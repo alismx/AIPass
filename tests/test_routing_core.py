@@ -5,7 +5,6 @@ Tests all Phase 1 routing functions with >80% coverage target.
 """
 
 import json
-import tempfile
 from pathlib import Path
 
 import pytest

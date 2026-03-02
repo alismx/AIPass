@@ -4,10 +4,9 @@ Branch resolution logic.
 Resolves symbolic @branch names to absolute paths and metadata.
 """
 
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from .exceptions import BranchNotFoundError, RegistryNotFoundError
+from .exceptions import BranchNotFoundError
 from .registry import get_all_branches, get_branch_by_name, load_registry
 
 
