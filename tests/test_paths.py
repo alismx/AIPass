@@ -15,7 +15,6 @@ Covers:
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 
 import pytest
@@ -28,7 +27,7 @@ from aipass.paths import (
     get_root,
     system_logs_dir,
 )
-from aipass.paths.resolver import _resolve_from_marker, get_root as _get_root_direct
+from aipass.paths.resolver import _resolve_from_marker
 
 
 # ---------------------------------------------------------------------------
@@ -155,8 +154,6 @@ class TestMarkerWalkResolution:
         # .aipass as a file, not a directory
         (tmp_path / ".aipass").write_text("not a dir")
 
-        # Provide a parent with the real marker so the walk finds something
-        parent = tmp_path.parent
         # We cannot rely on parent having .aipass, so use custom start to
         # test the helper directly
         result = _resolve_from_marker(start=tmp_path)
