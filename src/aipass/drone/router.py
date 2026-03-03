@@ -1,5 +1,5 @@
 """
-Command routing logic for the AIPass routing module.
+Command routing logic for the AIPass drone module.
 
 Routes commands to branch entry points by resolving symbolic @branch names,
 locating the branch's apps/{name}.py entry point, and executing via subprocess.

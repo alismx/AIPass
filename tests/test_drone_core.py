@@ -1,5 +1,5 @@
 """
-Unit tests for routing core functionality.
+Unit tests for drone core functionality.
 
 Tests all Phase 1 routing functions with >80% coverage target.
 """
@@ -9,7 +9,7 @@ from pathlib import Path
 
 import pytest
 
-from aipass.routing import (
+from aipass.drone import (
     BranchAlreadyExistsError,
     BranchNotFoundError,
     InvalidPathError,

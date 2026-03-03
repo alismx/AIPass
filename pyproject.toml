@@ -44,6 +44,7 @@ dev = [
 ]
 
 [project.scripts]
+drone = "aipass.drone.cli:main"
 seedgo = "seedgo.cli:main"
 
 [tool.hatch.build.targets.wheel]
