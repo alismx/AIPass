@@ -1,5 +1,5 @@
 """
-Routing module custom exceptions.
+Drone module custom exceptions.
 
 Defines the exception hierarchy for routing and branch resolution errors.
 """

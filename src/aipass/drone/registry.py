@@ -79,7 +79,7 @@ def save_registry(registry: Dict[str, Any]) -> None:
         registry["metadata"] = {}
 
     registry["metadata"]["last_updated"] = datetime.now(timezone.utc).isoformat()
-    registry["metadata"]["managed_by"] = "aipass.routing"
+    registry["metadata"]["managed_by"] = "aipass.drone"
 
     try:
         with open(registry_path, "w", encoding="utf-8") as f:
@@ -107,7 +107,7 @@ def initialize_registry() -> None:
         "branches": {},
         "metadata": {
             "last_updated": datetime.now(timezone.utc).isoformat(),
-            "managed_by": "aipass.routing",
+            "managed_by": "aipass.drone",
         },
     }
 

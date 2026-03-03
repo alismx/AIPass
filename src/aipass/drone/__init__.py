@@ -1,5 +1,5 @@
 """
-AIPass Routing & Discovery Module.
+AIPass Drone — Command routing & discovery module.
 
 Provides symbolic addressing for multi-agent systems. Resolves @branch names
 to absolute paths at runtime.
@@ -26,17 +26,17 @@ Registry Management:
     get_registry_path() -> Path         # Get current registry path
 
 Example:
-    >>> from aipass.routing import resolve_branch, register_branch
+    >>> from aipass.drone import resolve_branch, register_branch
     >>> register_branch("my_agent", "/path/to/agent", "agent")
     >>> path = resolve_branch("@my_agent")
     >>> print(path)
     /path/to/agent
 
-    >>> from aipass.routing import route_command
+    >>> from aipass.drone import route_command
     >>> result = route_command("@my_agent", "status")
     >>> print(result.stdout)
 
-    >>> from aipass.routing import route_all
+    >>> from aipass.drone import route_all
     >>> results = route_all("status")
     >>> for branch, r in results.items():
     ...     print(f"{branch}: exit={r.exit_code}")

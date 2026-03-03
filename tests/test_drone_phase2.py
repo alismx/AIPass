@@ -1,5 +1,5 @@
 """
-Unit tests for Phase 2 routing functionality.
+Unit tests for Phase 2 drone functionality.
 
 Tests command routing, subprocess execution, and module discovery with >80%
 coverage on new code. All subprocess calls are mocked — no real processes run.
@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from aipass.routing import (
+from aipass.drone import (
     BranchNotFoundError,
     CommandExecutionError,
     CommandResult,
@@ -22,8 +22,8 @@ from aipass.routing import (
     route_command,
     set_registry_path,
 )
-from aipass.routing.executor import execute_command
-from aipass.routing.router import _find_entry_point
+from aipass.drone.executor import execute_command
+from aipass.drone.router import _find_entry_point
 
 
 # ---------------------------------------------------------------------------
@@ -526,21 +526,21 @@ class TestPublicAPIImports:
     """Verify all Phase 2 symbols are importable from the top-level package."""
 
     def test_route_command_importable(self):
-        from aipass.routing import route_command
+        from aipass.drone import route_command
         assert callable(route_command)
 
     def test_discover_modules_importable(self):
-        from aipass.routing import discover_modules
+        from aipass.drone import discover_modules
         assert callable(discover_modules)
 
     def test_get_help_importable(self):
-        from aipass.routing import get_help
+        from aipass.drone import get_help
         assert callable(get_help)
 
     def test_command_result_importable(self):
-        from aipass.routing import CommandResult
+        from aipass.drone import CommandResult
         assert CommandResult is not None
 
     def test_version_updated(self):
-        from aipass.routing import __version__
+        from aipass.drone import __version__
         assert __version__ == "1.0.0"

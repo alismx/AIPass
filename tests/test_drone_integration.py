@@ -1,5 +1,5 @@
 """
-Integration tests for the AIPass routing module (Phase 3).
+Integration tests for the AIPass drone module (Phase 3).
 
 End-to-end tests that exercise the full workflow using real temp directories
 with proper branch file structures. All subprocess calls are mocked so no
@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from aipass.routing import (
+from aipass.drone import (
     BranchNotFoundError,
     CommandExecutionError,
     CommandResult,
@@ -31,7 +31,7 @@ from aipass.routing import (
     route_command,
     set_registry_path,
 )
-from aipass.routing.discovery import get_system_help
+from aipass.drone.discovery import get_system_help
 
 
 # ---------------------------------------------------------------------------
@@ -55,7 +55,7 @@ def _make_branch(root: Path, name: str) -> Path:
     Layout:
         root/{name}/
           apps/
-            {name}.py        ← entry point
+            {name}.py        <- entry point
             modules/
               status.py
               info.py
@@ -237,8 +237,8 @@ class TestHelpResult:
         assert result.commands_found == []
 
     def test_help_result_importable_from_package(self):
-        """HelpResult is importable directly from aipass.routing."""
-        from aipass.routing import HelpResult as HR
+        """HelpResult is importable directly from aipass.drone."""
+        from aipass.drone import HelpResult as HR
         assert HR is HelpResult
 
 
@@ -325,8 +325,8 @@ class TestRouteAll:
             assert kwargs.get("timeout") == 5
 
     def test_route_all_importable_from_package(self):
-        """route_all is importable from aipass.routing."""
-        from aipass.routing import route_all as ra
+        """route_all is importable from aipass.drone."""
+        from aipass.drone import route_all as ra
         assert callable(ra)
 
 
@@ -479,7 +479,7 @@ class TestRegistryPersistence:
             data = json.load(fh)
 
         assert "last_updated" in data["metadata"]
-        assert data["metadata"]["managed_by"] == "aipass.routing"
+        assert data["metadata"]["managed_by"] == "aipass.drone"
 
         reset_registry_path()
 
