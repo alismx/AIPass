@@ -23,3 +23,10 @@ site/
 .idea/
 .vscode/
 *.swp
+
+# AIPass global config (secrets live here)
+.aipass/
+!.aipass/aipass_global_prompt.md
+
+.archive
+
