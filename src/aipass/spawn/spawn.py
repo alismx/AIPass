@@ -1,0 +1,209 @@
+"""
+Spawn Module — Create new AIPass agents from templates.
+
+Orchestrates the full agent creation workflow:
+1. Validate target path
+2. Copy template to target
+3. Rename placeholder paths
+4. Replace all {{PLACEHOLDER}} patterns
+5. Regenerate .template_registry.json
+6. Register in BRANCH_REGISTRY.json
+7. Validate no unreplaced placeholders remain
+"""
+
+import hashlib
+import json
+from pathlib import Path
+
+from aipass.spawn.metadata import get_branch_name, normalize_branch_name, detect_profile
+from aipass.spawn.placeholders import build_replacements_dict, validate_no_placeholders
+from aipass.spawn.file_ops import copy_template, rename_placeholder_paths
+from aipass.spawn.registry import find_registry, add_to_registry
+
+# Default template location (relative to this file)
+DEFAULT_TEMPLATE = Path(__file__).parent / "templates" / "agent.template"
+
+
+def spawn_agent(target_path, role="", traits="", purpose="", profile=None,
+                template_dir=None, registry_path=None):
+    """
+    Create a new AIPass agent from template.
+
+    Args:
+        target_path: Where to create the agent (must not exist)
+        role: Agent's role description
+        traits: Agent's personality traits
+        purpose: Agent's purpose (brief description)
+        profile: AIPass profile override (default: auto-detect)
+        template_dir: Custom template directory (default: built-in agent.template)
+        registry_path: Path to BRANCH_REGISTRY.json (default: auto-discover)
+
+    Returns:
+        Dict with creation results:
+            - success: bool
+            - branch_name: str (uppercase)
+            - path: str
+            - files_copied: int
+            - registry_updated: bool
+            - validation_issues: list
+            - error: str (only if success=False)
+    """
+    target = Path(target_path).resolve()
+    template = Path(template_dir) if template_dir else DEFAULT_TEMPLATE
+
+    # Validate
+    if target.exists():
+        return _error(f"Target already exists: {target}")
+    if not template.exists():
+        return _error(f"Template not found: {template}")
+
+    # Extract names
+    folder_name = get_branch_name(target)
+    branch_upper = normalize_branch_name(folder_name, "upper")
+    branch_lower = normalize_branch_name(folder_name, "lower")
+    detected_profile = profile or detect_profile(target)
+
+    # Determine citizen number from registry
+    reg_path = Path(registry_path) if registry_path else find_registry(target.parent)
+    citizen_number = _get_next_citizen_number(reg_path)
+
+    # Build placeholder replacements
+    replacements = build_replacements_dict(
+        target, folder_name,
+        role=role, traits=traits, purpose=purpose or "New agent - purpose TBD",
+        profile=detected_profile, citizen_number=citizen_number,
+    )
+
+    # Step 1: Copy template with placeholder replacement in content
+    target.mkdir(parents=True, exist_ok=True)
+    copied, skipped = copy_template(template, target, replacements)
+
+    # Step 2: Rename any {{BRANCH}} dirs/files that weren't caught by path replacement
+    renamed = rename_placeholder_paths(target, folder_name)
+
+    # Step 3: Regenerate .template_registry.json with fresh hashes
+    _regenerate_template_registry(target)
+
+    # Step 4: Register in BRANCH_REGISTRY.json
+    registry_updated = add_to_registry(
+        reg_path, branch_upper, str(target), detected_profile,
+        f"@{branch_lower}", purpose or "New agent - purpose TBD",
+    )
+
+    # Step 5: Validate no unreplaced placeholders
+    issues = validate_no_placeholders(target)
+
+    return {
+        "success": True,
+        "branch_name": branch_upper,
+        "path": str(target),
+        "files_copied": len([c for c in copied if "(dir)" not in c]),
+        "dirs_created": len([c for c in copied if "(dir)" in c]),
+        "files_skipped": len(skipped),
+        "renamed": renamed,
+        "registry_updated": registry_updated,
+        "registry_path": str(reg_path),
+        "citizen_number": citizen_number,
+        "validation_issues": issues,
+    }
+
+
+def _get_next_citizen_number(registry_path):
+    """Get next citizen number from registry (count of existing branches + 1)."""
+    registry_path = Path(registry_path)
+    if not registry_path.exists():
+        return 1
+    try:
+        data = json.loads(registry_path.read_text(encoding="utf-8"))
+        return len(data.get("branches", [])) + 1
+    except (json.JSONDecodeError, IOError):
+        return 1
+
+
+def _regenerate_template_registry(target_dir):
+    """
+    Regenerate .template_registry.json with fresh SHA-256 hashes.
+
+    Scans all files in the agent directory and builds a new registry
+    with accurate content hashes.
+    """
+    target_dir = Path(target_dir)
+    agent_dir = target_dir / ".agent"
+    if not agent_dir.exists():
+        return
+
+    registry_file = agent_dir / ".template_registry.json"
+
+    files = {}
+    directories = {}
+    file_idx = 1
+    dir_idx = 1
+
+    for item in sorted(target_dir.rglob("*")):
+        rel = item.relative_to(target_dir)
+
+        # Skip .agent internal files and __pycache__
+        if ".agent" in rel.parts or "__pycache__" in rel.parts:
+            continue
+
+        if item.is_dir():
+            dir_id = f"d{dir_idx:03d}"
+            directories[dir_id] = {
+                "path": str(rel),
+                "name": item.name,
+            }
+            dir_idx += 1
+        elif item.is_file():
+            file_id = f"f{file_idx:03d}"
+            try:
+                content = item.read_bytes()
+                content_hash = hashlib.sha256(content).hexdigest()[:16]
+            except (IOError, PermissionError):
+                content_hash = "unreadable"
+
+            has_placeholder = False
+            try:
+                text = item.read_text(encoding="utf-8")
+                has_placeholder = "{{" in text and "}}" in text
+            except (UnicodeDecodeError, IOError):
+                pass
+
+            files[file_id] = {
+                "path": str(rel),
+                "name": item.name,
+                "content_hash": content_hash,
+                "has_branch_placeholder": has_placeholder,
+            }
+            file_idx += 1
+
+    registry = {
+        "metadata": {
+            "description": "Template registry for tracking files",
+            "generated": True,
+        },
+        "files": files,
+        "directories": directories,
+    }
+
+    registry_file.write_text(
+        json.dumps(registry, indent=2, ensure_ascii=False) + "\n",
+        encoding="utf-8",
+    )
+
+
+def _error(message):
+    """Return error result dict."""
+    return {
+        "success": False,
+        "error": message,
+        "branch_name": "",
+        "path": "",
+        "files_copied": 0,
+        "dirs_created": 0,
+        "files_skipped": 0,
+        "renamed": [],
+        "registry_updated": False,
+        "registry_path": "",
+        "citizen_number": 0,
+        "validation_issues": [],
+    }
