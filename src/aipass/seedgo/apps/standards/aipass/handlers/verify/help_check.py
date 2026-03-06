@@ -1,7 +1,7 @@
 """
 Help Consistency Checker Handler
 
-Checks that seed.py help text doesn't mention removed flags.
+Checks that seedgo.py help text doesn't mention removed flags.
 Validates help documentation accuracy.
 """
 
@@ -14,7 +14,6 @@ Validates help documentation accuracy.
 # =============================================
 
 
-import sys
 from pathlib import Path
 from typing import Dict
 
@@ -24,30 +23,31 @@ from aipass.seedgo.apps.standards.aipass.handlers.config import ignore_handler
 
 def check_help_consistency() -> Dict:
     """
-    Check that seed.py help text doesn't mention removed flags
+    Check that seedgo.py help text doesn't mention removed flags
 
     Returns:
         Dict with check results
     """
     seed_file = Path(__file__).resolve().parents[5] / "apps" / "seedgo.py"  # seedgo root / apps / seedgo.py
     issues = []
+    removed_flags = []
 
     if not seed_file.exists():
         return {
             'name': 'Help Consistency',
             'passed': False,
-            'issues': ["seed.py not found"],
+            'issues': ["seedgo.py not found"],
             'score': 0
         }
 
-    # Read seed.py and check for removed flags in help text
+    # Read seedgo.py and check for removed flags in help text
     try:
         content = file_handler.read_file(str(seed_file))
         if content is None:
             return {
                 'name': 'Help Consistency',
                 'passed': False,
-                'issues': ["Could not read seed.py"],
+                'issues': ["Could not read seedgo.py"],
                 'score': 0
             }
 
@@ -75,6 +75,6 @@ def check_help_consistency() -> Dict:
         'name': 'Help Consistency',
         'passed': len(issues) == 0,
         'issues': issues,
-        'checked': [f"Scanned seed.py for: {', '.join(removed_flags)}"],
+        'checked': [f"Scanned seedgo.py for: {', '.join(removed_flags)}"],
         'score': 100 if len(issues) == 0 else 0
     }

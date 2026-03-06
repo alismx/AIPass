@@ -47,8 +47,5 @@ def handle_memory_template_updated(**kwargs: Any) -> None:
     Args:
         **kwargs: Event data (template_name, updated_by, timestamp, etc.)
     """
-    try:
-        from aipass.memory_bank.apps.handlers.templates.pusher import push_templates
-        push_templates(dry_run=False)
-    except Exception:
-        pass
+    # memory_bank integration (optional, requires memory_bank package)
+    pass

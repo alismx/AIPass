@@ -98,7 +98,7 @@ Process:
 **Infrastructure in place:**
 - `pytest.ini` at root - Configuration for test discovery and markers
 - `/home/aipass/tests/` - Root test directory with conftest.py
-- `/home/aipass/aipass_core/tests/` - Core system tests
+- `<project_root>/tests/` - Core system tests
 - Branch-specific test directories (API, Prax, CLI, etc.)
 
 **Already operational in some branches:**

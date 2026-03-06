@@ -229,7 +229,7 @@ def deliver_email_to_branch(
     on_delivered: Optional[Callable] = None
 ) -> Tuple[bool, str]:
     """
-    Deliver email to target branch's ai_mail.local/inbox.json file.
+    Deliver email to target branch's .ai_mail.local/inbox.json file.
 
     Appends message to inbox JSON messages array.
 
@@ -283,11 +283,11 @@ def deliver_email_to_branch(
 
     branch_path = Path(branches[to_branch])
 
-    # Find the branch's ai_mail.local/inbox.json file
+    # Find the branch's .ai_mail.local/inbox.json file
     if branch_path == Path("/") or branch_path == _REPO_ROOT:
-        inbox_file = _REPO_ROOT / "ai_mail.local" / "inbox.json"
+        inbox_file = _REPO_ROOT / ".ai_mail.local" / "inbox.json"
     else:
-        inbox_file = branch_path / "ai_mail.local" / "inbox.json"
+        inbox_file = branch_path / ".ai_mail.local" / "inbox.json"
 
     if not inbox_file.exists():
         # Auto-provision inbox for new branches (self-healing)

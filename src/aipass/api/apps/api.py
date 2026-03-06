@@ -24,7 +24,7 @@ from pathlib import Path
 
 # Standard library imports
 import importlib
-from typing import Dict, Any, Optional, List
+from typing import Any, List
 
 # AIPass infrastructure imports
 from aipass.prax.apps.modules.logger import system_logger as logger
@@ -164,10 +164,6 @@ def print_help():
     table.add_row("models", "List available models from provider")
     table.add_row("track", "Track API usage metrics")
     table.add_row("stats", "Display API usage statistics")
-    table.add_row("telegram start", "Start Telegram bridge service")
-    table.add_row("telegram stop", "Stop Telegram bridge service")
-    table.add_row("telegram status", "Check Telegram bridge status")
-    table.add_row("telegram logs", "View Telegram bridge logs")
 
     console.print(table)
     console.print()

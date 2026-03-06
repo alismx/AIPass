@@ -42,15 +42,14 @@ Use this ONLY for infrastructure handlers that would cause recursion:
 Everyone else should use the regular system_logger.
 """
 
-from pathlib import Path
-
 import inspect
 import logging
 from logging.handlers import RotatingFileHandler
+from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 from aipass.prax.apps.handlers.config.load import (
-    get_system_logs_dir,
+    get_module_logs_dir,
     DEFAULT_LOG_LEVEL,
     load_log_config,
     lines_to_bytes
@@ -99,9 +98,9 @@ def _create_direct_logger(
     branch_name: str,
     branch_path: Optional[str]
 ) -> logging.Logger:
-    """Create a standalone logger with RotatingFileHandlers.
+    """Create a standalone logger with a RotatingFileHandler.
 
-    Same dual-logging setup as setup_individual_logger but with NO
+    Same logging setup as setup_individual_logger but with NO
     connection to the event pipeline. Uses logging.Logger internally
     only for RotatingFileHandler management - no root logger propagation.
 
@@ -111,11 +110,10 @@ def _create_direct_logger(
         branch_path: Module/branch name (e.g., 'prax') or None
 
     Returns:
-        Configured logger with dual file handlers and no propagation.
+        Configured logger with file handler and no propagation.
     """
-    # Namespaced to avoid collision with regular captured_ loggers
-    LOGGER_KEY = f"direct_{branch_name}_{module_name}"
-    logger = logging.getLogger(LOGGER_KEY)
+    logger_key = f"direct_{branch_name}_{module_name}"
+    logger = logging.getLogger(logger_key)
     logger.setLevel(DEFAULT_LOG_LEVEL)
     logger.handlers.clear()
     logger.propagate = False  # Critical: no root logger propagation
@@ -126,33 +124,19 @@ def _create_direct_logger(
         config['date_format']
     )
 
-    # Handler 1: System-wide log
-    SYS_LOG_FILE = get_system_logs_dir() / f"{branch_name}_{module_name}.log"
-    SYS_LIMITS = config['system_logs']
-    sys_handler = RotatingFileHandler(
-        SYS_LOG_FILE,
-        maxBytes=lines_to_bytes(SYS_LIMITS['max_lines']),
-        backupCount=SYS_LIMITS['backup_count'],
+    # Module-local log: each module logs to <module>/logs/
+    target = branch_name if branch_path else "prax"
+    logs_dir = get_module_logs_dir(target)
+    log_file = logs_dir / f"{module_name}.log"
+    limits = config['system_logs']
+    handler = RotatingFileHandler(
+        log_file,
+        maxBytes=lines_to_bytes(limits['max_lines']),
+        backupCount=limits['backup_count'],
         encoding='utf-8'
     )
-    sys_handler.setFormatter(formatter)
-    logger.addHandler(sys_handler)
-
-    # Handler 2: Branch-local log
-    if branch_path:
-        from aipass.prax.apps.handlers.config.load import _find_repo_root
-        LOCAL_LOGS_DIR = _find_repo_root() / branch_path / "logs"
-        LOCAL_LOGS_DIR.mkdir(parents=True, exist_ok=True)
-        LOCAL_LOG_FILE = LOCAL_LOGS_DIR / f"{module_name}.log"
-        LOCAL_LIMITS = config['local_logs']
-        local_handler = RotatingFileHandler(
-            LOCAL_LOG_FILE,
-            maxBytes=lines_to_bytes(LOCAL_LIMITS['max_lines']),
-            backupCount=LOCAL_LIMITS['backup_count'],
-            encoding='utf-8'
-        )
-        local_handler.setFormatter(formatter)
-        logger.addHandler(local_handler)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
     return logger
 
@@ -170,7 +154,7 @@ def _get_or_create_logger(
     Returns:
         Cached or newly created direct logger.
     """
-    branch_name = branch_path.split('/')[-1] if branch_path else "unknown"
+    branch_name = Path(branch_path).name if branch_path else "unknown"
     key = f"{branch_name}_{module_name}"
     if key not in _direct_loggers:
         _direct_loggers[key] = _create_direct_logger(

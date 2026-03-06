@@ -2,7 +2,7 @@
 Error Handling Standards Module
 
 Provides condensed error handling standards for AIPass branches.
-Run directly or via: drone @seed error_handling
+Run directly or via: seedgo error_handling
 """
 
 # =================== META ====================
@@ -67,16 +67,16 @@ def print_help():
     console.print()
 
     console.print("[yellow]USAGE:[/yellow]")
-    console.print("  drone @seed error_handling")
-    console.print("  drone @seed errors")
-    console.print("  drone @seed error")
+    console.print("  seedgo error_handling")
+    console.print("  seedgo errors")
+    console.print("  seedgo error")
     console.print("  python3 error_handling_standard.py")
     console.print("  python3 error_handling_standard.py --help")
     console.print()
 
     console.print("[yellow]EXAMPLES:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed error_handling")
+    console.print("  seedgo error_handling")
     console.print()
     console.print("  [dim]# Standalone[/dim]")
     console.print("  python3 error_handling_standard.py")

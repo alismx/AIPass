@@ -68,7 +68,7 @@ from aipass.ai_mail.apps.handlers.email.reply import get_email_by_id, send_reply
 from aipass.ai_mail.apps.handlers.email.header import prepend_dispatch_header
 from aipass.ai_mail.apps.handlers.users.user import get_current_user
 from aipass.ai_mail.apps.handlers.registry.read import get_all_branches, get_branch_by_email
-from aipass.ai_mail.apps.handlers.persistence.json_ops import log_operation
+from aipass.ai_mail.apps.handlers.json_utils.json_handler import log_operation
 
 
 def _on_email_delivered(branch_path, new_count, opened_count, total):
@@ -457,7 +457,7 @@ def send_email_direct(to_branch: str, subject: str, message: str, auto_execute: 
                 user_info = {
                     "email_address": email_addr,
                     "display_name": branch_info["name"],
-                    "mailbox_path": str(branch_path / "ai_mail.local"),
+                    "mailbox_path": str(branch_path / ".ai_mail.local"),
                     "timestamp_format": "%Y-%m-%d %H:%M:%S"
                 }
             else:
@@ -466,7 +466,7 @@ def send_email_direct(to_branch: str, subject: str, message: str, auto_execute: 
                 user_info = {
                     "email_address": email_addr,
                     "display_name": branch_name,
-                    "mailbox_path": str(_AI_MAIL_DIR.parent / from_branch.lstrip('@').lower() / "ai_mail.local"),
+                    "mailbox_path": str(_AI_MAIL_DIR.parent / from_branch.lstrip('@').lower() / ".ai_mail.local"),
                     "timestamp_format": "%Y-%m-%d %H:%M:%S"
                 }
         else:
@@ -605,7 +605,7 @@ def handle_inbox(args: List[str]) -> bool:
                 console.print(f"❌ Unknown branch: {target_branch}")
                 return False
             branch_path = Path(branch_info["path"])
-            mailbox_path = branch_path / "ai_mail.local"
+            mailbox_path = branch_path / ".ai_mail.local"
             display_name = branch_info.get("name", target_branch)
         else:
             # Use current branch (detected from PWD)
@@ -670,7 +670,7 @@ def handle_read(args: List[str]) -> bool:
 
     try:
         user_info = get_current_user()
-        # mailbox_path is ai_mail.local/, branch_path is parent
+        # mailbox_path is .ai_mail.local/, branch_path is parent
         branch_path = Path(user_info["mailbox_path"]).parent
 
         # Archive all messages
@@ -801,7 +801,7 @@ def handle_close(args: List[str]) -> bool:
                 pass  # Dashboard/central update is best-effort
             try:
                 from aipass.ai_mail.apps.handlers.email.purge import purge_deleted_folder
-                purge_deleted_folder(branch_path / "ai_mail.local")
+                purge_deleted_folder(branch_path / ".ai_mail.local")
             except Exception:
                 pass
 
@@ -830,7 +830,7 @@ def handle_reply(args: List[str]) -> bool:
     try:
         user_info = get_current_user()
         branch_path = Path(user_info["mailbox_path"]).parent
-        inbox_file = branch_path / "ai_mail.local" / "inbox.json"
+        inbox_file = branch_path / ".ai_mail.local" / "inbox.json"
 
         message_id = args[0]
         reply_message = args[1]

@@ -15,9 +15,8 @@ Catches drift between trigger_check.py patterns and trigger_content.py docs.
 
 
 import re
-import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict
 
 # =============================================================================
 # INFRASTRUCTURE SETUP
@@ -190,8 +189,8 @@ def check_checker_sync() -> Dict:
             if count != actual_checkers:
                 issues.append(f"SEED.id.json says {count} standards but {actual_checkers} checkers exist")
 
-    # Check seed.py --help for consistent standards count
-    seed_entry_path = PACK_ROOT / "apps/seed.py"
+    # Check seedgo.py --help for consistent standards count
+    seed_entry_path = PACK_ROOT / "apps/seedgo.py"
     if seed_entry_path.exists() and checkers_dir.exists():
         seed_py_content = seed_entry_path.read_text()
         actual_checkers = len([f for f in checkers_dir.glob("*_check.py")])
@@ -200,7 +199,7 @@ def check_checker_sync() -> Dict:
         seed_py_counts = re.findall(r'(\d+)\s*(?:queryable\s*)?(?:code\s*)?standards?', seed_py_content, re.IGNORECASE)
         wrong_counts = [int(c) for c in set(seed_py_counts) if int(c) != actual_checkers and int(c) > 5]
         if wrong_counts:
-            issues.append(f"seed.py mentions {wrong_counts} standards but {actual_checkers} checkers exist")
+            issues.append(f"seedgo.py mentions {wrong_counts} standards but {actual_checkers} checkers exist")
 
     return {
         'name': 'Checker-Doc Sync',

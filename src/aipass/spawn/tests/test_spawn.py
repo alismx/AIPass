@@ -6,9 +6,9 @@ import pytest
 from pathlib import Path
 
 from aipass.spawn import spawn_agent
-from aipass.spawn.metadata import get_branch_name, normalize_branch_name, detect_profile
-from aipass.spawn.placeholders import build_replacements_dict, validate_no_placeholders
-from aipass.spawn.registry import load_registry, add_to_registry
+from aipass.spawn.apps.handlers.metadata import get_branch_name, normalize_branch_name, detect_profile
+from aipass.spawn.apps.handlers.placeholders import build_replacements_dict, validate_no_placeholders
+from aipass.spawn.apps.handlers.registry import load_registry, add_to_registry
 
 
 @pytest.fixture

@@ -2,7 +2,7 @@
 Architecture Standards Module
 
 Provides condensed architecture standards for AIPass branches.
-Run directly or via: drone @seed architecture
+Run directly or via: seedgo architecture
 """
 
 # =================== META ====================
@@ -66,15 +66,15 @@ def print_help():
     console.print()
 
     console.print("[yellow]USAGE:[/yellow]")
-    console.print("  drone @seed architecture")
+    console.print("  seedgo architecture")
     console.print("  python3 architecture_standard.py")
     console.print("  python3 architecture_standard.py --help")
     console.print()
 
     console.print("[yellow]EXAMPLES:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed architecture")
-    console.print("  drone @seed arch")
+    console.print("  seedgo architecture")
+    console.print("  seedgo arch")
     console.print()
     console.print("  [dim]# Standalone[/dim]")
     console.print("  python3 architecture_standard.py")

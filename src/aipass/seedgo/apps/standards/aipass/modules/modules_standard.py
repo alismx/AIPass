@@ -2,7 +2,7 @@
 Modules Standards Module
 
 Provides condensed module standards for AIPass branches.
-Run directly or via: drone @seed modules
+Run directly or via: seedgo modules
 """
 
 # =================== META ====================
@@ -64,14 +64,14 @@ def print_help():
     console.print()
 
     console.print("[yellow]USAGE:[/yellow]")
-    console.print("  drone @seed modules")
+    console.print("  seedgo modules")
     console.print("  python3 modules_standard.py")
     console.print("  python3 modules_standard.py --help")
     console.print()
 
     console.print("[yellow]EXAMPLES:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed modules")
+    console.print("  seedgo modules")
     console.print()
     console.print("  [dim]# Standalone[/dim]")
     console.print("  python3 modules_standard.py")

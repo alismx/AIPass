@@ -2,7 +2,7 @@
 Log Level Hygiene Standards Module
 
 Provides condensed log level hygiene standards for AIPass branches.
-Run directly or via: drone @seed log_level
+Run directly or via: seedgo log_level
 """
 
 # =================== META ====================
@@ -60,14 +60,14 @@ def print_help():
     console.print()
 
     console.print("[yellow]USAGE:[/yellow]")
-    console.print("  drone @seed log_level")
+    console.print("  seedgo log_level")
     console.print("  python3 log_level_standard.py")
     console.print("  python3 log_level_standard.py --help")
     console.print()
 
     console.print("[yellow]EXAMPLES:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed log_level")
+    console.print("  seedgo log_level")
     console.print()
     console.print("  [dim]# Standalone[/dim]")
     console.print("  python3 log_level_standard.py")

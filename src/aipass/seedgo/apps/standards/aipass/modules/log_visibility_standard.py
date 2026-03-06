@@ -2,7 +2,7 @@
 Log Visibility Standards Module
 
 Provides condensed log visibility standards for AIPass branches.
-Run directly or via: drone @seed log_visibility
+Run directly or via: seedgo log_visibility
 """
 
 # =================== META ====================
@@ -60,14 +60,14 @@ def print_help():
     console.print()
 
     console.print("[yellow]USAGE:[/yellow]")
-    console.print("  drone @seed log_visibility")
+    console.print("  seedgo log_visibility")
     console.print("  python3 log_visibility_standard.py")
     console.print("  python3 log_visibility_standard.py --help")
     console.print()
 
     console.print("[yellow]EXAMPLES:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed log_visibility")
+    console.print("  seedgo log_visibility")
     console.print()
     console.print("  [dim]# Standalone[/dim]")
     console.print("  python3 log_visibility_standard.py")

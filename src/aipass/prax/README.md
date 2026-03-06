@@ -1,51 +1,80 @@
-# PRAX
+# Prax
 
-**Purpose:** System logging, event tracking, and real-time monitoring infrastructure
-**Module:** `aipass.prax`
-**Created:** 2026-03-05
+System-wide logging and real-time monitoring for AIPass. Prax auto-routes log output from any module to per-module log files and provides a live monitoring console (Mission Control) that shows file changes, log events, and command execution across all branches.
 
----
+## Usage
 
-## Overview
+### Logging
 
-### What I Do
+```python
+from aipass.prax import logger
 
+logger.info("Processing started")
+logger.warning("Disk usage high")
+logger.error("Connection failed")
+```
 
-### How I Work
-- **Entry Point:** `apps/prax.py`
-- **Pattern:** Auto-discovers and routes to modules
+Logs auto-route to `system_logs/<branch>_<module>.log` based on the calling module. No configuration needed — prax detects the caller via stack introspection.
 
----
+For handlers or plugins that need to bypass the event pipeline:
+
+```python
+from aipass.prax.apps.modules.logger import get_direct_logger
+
+log = get_direct_logger("my_handler")
+log.info("Direct log entry")
+```
+
+### Mission Control
+
+Real-time monitoring console for watching system activity across all branches.
+
+```bash
+drone @prax monitor
+```
+
+Interactive commands inside the monitor:
+
+```
+watch all           # Watch all branches
+watch prax          # Watch specific branch
+watch errors        # Only show errors
+status              # Show current filters
+quit                # Exit
+```
+
+### CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `drone @prax monitor` | Launch Mission Control |
+| `drone @prax init` | Initialize logging system |
+| `drone @prax status` | Show system status |
+| `drone @prax run` | Start continuous logging mode |
+| `drone @prax shutdown` | Shutdown logging system |
+| `drone @prax discover` | Discover Python modules in ecosystem |
+| `drone @prax log-audit` | Audit log file sizes and health |
 
 ## Architecture
 
 ```
-PRAX/
+prax/
 ├── apps/
-│   ├── prax.py       # Entry point
-│   ├── modules/            # Business logic
-│   ├── handlers/           # Implementation
-│   └── plugins/            # Extensions
-├── docs/
-├── tests/
-├── passport.json           # Identity
-├── local.json              # Session history
-├── observations.json       # Collaboration patterns
-└── README.md
+│   ├── prax.py              # Entry point
+│   ├── modules/
+│   │   ├── logger.py        # SystemLogger (public API)
+│   │   └── monitor_module.py # Mission Control
+│   └── handlers/
+│       ├── logging/         # Log setup, rotation, introspection
+│       ├── monitoring/      # Event queue, branch detection, stream output
+│       ├── discovery/       # Module scanning and filtering
+│       ├── config/          # Configuration loading
+│       └── registry/        # Module registry management
+└── tests/
 ```
 
----
+## How It Works
 
-## Commands
-
-*Configure after initialization*
-
----
-
-## Integration Points
-
-### Depends On
-
-
-### Provides To
-
+1. **Auto-routing** — When any module calls `logger.info()`, prax inspects the call stack to identify the caller and routes the log entry to the appropriate file.
+2. **Dual output** — Each log entry goes to both a system-wide log (`system_logs/`) and a branch-local log (`{branch}/logs/`), both with rotation.
+3. **Mission Control** — A multi-threaded monitoring console that watches file changes (via inotify), log events, and agent activity across all branches simultaneously.

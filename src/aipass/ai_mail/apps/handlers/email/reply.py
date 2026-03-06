@@ -151,7 +151,7 @@ def send_reply(
         return False, f"Failed to deliver reply: {error_msg}", None
 
     # Save to sender's sent folder
-    sent_folder = from_branch_path / "ai_mail.local" / "sent"
+    sent_folder = from_branch_path / ".ai_mail.local" / "sent"
     sent_folder.mkdir(parents=True, exist_ok=True)
 
     reply_id = str(uuid.uuid4())[:8]

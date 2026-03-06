@@ -67,8 +67,9 @@ def detect_branch_from_pwd() -> Dict | None:
         None if no branch detected
     """
     try:
-        # Get current working directory
-        cwd = Path.cwd()
+        # Use caller's CWD if passed by drone, otherwise fall back to process CWD
+        caller_cwd = os.environ.get("AIPASS_CALLER_CWD")
+        cwd = Path(caller_cwd) if caller_cwd else Path.cwd()
 
         # Find branch root
         branch_root = find_branch_root(cwd)
@@ -103,9 +104,12 @@ def find_branch_root(start_path: Path) -> Path | None:
 
     # Walk up directory tree (max 10 levels to prevent infinite loop)
     for _ in range(10):
-        # Check if this directory has a [BRANCH].id.json file
-        for file in current.glob("*.id.json"):
-            # Found a .id.json file - this is likely a branch root
+        # Check for dev-pass pattern: [BRANCH].id.json
+        for _ in current.glob("*.id.json"):
+            return current
+
+        # Check for public/trinity pattern: .trinity/passport.json
+        if (current / ".trinity" / "passport.json").exists():
             return current
 
         # Move up one level
@@ -134,13 +138,18 @@ def get_branch_info_from_registry(branch_path: Path) -> Dict | None:
         with open(BRANCH_REGISTRY_PATH, 'r', encoding='utf-8') as f:
             registry = json.load(f)
 
-        # Normalize branch_path for comparison
-        branch_path_str = str(branch_path.resolve())
+        registry_dir = BRANCH_REGISTRY_PATH.parent
+        branch_path_resolved = branch_path.resolve()
 
         # Search registry for matching path
         for branch in registry.get("branches", []):
-            if Path(branch["path"]).resolve() == Path(branch_path_str):
-                # Found match - return branch info
+            reg_path = Path(branch["path"])
+            # Resolve relative paths against registry location, not CWD
+            if not reg_path.is_absolute():
+                reg_path = (registry_dir / reg_path).resolve()
+            else:
+                reg_path = reg_path.resolve()
+            if reg_path == branch_path_resolved:
                 return branch
 
         return None

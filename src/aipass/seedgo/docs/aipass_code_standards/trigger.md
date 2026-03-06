@@ -103,7 +103,7 @@ def fire_event(name, **data):
 
 ## Handler Requirements
 
-Handlers live in `/home/aipass/aipass_core/trigger/apps/handlers/events/`
+Handlers live in `<project_root>/trigger/apps/handlers/events/`
 
 ### Handler Interface
 ```python
@@ -371,7 +371,7 @@ For Trigger branch itself:
 
 ## Reference
 
-- **Trigger Core:** `/home/aipass/aipass_core/trigger/apps/modules/core.py`
-- **Handler Registry:** `/home/aipass/aipass_core/trigger/apps/handlers/events/registry.py`
-- **Event Handlers:** `/home/aipass/aipass_core/trigger/apps/handlers/events/*.py`
+- **Trigger Core:** `<project_root>/trigger/apps/modules/core.py`
+- **Handler Registry:** `<project_root>/trigger/apps/handlers/events/registry.py`
+- **Event Handlers:** `<project_root>/trigger/apps/handlers/events/*.py`
 - **Standard:** `/home/aipass/seed/standards/CODE_STANDARDS/trigger.md`

@@ -15,15 +15,27 @@
 #   - No Prax imports (handler tier 3)
 # =============================================
 
+"""JSON Auto-Creating Handler - manages CLI JSON files with templates and auto-rotation."""
+
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Any, Optional
-import sys
+from typing import Dict, Any, Optional
 import inspect
+from aipass.prax.apps.modules.logger import system_logger as logger
 
-# Constants — package-relative paths (portable across any machine)
-CLI_ROOT = Path(__file__).resolve().parents[3]  # json_handler.py -> json -> handlers -> apps -> cli
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains pyproject.toml or AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "pyproject.toml").exists() or (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+# Constants — resolved via repo root walk-up (portable across any machine)
+_REPO_ROOT = _find_repo_root()
+CLI_ROOT = _REPO_ROOT / "src" / "aipass" / "cli"
 CLI_JSON_DIR = CLI_ROOT / "cli_json"
 JSON_TEMPLATES_DIR = CLI_ROOT / "apps" / "json_templates"
 
@@ -108,9 +120,8 @@ def ensure_json_exists(module_name: str, json_type: str) -> bool:
             if validate_json_structure(data, json_type):
                 return True
             # If corrupted, fall through to regenerate
-        except Exception:
-            # If unreadable, fall through to regenerate
-            pass
+        except Exception as exc:
+            logger.warning("JSON unreadable at %s, regenerating: %s", json_path, exc)
 
     template = load_template(json_type, module_name)
 

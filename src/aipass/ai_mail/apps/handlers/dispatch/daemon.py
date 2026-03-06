@@ -64,9 +64,9 @@ _AI_MAIL_DIR = Path(__file__).resolve().parents[3]  # ai_mail/
 
 # Paths
 CONFIG_FILE = _AI_MAIL_DIR / "safety_config.json"
-DAEMON_STATE_FILE = _AI_MAIL_DIR / "ai_mail.local" / "daemon_state.json"
-DAEMON_LOG_FILE = _AI_MAIL_DIR / "ai_mail.local" / "dispatch_daemon.log"
-DAEMON_PID_FILE = _AI_MAIL_DIR / "ai_mail.local" / "daemon.pid"
+DAEMON_STATE_FILE = _AI_MAIL_DIR / ".ai_mail.local" / "daemon_state.json"
+DAEMON_LOG_FILE = _AI_MAIL_DIR / ".ai_mail.local" / "dispatch_daemon.log"
+DAEMON_PID_FILE = _AI_MAIL_DIR / ".ai_mail.local" / "daemon.pid"
 BRANCH_REGISTRY = _REPO_ROOT / "AIPASS_REGISTRY.json"
 
 # Telegram notifications (scheduler bot)
@@ -168,7 +168,7 @@ def _set_session_name(branch_path: Path, name: str) -> bool:
 
 def _check_lock(branch_path: Path) -> Optional[Dict[str, Any]]:
     """Check if branch has an active dispatch lock. Returns lock data or None."""
-    lock_file = branch_path / "ai_mail.local" / ".dispatch.lock"
+    lock_file = branch_path / ".ai_mail.local" / ".dispatch.lock"
     if not lock_file.exists():
         return None
     try:
@@ -212,7 +212,7 @@ def _check_lock(branch_path: Path) -> Optional[Dict[str, Any]]:
 
 def _acquire_lock(branch_path: Path, pid: int) -> tuple[bool, str]:
     """Acquire dispatch lock for branch. Atomic creation via O_CREAT|O_EXCL."""
-    lock_file = branch_path / "ai_mail.local" / ".dispatch.lock"
+    lock_file = branch_path / ".ai_mail.local" / ".dispatch.lock"
     lock_data = {
         "pid": pid,
         "timestamp": datetime.now().isoformat(),
@@ -336,7 +336,7 @@ def check_inbox_for_dispatch(branch_path: Path) -> Optional[Dict[str, Any]]:
     Also retries opened dispatch emails orphaned for >30 min (agent crashed
     before completing).
     """
-    inbox_file = branch_path / "ai_mail.local" / "inbox.json"
+    inbox_file = branch_path / ".ai_mail.local" / "inbox.json"
     inbox_data = _read_json(inbox_file)
     if inbox_data is None:
         return None
@@ -372,7 +372,7 @@ def check_inbox_for_dispatch(branch_path: Path) -> Optional[Dict[str, Any]]:
 
 def count_new_emails(branch_path: Path) -> int:
     """Count new (unread) emails in a branch's inbox."""
-    inbox_file = branch_path / "ai_mail.local" / "inbox.json"
+    inbox_file = branch_path / ".ai_mail.local" / "inbox.json"
     inbox_data = _read_json(inbox_file)
     if inbox_data is None:
         return 0
@@ -409,7 +409,7 @@ def spawn_agent(
     subject = message.get("subject", "")
     max_turns = config.get("max_turns_per_wake", 15)
 
-    lock_file_path = str(branch_path / "ai_mail.local" / ".dispatch.lock")
+    lock_file_path = str(branch_path / ".ai_mail.local" / ".dispatch.lock")
 
     # Prompt — no lock cleanup instruction (dispatch_monitor handles it)
     prompt = (
@@ -426,7 +426,7 @@ def spawn_agent(
 
     # Build monitor command (dispatch_monitor wraps claude, handles bounce + lock cleanup)
     MONITOR_SCRIPT = Path(__file__).resolve().parent / "dispatch_monitor.py"
-    LOG_DIR = branch_path / "ai_mail.local"
+    LOG_DIR = branch_path / ".ai_mail.local"
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     STDERR_LOG = str(LOG_DIR / "agent_stderr.log")
 
@@ -504,6 +504,8 @@ def is_protected_branch(branch_email: str) -> bool:
 
 def _read_session_type(pid_str: str) -> str:
     """Read AIPASS_SESSION_TYPE from /proc/{pid}/environ. Returns 'interactive' if unset."""
+    if sys.platform != "linux":
+        return 'interactive'
     try:
         with open(f'/proc/{pid_str}/environ', 'rb') as f:
             data = f.read()
@@ -540,6 +542,8 @@ def _is_branch_occupied(branch_path: Path) -> bool:
             if not pid_str:
                 continue
             try:
+                if sys.platform != "linux":
+                    continue
                 cwd = os.readlink(f'/proc/{pid_str}/cwd')
                 if Path(cwd).resolve() == resolved:
                     session_type = _read_session_type(pid_str)

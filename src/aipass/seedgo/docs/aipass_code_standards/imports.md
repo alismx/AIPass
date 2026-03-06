@@ -303,7 +303,7 @@ from drone.apps.modules.router import route_command  # NO!
 # Working dir: /home/aipass/seed/
 
 import subprocess
-subprocess.run(["python3", "/home/aipass/aipass_core/ai_mail/apps/ai_mail.py",
+subprocess.run(["python3", "<project_root>/ai_mail/apps/ai_mail.py",
                 "send", "@drone", "Subject", "Message"])
 
 # AI_MAIL walks up from your CWD, finds SEED.id.json, knows you're @seed
@@ -314,7 +314,7 @@ subprocess.run(["python3", "/home/aipass/aipass_core/ai_mail/apps/ai_mail.py",
 # ✗ WRONG - Call from wrong directory
 # Working dir: /home/aipass/
 
-subprocess.run(["python3", "/home/aipass/aipass_core/ai_mail/apps/ai_mail.py",
+subprocess.run(["python3", "<project_root>/ai_mail/apps/ai_mail.py",
                 "send", "@drone", "Subject", "Message"])
 
 # AI_MAIL can't find branch identity, falls back to @dev_central
@@ -356,7 +356,7 @@ from pathlib import Path
 # Ensure you're in your branch directory
 branch_dir = Path(__file__).parent.parent  # Adjust based on file depth
 result = subprocess.run(
-    ["python3", "/home/aipass/aipass_core/ai_mail/apps/ai_mail.py",
+    ["python3", "<project_root>/ai_mail/apps/ai_mail.py",
      "send", "@recipient", "Subject", "Message"],
     cwd=str(branch_dir),  # Force working directory to branch root
     capture_output=True

@@ -36,7 +36,7 @@ apps/handlers/ (Implementation Layer)
 
 **Rule:** All branches must match the Cortex template structure.
 
-**Source of Truth:** `/home/aipass/aipass_core/cortex/templates/branch_template/.template_registry.json`
+**Source of Truth:** `<project_root>/cortex/templates/branch_template/.template_registry.json`
 
 **What it checks:**
 - All required files from template exist in branch (with proper name transformations)
@@ -166,7 +166,7 @@ apps/handlers/
   └── cli/        → Everything about user interaction
 ```
 
-**Verified from:** `/home/aipass/aipass_core/cortex/apps/handlers/` - These are actual domains from Cortex.
+**Verified from:** `<project_root>/cortex/apps/handlers/` - These are actual domains from Cortex.
 
 **Note:** Actual domain names will vary by branch purpose. See naming.md for domain naming standards.
 
@@ -323,7 +323,7 @@ Run 'python3 create_plan.py --help' for usage
 
 Drone handles TWO critical responsibilities:
 
-1. **@ Resolution:** Converts branch handles (@flow, @seed, @cortex) to absolute paths (/home/aipass/flow, /home/aipass/seed, /home/aipass/aipass_core/cortex)
+1. **@ Resolution:** Converts branch handles (@flow, @seed, @cortex) to absolute paths (/home/aipass/flow, /home/aipass/seed, <project_root>/cortex)
 2. **Command Routing:** Routes the resolved command to the target branch's entry point
 
 ### How @ Resolution Works

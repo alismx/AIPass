@@ -2,7 +2,7 @@
 CLI Flags Standards Module
 
 Provides condensed CLI flags standards for AIPass branches.
-Run directly or via: drone @seed cli_flags
+Run directly or via: seedgo cli_flags
 """
 
 # =================== META ====================
@@ -60,14 +60,14 @@ def print_help():
     console.print()
 
     console.print("[yellow]USAGE:[/yellow]")
-    console.print("  drone @seed cli_flags")
+    console.print("  seedgo cli_flags")
     console.print("  python3 cli_flags_standard.py")
     console.print("  python3 cli_flags_standard.py --help")
     console.print()
 
     console.print("[yellow]EXAMPLES:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed cli_flags")
+    console.print("  seedgo cli_flags")
     console.print()
     console.print("  [dim]# Standalone[/dim]")
     console.print("  python3 cli_flags_standard.py")

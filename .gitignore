@@ -60,8 +60,10 @@ aipass_json/
 .standards/
 # AIPASS_REGISTRY.json — NOT ignored. Ships with core modules pre-registered.
 
+# Runtime log files (created by prax logging)
+**/logs
+
+# Claude local settings (per-branch, not source code)
+.claude/
 
 setup-workspace.sh
-
-# Local cheat sheets (not source code)
-# Docker.md

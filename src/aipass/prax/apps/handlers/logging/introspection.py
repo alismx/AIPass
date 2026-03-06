@@ -79,11 +79,13 @@ def get_calling_module_path() -> Optional[str]:
     finally:
         del frame
 
+_AIPASS_PKG_ROOT = Path(__file__).resolve().parents[4]  # logging/ → handlers/ → apps/ → prax/ → aipass/
+
 def detect_branch_from_path(module_path: str) -> Optional[str]:
     """Detect branch name from module file path
 
     The package structure is: .../src/aipass/{module}/apps/...
-    Find "aipass" in path parts, then the next part is the module name.
+    Resolves relative to the aipass package root found via __file__.
 
     Examples:
         .../src/aipass/flow/apps/module.py → "flow"
@@ -96,18 +98,12 @@ def detect_branch_from_path(module_path: str) -> Optional[str]:
     if not module_path:
         return None
 
-    path = Path(module_path)
-    parts = path.parts
-
-    # Find "aipass" in path parts and return the next part (the module name)
-    # Package structure: .../src/aipass/{module}/apps/...
     try:
-        aipass_idx = parts.index('aipass')
-        if aipass_idx + 1 < len(parts):
-            module_name = parts[aipass_idx + 1]
-            # Ensure there's more after it (not just a file in the aipass dir)
-            if aipass_idx + 2 < len(parts):
-                return module_name
+        path = Path(module_path).resolve()
+        relative = path.relative_to(_AIPASS_PKG_ROOT)
+        # relative is like: flow/apps/module.py → parts[0] = "flow"
+        if len(relative.parts) >= 2:
+            return relative.parts[0]
     except ValueError:
         pass
 

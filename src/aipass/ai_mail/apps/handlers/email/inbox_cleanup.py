@@ -80,7 +80,7 @@ def _save_to_deleted_folder(mailbox_path: Path, message: Dict) -> Path:
     Save a message to the deleted/ folder as individual JSON file.
 
     Args:
-        mailbox_path: Path to ai_mail.local directory
+        mailbox_path: Path to .ai_mail.local directory
         message: Email message dict to archive
 
     Returns:
@@ -111,7 +111,7 @@ def _migrate_deleted_json_if_exists(mailbox_path: Path) -> int:
     Migrate existing deleted.json to deleted/ directory on first access.
 
     Args:
-        mailbox_path: Path to ai_mail.local directory
+        mailbox_path: Path to .ai_mail.local directory
 
     Returns:
         Number of messages migrated
@@ -165,7 +165,7 @@ def mark_read_and_archive(branch_path: Path, message_id: str) -> Tuple[bool, str
     Returns:
         Tuple of (success: bool, message: str)
     """
-    mailbox_path = branch_path / "ai_mail.local"
+    mailbox_path = branch_path / ".ai_mail.local"
     inbox_file = mailbox_path / "inbox.json"
 
     if not inbox_file.exists():
@@ -240,7 +240,7 @@ def mark_all_read_and_archive(branch_path: Path) -> Tuple[bool, str, int]:
     Returns:
         Tuple of (success: bool, message: str, count: int)
     """
-    mailbox_path = branch_path / "ai_mail.local"
+    mailbox_path = branch_path / ".ai_mail.local"
     inbox_file = mailbox_path / "inbox.json"
 
     if not inbox_file.exists():
@@ -308,7 +308,7 @@ def _trigger_deleted_purge(branch_path: Path) -> None:
     """
     try:
         from aipass.ai_mail.apps.handlers.email.purge import purge_deleted_folder
-        mailbox_path = branch_path / "ai_mail.local"
+        mailbox_path = branch_path / ".ai_mail.local"
         purge_deleted_folder(mailbox_path)
     except Exception:
         pass  # Silent fail - purge is best-effort
@@ -331,7 +331,7 @@ def mark_as_opened(branch_path: Path, message_id: str) -> Tuple[bool, str, Optio
     Returns:
         Tuple of (success: bool, message: str, email_data: dict or None)
     """
-    inbox_file = branch_path / "ai_mail.local" / "inbox.json"
+    inbox_file = branch_path / ".ai_mail.local" / "inbox.json"
 
     if not inbox_file.exists():
         return False, f"Inbox not found: {inbox_file}", None
@@ -390,7 +390,7 @@ def mark_as_closed_and_archive(branch_path: Path, message_id: str, skip_post_ops
     Returns:
         Tuple of (success: bool, message: str)
     """
-    mailbox_path = branch_path / "ai_mail.local"
+    mailbox_path = branch_path / ".ai_mail.local"
     inbox_file = mailbox_path / "inbox.json"
 
     if not inbox_file.exists():

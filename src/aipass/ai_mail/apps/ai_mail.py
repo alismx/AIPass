@@ -33,13 +33,8 @@ from typing import Dict, Any, Optional, List
 # Handle broken pipe gracefully (e.g. output piped to head)
 signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 
-# Pre-import dashboard to ensure path is resolved before module discovery
-# This prevents import failures in handlers that depend on devpulse dashboard
-try:
-    from aipass.dev_central.devpulse.apps.modules.dashboard import update_section as _update_section  # noqa: F401
-except ImportError:
-    # Dashboard is optional - branch works without it
-    _update_section = None  # type: ignore
+# Dashboard integration (optional, requires dev_central package)
+_update_section = None  # type: ignore
 
 # AIPass infrastructure imports
 from aipass.prax.apps.modules.logger import system_logger as logger

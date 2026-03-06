@@ -2,7 +2,7 @@
 JSON Structure Standards Module
 
 Provides condensed JSON structure standards for AIPass branches.
-Run directly or via: drone @seed json
+Run directly or via: seedgo json
 """
 
 # =================== META ====================
@@ -67,14 +67,14 @@ def print_help():
     console.print()
 
     console.print("[yellow]USAGE:[/yellow]")
-    console.print("  drone @seed json")
+    console.print("  seedgo json")
     console.print("  python3 json_structure_standard.py")
     console.print("  python3 json_structure_standard.py --help")
     console.print()
 
     console.print("[yellow]EXAMPLES:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed json")
+    console.print("  seedgo json")
     console.print()
     console.print("  [dim]# Standalone[/dim]")
     console.print("  python3 json_structure_standard.py")

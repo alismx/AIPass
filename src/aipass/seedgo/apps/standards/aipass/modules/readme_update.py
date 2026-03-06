@@ -5,7 +5,7 @@ On-demand updating of auto-generated README sections for any AIPass branch.
 Uses readme_generator handler to produce content for sections marked with
 <!-- AUTO:SECTION --> comment markers in README.md files.
 
-Run: python3 seed.py readme update @branch
+Run: seedgo readme update @branch
 """
 
 # =================== META ====================

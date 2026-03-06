@@ -2,7 +2,7 @@
 Documentation Standards Module
 
 Provides condensed documentation standards for AIPass branches.
-Run directly or via: drone @seed documentation
+Run directly or via: seedgo documentation
 """
 
 # =================== META ====================
@@ -42,15 +42,15 @@ def print_help():
     console.print()
 
     console.print("[yellow]USAGE:[/yellow]")
-    console.print("  drone @seed documentation")
+    console.print("  seedgo documentation")
     console.print("  python3 documentation_standard.py")
     console.print("  python3 documentation_standard.py --help")
     console.print()
 
     console.print("[yellow]EXAMPLES:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed documentation")
-    console.print("  drone @seed docs")
+    console.print("  seedgo documentation")
+    console.print("  seedgo docs")
     console.print()
     console.print("  [dim]# Standalone[/dim]")
     console.print("  python3 documentation_standard.py")

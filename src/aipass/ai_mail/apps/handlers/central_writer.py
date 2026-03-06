@@ -22,7 +22,7 @@ Aggregates branch inbox stats and writes to AI_MAIL.central.json.
 This file serves as AI_MAIL's API output for AIPASS dashboard integration.
 
 Architecture:
-- Scans all ai_mail.local/inbox.json files across the system
+- Scans all .ai_mail.local/inbox.json files across the system
 - Calculates per-branch unread/total message counts
 - Writes aggregated stats to AI_CENTRAL/AI_MAIL.central.json (under repo root)
 """
@@ -71,9 +71,9 @@ BRANCH_REGISTRY = _REPO_ROOT / "AIPASS_REGISTRY.json"
 
 def find_all_inbox_files() -> List[Path]:
     """
-    Find all inbox.json files in ai_mail.local directories.
+    Find all inbox.json files in .ai_mail.local directories.
 
-    Scans the repo root directory for ai_mail.local/inbox.json files.
+    Scans the repo root directory for .ai_mail.local/inbox.json files.
     Excludes backup directories to avoid counting archived data.
 
     Returns:
@@ -84,8 +84,8 @@ def find_all_inbox_files() -> List[Path]:
     """
     inbox_files = []
 
-    # Search pattern: any directory ending in ai_mail.local containing inbox.json
-    for ai_mail_dir in _REPO_ROOT.rglob("ai_mail.local"):
+    # Search pattern: any directory ending in .ai_mail.local containing inbox.json
+    for ai_mail_dir in _REPO_ROOT.rglob(".ai_mail.local"):
         # Skip backup/archive directories (but NOT backup_system branch itself)
         path_str = str(ai_mail_dir)
         if ".backup" in path_str or ".archive" in path_str or "/backups/" in path_str:
@@ -102,10 +102,10 @@ def extract_branch_name(inbox_path: Path) -> str:
     """
     Extract branch name from inbox.json path.
 
-    Given: .../seed/ai_mail.local/inbox.json
+    Given: .../seed/.ai_mail.local/inbox.json
     Returns: SEED
 
-    Given: .../prax/ai_mail.local/inbox.json
+    Given: .../prax/.ai_mail.local/inbox.json
     Returns: PRAX
 
     Args:
@@ -114,7 +114,7 @@ def extract_branch_name(inbox_path: Path) -> str:
     Returns:
         Uppercase branch name
     """
-    # Parent of ai_mail.local is the branch directory
+    # Parent of .ai_mail.local is the branch directory
     branch_dir = inbox_path.parent.parent
     branch_name = branch_dir.name.upper()
 
@@ -280,7 +280,7 @@ def update_central() -> Dict[str, Any]:
     Should be called whenever mail is sent/received to keep dashboard in sync.
 
     Process:
-    1. Scans all branch ai_mail.local/inbox.json files
+    1. Scans all branch .ai_mail.local/inbox.json files
     2. Aggregates unread and total message counts per branch
     3. Calculates system-wide totals
     4. Writes results to AI_CENTRAL/AI_MAIL.central.json (under repo root)

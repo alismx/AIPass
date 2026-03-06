@@ -97,6 +97,8 @@ def _is_pid_alive(pid: int) -> bool:
         True if process exists and looks like a claude agent
     """
     try:
+        if sys.platform != "linux":
+            return False
         cmdline_path = Path(f"/proc/{pid}/cmdline")
         if not cmdline_path.exists():
             return False

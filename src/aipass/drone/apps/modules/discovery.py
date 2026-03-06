@@ -7,6 +7,7 @@ and scanning module directories as a fallback.
 
 import logging
 import subprocess
+import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -82,7 +83,7 @@ def discover_modules(target: str) -> List[str]:
     if entry_point is not None:
         try:
             result = subprocess.run(
-                ["python3", str(entry_point.relative_to(branch_path)), "--help"],
+                [sys.executable, str(entry_point.relative_to(branch_path)), "--help"],
                 cwd=branch_path,
                 capture_output=True,
                 timeout=10,
@@ -121,7 +122,7 @@ def get_help(target: str, command: Optional[str] = None) -> HelpResult:
 
     try:
         result = subprocess.run(
-            ["python3"] + cmd_args,
+            [sys.executable] + cmd_args,
             cwd=branch_path,
             capture_output=True,
             timeout=10,

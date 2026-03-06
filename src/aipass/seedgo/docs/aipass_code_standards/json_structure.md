@@ -20,7 +20,7 @@ drone_discovery_log.json
 
 **Location patterns:**
 - Seed modules: `/home/aipass/seed/seed_json/`
-- Branch modules: `/home/aipass/aipass_core/{branch}/{branch}_json/`
+- Branch modules: `<project_root>/{branch}/{branch}_json/`
 
 ---
 
@@ -125,14 +125,14 @@ JSON_TEMPLATES_DIR = {BRANCH}_ROOT / "apps" / "json_templates"
 
 **4. Create required directories:**
 ```bash
-mkdir -p /home/aipass/aipass_core/{branch}/{branch}_json
-mkdir -p /home/aipass/aipass_core/{branch}/apps/json_templates/default
+mkdir -p <project_root>/{branch}/{branch}_json
+mkdir -p <project_root>/{branch}/apps/json_templates/default
 ```
 
 **5. Copy templates from SEED:**
 ```bash
 cp /home/aipass/seed/apps/json_templates/default/*.json \
-   /home/aipass/aipass_core/{branch}/apps/json_templates/default/
+   <project_root>/{branch}/apps/json_templates/default/
 ```
 
 ### Validation
@@ -140,7 +140,7 @@ cp /home/aipass/seed/apps/json_templates/default/*.json \
 **Run standards checker on your json_handler.py:**
 ```bash
 python3 /home/aipass/seed/apps/modules/standards_checklist.py \
-  /home/aipass/aipass_core/{branch}/apps/handlers/json/json_handler.py
+  <project_root>/{branch}/apps/handlers/json/json_handler.py
 ```
 
 **Expected result:** 100/100 on JSON STRUCTURE standard
@@ -370,14 +370,14 @@ json_handler.log_operation("operation_name", {"key": "value"})
   "branches": [
     {
       "name": "FLOW",
-      "path": "/home/aipass/aipass_core/flow",
+      "path": "<project_root>/flow",
       "email": "@flow",
       "status": "active",
       "created": "2025-10-30"
     },
     {
       "name": "CORTEX",
-      "path": "/home/aipass/aipass_core/cortex",
+      "path": "<project_root>/cortex",
       "email": "@cortex",
       "status": "active",
       "created": "2025-10-30"
@@ -394,8 +394,8 @@ json_handler.log_operation("operation_name", {"key": "value"})
 - Typically located at system root level
 
 **Other registries in use:**
-- `/home/aipass/aipass_core/drone/drone_json/drone_registry.json` - Drone commands
-- `/home/aipass/aipass_core/prax/prax_json/prax_registry.json` - Prax tracks
+- `<project_root>/drone/drone_json/drone_registry.json` - Drone commands
+- `<project_root>/prax/prax_json/prax_registry.json` - Prax tracks
 
 **When to create registry:**
 - Need to track multiple related items
@@ -658,9 +658,9 @@ ls /branch/branch_json/
 **Primary handler:** `/home/aipass/seed/apps/handlers/json/json_handler.py`
 
 **Branch implementations:**
-- `/home/aipass/aipass_core/cortex/apps/handlers/json/json_handler.py`
-- `/home/aipass/aipass_core/drone/apps/handlers/json/json_handler.py`
-- `/home/aipass/aipass_core/prax/apps/handlers/json/json_handler.py`
+- `<project_root>/cortex/apps/handlers/json/json_handler.py`
+- `<project_root>/drone/apps/handlers/json/json_handler.py`
+- `<project_root>/prax/apps/handlers/json/json_handler.py`
 - (Other branches follow same pattern)
 
 **Status:** Production-ready, tested across Seed and core branches

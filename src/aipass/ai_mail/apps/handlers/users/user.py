@@ -46,7 +46,7 @@ def get_current_user() -> Dict:
         {
             "email_address": "@branch",
             "display_name": "BRANCH_NAME",
-            "mailbox_path": "/path/to/branch/ai_mail.local",
+            "mailbox_path": "/path/to/branch/.ai_mail.local",
             "timestamp_format": "%Y-%m-%d %H:%M:%S"
         }
 
@@ -81,7 +81,7 @@ def get_current_user() -> Dict:
 
     # Construct mailbox path (branch_path guaranteed non-None by check above)
     assert branch_path is not None
-    mailbox_path = branch_path / "ai_mail.local"
+    mailbox_path = branch_path / ".ai_mail.local"
 
     # Return user info in expected format
     return {
@@ -121,7 +121,7 @@ def get_user_by_email(email: str) -> Dict | None:
                 return {
                     "email_address": branch.get("email"),
                     "display_name": branch.get("name"),
-                    "mailbox_path": str(branch_path / "ai_mail.local"),
+                    "mailbox_path": str(branch_path / ".ai_mail.local"),
                     "timestamp_format": "%Y-%m-%d %H:%M:%S"
                 }
         return None
@@ -154,7 +154,7 @@ def get_all_users() -> Dict[str, Dict]:
                 users[email] = {
                     "email_address": email,
                     "display_name": branch.get("name"),
-                    "mailbox_path": str(branch_path / "ai_mail.local"),
+                    "mailbox_path": str(branch_path / ".ai_mail.local"),
                     "timestamp_format": "%Y-%m-%d %H:%M:%S"
                 }
         return users

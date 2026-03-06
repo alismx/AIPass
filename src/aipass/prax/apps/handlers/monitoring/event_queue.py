@@ -72,7 +72,7 @@ class MonitoringQueue:
                     if len(self.recent_events) > 100:
                         self.recent_events.pop(0)
                 return True
-            except:
+            except Exception:
                 return False
         return False
 

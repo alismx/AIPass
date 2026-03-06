@@ -1,14 +1,14 @@
 {
   "error_catchup": {
-    "last_scan_timestamp": "2026-03-06T20:38:05.532132",
+    "last_scan_timestamp": "2026-03-06T14:27:27.869613",
     "processed_hashes": [
-      "68dd0ab6",
-      "4095ef97",
-      "02d93909",
-      "541e0b9b",
-      "69de737b",
       "ace01637",
-      "c7edc03b"
+      "69de737b",
+      "c7edc03b",
+      "4095ef97",
+      "68dd0ab6",
+      "541e0b9b",
+      "02d93909"
     ],
     "max_hashes": 500,
     "max_lookback_hours": 24

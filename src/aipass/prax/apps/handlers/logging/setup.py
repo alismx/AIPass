@@ -17,15 +17,14 @@ Creates and configures individual loggers for modules.
 Handles dual logging (system-wide + branch-local) and terminal output.
 """
 
-from pathlib import Path
-
 import logging
+from pathlib import Path
 from typing import Dict, Optional
 from logging.handlers import RotatingFileHandler
 
 # Import from prax config
 from aipass.prax.apps.handlers.config.load import (
-    get_system_logs_dir,
+    get_module_logs_dir,
     DEFAULT_LOG_LEVEL,
     load_log_config,
     lines_to_bytes
@@ -58,8 +57,7 @@ def setup_individual_logger(module_name: str) -> logging.Logger:
     """Setup individual logger for a specific module with dual logging support
 
     Creates:
-    - System-wide log: {repo_root}/system_logs/prax_{module_name}.log
-    - Branch-local log: {repo_root}/src/aipass/{branch}/logs/{module_name}.log (if in a branch)
+    - Module-local log: src/aipass/{branch}/logs/{module_name}.log
     - Terminal handler (if enabled)
 
     Args:
@@ -91,7 +89,7 @@ def setup_individual_logger(module_name: str) -> logging.Logger:
     # "prax" → "prax"
     # "flow" → "flow"
     if branch_path:
-        branch_name = branch_path.split('/')[-1]
+        branch_name = Path(branch_path).name
     else:
         branch_name = "prax"  # Fallback to prax if no branch detected
 
@@ -101,49 +99,22 @@ def setup_individual_logger(module_name: str) -> logging.Logger:
         log_config['date_format']
     )
 
-    # HANDLER 1: System-wide log (named after calling branch)
-    system_log_file = get_system_logs_dir() / f"{branch_name}_{module_name}.log"
-    system_limits = log_config['system_logs']
-    system_max_bytes = lines_to_bytes(system_limits['max_lines'])
-    system_handler = RotatingFileHandler(
-        system_log_file,
-        maxBytes=system_max_bytes,
-        backupCount=system_limits['backup_count'],
+    # Module-local log: each module logs to <module>/logs/
+    logs_dir = get_module_logs_dir(branch_name)
+    log_file = logs_dir / f"{module_name}.log"
+    limits = log_config['system_logs']
+    max_bytes = lines_to_bytes(limits['max_lines'])
+    handler = RotatingFileHandler(
+        log_file,
+        maxBytes=max_bytes,
+        backupCount=limits['backup_count'],
         encoding='utf-8'
     )
-    system_handler.setFormatter(formatter)
-    logger.addHandler(system_handler)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
 
-    # HANDLER 2: Branch-local log (if module is in a branch)
-    branch = branch_path  # Use already detected branch_path
-
-    if branch:
-        # Create branch logs directory if it doesn't exist
-        # Use repo-relative path for branch logs
-        from aipass.prax.apps.handlers.config.load import _find_repo_root
-        branch_logs_dir = _find_repo_root() / branch / "logs"
-        branch_logs_dir.mkdir(parents=True, exist_ok=True)
-
-        # Create branch-local log file
-        branch_log_file = branch_logs_dir / f"{module_name}.log"
-        local_limits = log_config['local_logs']
-        local_max_bytes = lines_to_bytes(local_limits['max_lines'])
-        branch_handler = RotatingFileHandler(
-            branch_log_file,
-            maxBytes=local_max_bytes,
-            backupCount=local_limits['backup_count'],
-            encoding='utf-8'
-        )
-        branch_handler.setFormatter(formatter)
-        logger.addHandler(branch_handler)
-
-        # Log to system logger
-        if _system_logger:
-            _system_logger.info(f"Logger created for {module_name} → system: {system_log_file} ({system_limits['max_lines']} lines), branch: {branch_log_file} ({local_limits['max_lines']} lines)")
-    else:
-        # Log to system logger
-        if _system_logger:
-            _system_logger.info(f"Logger created for {module_name} → {system_log_file} ({system_limits['max_lines']} lines)")
+    if _system_logger:
+        _system_logger.info(f"Logger created for {module_name} → {log_file} ({limits['max_lines']} lines)")
 
     # HANDLER 3: Terminal output (if enabled)
     if _terminal_output_enabled and _terminal_module_available:
@@ -177,8 +148,8 @@ def setup_system_logger() -> logging.Logger:
     _system_logger.setLevel(DEFAULT_LOG_LEVEL)
     _system_logger.handlers.clear()
 
-    # Create prax_logger's own log file
-    log_file = get_system_logs_dir() / "prax_logger.log"
+    # Create prax_logger's own log file (in prax/logs/)
+    log_file = get_module_logs_dir("prax") / "prax_logger.log"
 
     # Create rotating file handler with config-driven limits
     system_limits = log_config['system_logs']

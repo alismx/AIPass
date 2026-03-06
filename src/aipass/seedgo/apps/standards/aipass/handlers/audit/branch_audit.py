@@ -45,6 +45,7 @@ from aipass.seedgo.apps.standards.aipass.handlers.standards import readme_check
 from aipass.seedgo.apps.standards.aipass.handlers.standards import diagnostics_check
 from aipass.seedgo.apps.standards.aipass.handlers.standards import meta_check
 from aipass.seedgo.apps.standards.aipass.handlers.standards import shebang_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import log_structure_check
 from aipass.seedgo.apps.standards.aipass.handlers.config import ignore_handler
 
 
@@ -441,6 +442,33 @@ def audit_branch(branch: Dict[str, str], bypass_rules: list) -> Dict:
     # Update shebang score to reflect ALL files
     if shebang_scores:
         scores['shebang'] = int(sum(shebang_scores) / len(shebang_scores))
+        avg_score = int(sum(scores.values()) / len(scores)) if scores else 0
+
+    # Check LOG_STRUCTURE on ALL files
+    log_structure_violations = []
+    log_structure_scores = []
+    if all_file_results:
+        for file_info in all_file_results:
+            try:
+                ls_result = log_structure_check.check_module(file_info['file'], bypass_rules=bypass_rules)
+                ls_score = ls_result.get('score', 0)
+                if ls_result.get('checks', []):
+                    log_structure_scores.append(ls_score)
+                if not ls_result.get('passed', True):
+                    failed_checks = [c for c in ls_result.get('checks', []) if not c.get('passed', False)]
+                    if failed_checks:
+                        log_structure_violations.append({
+                            'file': file_info['name'],
+                            'path': file_info['file'],
+                            'score': ls_score,
+                            'issues': [c.get('message', 'Unknown') for c in failed_checks]
+                        })
+            except Exception:
+                pass
+
+    # Update log_structure score
+    if log_structure_scores:
+        scores['log_structure'] = int(sum(log_structure_scores) / len(log_structure_scores))
         avg_score = int(sum(scores.values()) / len(scores)) if scores else 0
 
     # Run TYPE ERROR diagnostics on the branch (pyright)

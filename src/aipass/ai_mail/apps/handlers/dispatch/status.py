@@ -29,7 +29,7 @@ from typing import Dict, Any, List, Optional
 
 # Dispatch log location (package-relative)
 _AI_MAIL_DIR = Path(__file__).resolve().parents[3]  # ai_mail/
-DISPATCH_LOG_FILE = _AI_MAIL_DIR / "ai_mail.local" / "dispatch_log.json"
+DISPATCH_LOG_FILE = _AI_MAIL_DIR / ".ai_mail.local" / "dispatch_log.json"
 
 
 def load_dispatch_log() -> List[Dict[str, Any]]:

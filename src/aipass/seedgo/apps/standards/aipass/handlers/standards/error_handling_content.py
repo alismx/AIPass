@@ -25,7 +25,7 @@ def get_error_handling_standards() -> str:
         "",
         "[yellow]CORE PRINCIPLE:[/yellow] Logging responsibility follows architectural hierarchy",
         "",
-        "[bold cyan]TIER 1: ENTRY POINTS[/bold cyan] (flow.py, seed.py, etc.)",
+        "[bold cyan]TIER 1: ENTRY POINTS[/bold cyan] (flow.py, seedgo.py, etc.)",
         "  [dim]Prax Import:[/dim] YES (minimal)",
         "  [dim]Logging Scope:[/dim] Operational only (discovery, routing, help)",
         "  [red]✗ NO business error logging[/red]",

@@ -26,7 +26,7 @@ def _find_real_caller():
 
 def _extract_branch_name(filepath: str) -> str:
     """Extract branch name from a file path."""
-    parts = filepath.split("/")
+    parts = Path(filepath).parts
     for i, part in enumerate(parts):
         if part in ("MEMORY_BANK", "seed", ".vscode"):
             if i + 1 < len(parts):

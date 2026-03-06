@@ -62,13 +62,34 @@ def _find_repo_root() -> Path:
 _system_logs_dir_cache: Path | None = None
 
 def get_system_logs_dir() -> Path:
-    """Lazily resolve and create system_logs directory (package-relative)."""
+    """Lazily resolve and create system_logs directory (package-relative).
+
+    DEPRECATED: Use get_module_logs_dir(module_name) for per-module logging.
+    Kept for monitoring code that scans a central directory.
+    """
     global _system_logs_dir_cache
     if _system_logs_dir_cache is None:
         repo_root = _find_repo_root()
         _system_logs_dir_cache = repo_root / "system_logs"
         _system_logs_dir_cache.mkdir(parents=True, exist_ok=True)
     return _system_logs_dir_cache
+
+
+def get_module_logs_dir(module_name: str) -> Path:
+    """Get the logs directory for a specific module.
+
+    Returns ECOSYSTEM_ROOT / module_name / "logs", creating it if needed.
+    Each module logs to its own directory instead of a centralized system_logs/.
+
+    Args:
+        module_name: Module name (e.g., "flow", "prax", "trigger")
+
+    Returns:
+        Path to the module's logs directory
+    """
+    logs_dir = ECOSYSTEM_ROOT / module_name / "logs"
+    logs_dir.mkdir(parents=True, exist_ok=True)
+    return logs_dir
 
 # Config file
 PRAX_LOGGER_CONFIG_FILE = PRAX_JSON_DIR / "prax_logger_config.json"

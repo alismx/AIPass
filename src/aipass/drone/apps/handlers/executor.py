@@ -28,12 +28,21 @@ def execute_command(
     args: List[str],
     cwd: str,
     timeout: int = 30,
+    env: dict | None = None,
 ) -> CommandResult:
     """Execute a command via subprocess with safety guards.
 
     Never uses shell=True to prevent shell injection attacks.
     """
+    import os
+
     full_cmd = [executable] + list(args)
+
+    # Merge custom env vars with current environment
+    run_env = None
+    if env:
+        run_env = os.environ.copy()
+        run_env.update(env)
 
     try:
         result = subprocess.run(
@@ -42,6 +51,7 @@ def execute_command(
             capture_output=True,
             timeout=timeout,
             shell=False,
+            env=run_env,
         )
     except subprocess.TimeoutExpired as e:
         raise CommandExecutionError(

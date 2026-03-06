@@ -41,7 +41,7 @@ from aipass.ai_mail.apps.handlers.registry.update import (
     get_branch_context,
     update_json_memory_health
 )
-from aipass.ai_mail.apps.handlers.persistence.json_ops import log_operation
+from aipass.ai_mail.apps.handlers.json_utils.json_handler import log_operation
 
 MODULE_NAME = "branch_ping"
 THRESHOLDS = {"green": (0, 400), "yellow": (401, 550), "red": (551, float('inf'))}

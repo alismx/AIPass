@@ -4,7 +4,7 @@
   "description": "AIPass framework standards for multi-agent Python projects",
   "author": "AIPass",
   "file_types": ["*.py"],
-  "standards_count": 20,
+  "standards_count": 21,
   "standards": [
     "architecture",
     "cli",
@@ -24,6 +24,7 @@
     "naming",
     "permission_flags",
     "readme",
+    "shebang",
     "testing",
     "trigger"
   ],

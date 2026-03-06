@@ -32,7 +32,7 @@ import inspect
 _AI_MAIL_ROOT = Path(__file__).resolve().parents[3]  # ai_mail/
 
 # Constants - Updated for AI_MAIL
-AI_MAIL_JSON_DIR = _AI_MAIL_ROOT / "ai_mail_json"
+AI_MAIL_JSON_DIR = _AI_MAIL_ROOT / ".ai_mail.local"
 JSON_TEMPLATES_DIR = _AI_MAIL_ROOT / "apps" / "json_templates"
 
 

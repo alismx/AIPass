@@ -424,8 +424,8 @@ def handler_function(param1: str, param2: int) -> dict:
 ## Reference
 
 **See Flow for working example:**
-- `/home/aipass/aipass_core/flow/apps/modules/`
-- `/home/aipass/aipass_core/flow/apps/handlers/`
+- `<project_root>/flow/apps/modules/`
+- `<project_root>/flow/apps/handlers/`
 
 **See Seed for reference implementation:**
 - `/home/aipass/seed/apps/modules/`
@@ -444,7 +444,7 @@ def handler_function(param1: str, param2: int) -> dict:
 
 Prax handlers in `apps/handlers/logging/` use Python's stdlib `logging` instead of `system_logger`. This is **intentional** to avoid circular dependencies — the logging handlers ARE the logging infrastructure.
 
-**Status:** Documented in `/home/aipass/aipass_core/prax/.seed/bypass.json`
+**Status:** Documented in `<project_root>/prax/.seed/bypass.json`
 
 ### Trigger Infrastructure Handlers
 

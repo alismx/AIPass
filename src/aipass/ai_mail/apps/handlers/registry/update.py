@@ -39,7 +39,7 @@ from aipass.cli.apps.modules import console
 # Constants
 MODULE_NAME = "registry.update"
 _AI_MAIL_ROOT = Path(__file__).resolve().parents[3]  # ai_mail/
-AI_MAIL_JSON = _AI_MAIL_ROOT / "ai_mail_json"
+AI_MAIL_JSON = _AI_MAIL_ROOT / ".ai_mail.local"
 REGISTRY_PATH = AI_MAIL_JSON / "local_memory_monitor_registry.json"
 THRESHOLDS = {
     "green": (0, 400),

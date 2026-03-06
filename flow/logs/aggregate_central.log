@@ -1,6 +1,0 @@
-2026-03-06 19:26:45 - captured_aggregate_central - INFO - [aggregate_central] Starting central aggregation
-2026-03-06 19:26:45 - captured_aggregate_central - INFO - [aggregate_central] Processing branch: flow
-2026-03-06 19:26:45 - captured_aggregate_central - INFO - [aggregate_central] SUCCESS: Aggregation complete: 0 active, 0 recently closed
-2026-03-06 20:20:39 - captured_aggregate_central - INFO - [aggregate_central] Starting central aggregation
-2026-03-06 20:20:39 - captured_aggregate_central - INFO - [aggregate_central] Processing branch: flow
-2026-03-06 20:20:39 - captured_aggregate_central - INFO - [aggregate_central] SUCCESS: Aggregation complete: 1 active, 0 recently closed

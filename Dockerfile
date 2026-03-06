@@ -34,4 +34,4 @@ ENV PATH="/opt/venv/bin:$PATH"
 EXPOSE 8080
 # Use the official entrypoint (already in the base image at /usr/bin/entrypoint.sh)
 # It runs fixuid -> entrypoint.d scripts -> dumb-init code-server
-ENTRYPOINT ["/usr/bin/entrypoint.sh", "--bind-addr", "0.0.0.0:8080", "--auth", "none", "/home/coder/workspace"]
+ENTRYPOINT ["/usr/bin/entrypoint.sh", "--bind-addr", "0.0.0.0:8080", "--auth", "none", "/home/coder/workspace/AIPass"]

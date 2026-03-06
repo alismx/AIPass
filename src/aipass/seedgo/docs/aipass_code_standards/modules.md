@@ -252,7 +252,7 @@ Based on analysis of `/home/aipass/seed/apps/modules/` (14 modules):
 4. **Change isolation** - Smaller files = smaller blast radius for changes
 
 **Example: CLI Display Module**
-`/home/aipass/aipass_core/cli/apps/modules/display.py` - 184 lines
+`<project_root>/cli/apps/modules/display.py` - 184 lines
 - Public API for 5 display functions
 - Light orchestration over handler implementation
 - Includes docstrings, examples, demo
@@ -771,7 +771,7 @@ def test_track_operation_exception():
 - Shows orchestration flow
 - Demonstrates good practices
 
-**Service module (184 lines):** `/home/aipass/aipass_core/cli/apps/modules/display.py`
+**Service module (184 lines):** `<project_root>/cli/apps/modules/display.py`
 - Public API wrapper
 - Thin orchestration over handlers
 - Multiple function exports

@@ -273,9 +273,9 @@ success("Operation complete!")
 
 **Reference:**
 - Standard: `/home/aipass/standards/CODE_STANDARDS/cli.md`
-- Implementation: `/home/aipass/aipass_core/cli/`
+- Implementation: `<project_root>/cli/`
 - Example Usage: `/home/aipass/seed/apps/modules/test_cli_errors.py`
-- Interactive Demo: `/home/aipass/aipass_core/planning/cli_layout_demo.py`
+- Interactive Demo: `<project_root>/planning/cli_layout_demo.py`
 - Module Demo: `python3 /home/aipass/seed/apps/modules/cli_standard.py`
 
 ---

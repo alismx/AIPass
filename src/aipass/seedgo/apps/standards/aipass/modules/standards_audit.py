@@ -4,7 +4,7 @@ Standards Audit Module
 Scans all AIPass branches and generates compliance dashboard.
 Shows per-branch scores, system-wide metrics, and top issues.
 
-Run: python3 seed.py audit
+Run: seedgo audit
 """
 
 # =================== META ====================
@@ -207,20 +207,20 @@ def print_help():
 
     console.print("[yellow]USAGE:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed audit")
-    console.print("  drone @seed audit cortex")
+    console.print("  seedgo audit")
+    console.print("  seedgo audit cortex")
     console.print()
-    console.print("  python3 seed.py audit")
-    console.print("  python3 seed.py audit cortex")
-    console.print("  python3 seed.py audit --help")
+    console.print("  seedgo audit")
+    console.print("  seedgo audit cortex")
+    console.print("  seedgo audit --help")
     console.print()
 
     console.print("[yellow]EXAMPLES:[/yellow]")
     console.print("  [dim]# Full system audit (all branches, all files)[/dim]")
-    console.print("  python3 seed.py audit")
+    console.print("  seedgo audit")
     console.print()
     console.print("  [dim]# Full audit of specific branch[/dim]")
-    console.print("  python3 seed.py audit cortex")
+    console.print("  seedgo audit cortex")
     console.print()
 
     console.print("[yellow]REFERENCE:[/yellow]")

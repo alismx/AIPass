@@ -154,7 +154,7 @@ def push_dashboard_update(branch_path: Path) -> bool:
     Read branch inbox and push ai_mail section to dashboard.
 
     This is the primary public function. It:
-    1. Reads the branch's ai_mail.local/inbox.json
+    1. Reads the branch's .ai_mail.local/inbox.json
     2. Calculates section data (new, opened, total, oldest_unread_age, etc.)
     3. Calls write_section() to update DASHBOARD.local.json
 
@@ -171,9 +171,9 @@ def push_dashboard_update(branch_path: Path) -> bool:
 
         # Determine inbox path
         if branch_path == Path("/"):
-            inbox_file = Path.cwd() / "ai_mail.local" / "inbox.json"
+            inbox_file = Path.cwd() / ".ai_mail.local" / "inbox.json"
         else:
-            inbox_file = branch_path / "ai_mail.local" / "inbox.json"
+            inbox_file = branch_path / ".ai_mail.local" / "inbox.json"
 
         # Read inbox (BYPASS: direct json.load - this is a data file, not a template)
         if not inbox_file.exists():

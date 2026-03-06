@@ -63,7 +63,7 @@ def purge_sent_folder(mailbox_path: Path) -> Dict[str, Any]:
     Keeps 10 most recent emails, vectorizes and archives older ones.
 
     Args:
-        mailbox_path: Path to ai_mail.local directory
+        mailbox_path: Path to .ai_mail.local directory
 
     Returns:
         Dict with success, purged_count, archived_paths
@@ -97,7 +97,7 @@ def purge_deleted_folder(mailbox_path: Path) -> Dict[str, Any]:
     Keeps 10 most recent emails, vectorizes and archives older ones.
 
     Args:
-        mailbox_path: Path to ai_mail.local directory
+        mailbox_path: Path to .ai_mail.local directory
 
     Returns:
         Dict with success, purged_count, archived_count
@@ -129,7 +129,7 @@ def _purge_email_files(mailbox_path: Path, files: List[Path], folder_type: str) 
     Purge list of email files (vectorize, archive, delete).
 
     Args:
-        mailbox_path: Path to ai_mail.local directory
+        mailbox_path: Path to .ai_mail.local directory
         files: List of file paths to purge
         folder_type: "sent" or "deleted" for logging
 
@@ -246,7 +246,7 @@ def _archive_email_files(mailbox_path: Path, files: List[Path], folder_type: str
     Archive email files to .archive/ directory.
 
     Args:
-        mailbox_path: Path to ai_mail.local directory
+        mailbox_path: Path to .ai_mail.local directory
         files: List of file paths to archive
         folder_type: "sent" or "deleted" for subdirectory
 
@@ -280,7 +280,7 @@ def run_purge(mailbox_path: Path) -> Dict[str, Any]:
     Convenience function to run both purges.
 
     Args:
-        mailbox_path: Path to ai_mail.local directory
+        mailbox_path: Path to .ai_mail.local directory
 
     Returns:
         Dict with combined results

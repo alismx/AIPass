@@ -122,7 +122,7 @@ def _read_json(filepath: Path) -> Optional[dict]:
 
 def _check_lock(branch_path: Path) -> Optional[dict]:
     """Check if branch has an active dispatch lock. Returns lock data or None."""
-    lock_file = branch_path / "ai_mail.local" / ".dispatch.lock"
+    lock_file = branch_path / ".ai_mail.local" / ".dispatch.lock"
     if not lock_file.exists():
         return None
     try:
@@ -158,7 +158,7 @@ def _check_lock(branch_path: Path) -> Optional[dict]:
 
 def _acquire_lock(branch_path: Path, pid: int) -> Tuple[bool, str]:
     """Acquire dispatch lock for branch. Atomic creation."""
-    lock_file = branch_path / "ai_mail.local" / ".dispatch.lock"
+    lock_file = branch_path / ".ai_mail.local" / ".dispatch.lock"
     lock_data = {
         "pid": pid,
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -218,6 +218,8 @@ def _set_session_name(branch_path: Path, name: str) -> bool:
 
 def _read_session_type(pid_str: str) -> str:
     """Read AIPASS_SESSION_TYPE from /proc/{pid}/environ. Returns 'interactive' if unset."""
+    if sys.platform != "linux":
+        return 'interactive'
     try:
         with open(f'/proc/{pid_str}/environ', 'rb') as f:
             data = f.read()
@@ -248,6 +250,8 @@ def _is_branch_occupied(branch_path: Path) -> bool:
             if not pid_str:
                 continue
             try:
+                if sys.platform != "linux":
+                    continue
                 cwd = os.readlink(f'/proc/{pid_str}/cwd')
                 if str(Path(cwd).resolve()) == resolved:
                     session_type = _read_session_type(pid_str)
@@ -283,11 +287,12 @@ def _check_pid_alive(pid: int) -> bool:
     """Check if a process is alive (not zombie)."""
     try:
         os.kill(pid, 0)
-        # Also verify not zombie
-        with open(f'/proc/{pid}/status', 'r') as f:
-            for line in f:
-                if line.startswith('State:'):
-                    return 'Z' not in line
+        # Also verify not zombie via /proc (Linux only)
+        if sys.platform == "linux":
+            with open(f'/proc/{pid}/status', 'r') as f:
+                for line in f:
+                    if line.startswith('State:'):
+                        return 'Z' not in line
         return True
     except (ProcessLookupError, FileNotFoundError):
         return False
@@ -376,7 +381,7 @@ def wake_branch(branch_email: str, custom_message: Optional[str] = None,
     config = _load_config()
     max_turns = config.get("max_turns_per_wake", 50)
 
-    lock_file_path = str(branch_path / "ai_mail.local" / ".dispatch.lock")
+    lock_file_path = str(branch_path / ".ai_mail.local" / ".dispatch.lock")
     if custom_message:
         prompt = f"Hi. {custom_message} "
     else:
@@ -406,7 +411,7 @@ def wake_branch(branch_email: str, custom_message: Optional[str] = None,
         _set_session_name(branch_path, session_label)
 
     # Step 7: Spawn via dispatch_monitor
-    log_dir = branch_path / "ai_mail.local"
+    log_dir = branch_path / ".ai_mail.local"
     log_dir.mkdir(parents=True, exist_ok=True)
     stderr_log = str(log_dir / "agent_stderr.log")
 
@@ -459,7 +464,7 @@ def wake_branch(branch_email: str, custom_message: Optional[str] = None,
     else:
         status.fail("alive", f"Agent died immediately (PID {monitor_pid})")
         # Clean up lock
-        lock_file = branch_path / "ai_mail.local" / ".dispatch.lock"
+        lock_file = branch_path / ".ai_mail.local" / ".dispatch.lock"
         lock_file.unlink(missing_ok=True)
         return status, False
 

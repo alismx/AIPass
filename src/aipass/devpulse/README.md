@@ -1,22 +1,17 @@
-# DEVPULSE
+# DevPulse
 
-**Purpose:** Orchestration hub for AIPass public repo. Manages dev notes, DPLANs, system status dashboards. The DEV_CENTRAL of AIPass.
+**Purpose:** Dev notes and status tracking for AIPass projects
 **Module:** `aipass.devpulse`
-**Created:** 2026-03-06
-**Last Updated:** 2026-03-06
+**Status:** Building
 
 ---
 
 ## Overview
 
-### What I Do
-- Coordinate work across all 10 AIPass modules
-- Track system health via seedgo audits and recon reports
-- Manage DPLANs and development notes
-- Test and wire modules in Docker container environment
+DevPulse tracks development notes, plans, and project status across an AIPass ecosystem. It provides a shared notation layer where both humans and agents can log issues, todos, and progress — giving visibility into what's happening without requiring meetings or status emails.
 
-### How I Work
-- **Entry Point:** `apps/branch.py`
+### How It Works
+- **Entry Point:** `apps/devpulse.py`
 - **Pattern:** Auto-discovers modules in `apps/modules/` with `handle_command()` and routes commands
 
 ---
@@ -24,27 +19,15 @@
 ## Architecture
 
 ```
-DEVPULSE/
+devpulse/
 ├── apps/
-│   ├── branch.py              # Entry point (auto-discovery + routing)
-│   ├── modules/               # Business logic (empty, building out)
-│   ├── handlers/              # Implementation
-│   └── plugins/               # Extensions
-├── .trinity/
-│   ├── passport.json          # Identity
-│   ├── local.json             # Session history
-│   └── observations.json      # Collaboration patterns
-├── .agent/                    # System metadata
-├── .aipass/                   # Branch prompt context
-├── artifacts/                 # Birth certificate
+│   ├── devpulse.py        # Entry point (auto-discovery + routing)
+│   ├── modules/           # Business logic
+│   ├── handlers/          # Implementation
+│   └── plugins/           # Extensions
+├── devpulse_json/         # JSON storage
 ├── docs/
-│   └── sub_agent_drops/       # Recon reports from sub-agents
-├── tools/
-│   └── verify_branch.py       # Template verification
-├── devpulse_json/             # Branch JSON storage
 ├── tests/
-├── DASHBOARD.local.json       # System status
-├── flow.local.md              # Issues and todos
 └── README.md
 ```
 
@@ -52,16 +35,33 @@ DEVPULSE/
 
 ## Commands
 
-*No modules built yet — commands will be added as modules are created.*
+```bash
+drone @devpulse --help     # Show available commands
+```
+
+*Modules are being built out — commands will appear as they ship.*
+
+---
+
+## Python Usage
+
+```python
+from aipass.devpulse.apps.devpulse import discover_modules, route_command
+
+# Discover available sub-modules
+modules = discover_modules()
+
+# Route a command
+route_command("status", [], modules)
+```
 
 ---
 
 ## Integration Points
 
 ### Depends On
-- `aipass.prax` — Logger
+- `aipass.prax` — Logging
 - `aipass.cli` — Display formatting
-- `aipass.seedgo` — Standards auditing
 
 ### Provides To
-- All modules — orchestration coordination, system health tracking
+- All modules — dev notes, plan tracking, project status

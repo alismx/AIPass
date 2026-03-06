@@ -27,7 +27,7 @@ def check_command_consistency() -> Dict:
 
     Scans audit module for flags, checks if they appear in:
     - README.md
-    - seed.py help text
+    - seedgo.py help text
     - docs/ files
 
     Returns:
@@ -46,7 +46,7 @@ def check_command_consistency() -> Dict:
     # Files that should document commands
     doc_files = {
         'readme': seed_path / "README.md",
-        'seed_help': seed_path / "apps" / "seed.py",
+        'seed_help': seed_path / "apps" / "seedgo.py",
     }
 
     for flag, description, source in command_flags:

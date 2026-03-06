@@ -6,6 +6,6 @@ Usage:
     result = spawn_agent("/path/to/new/agent", role="My Role", purpose="My Purpose")
 """
 
-from aipass.spawn.spawn import spawn_agent
+from aipass.spawn.apps.modules.core import spawn_agent
 
 __all__ = ["spawn_agent"]

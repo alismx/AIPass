@@ -124,7 +124,7 @@ def main():
         if key.startswith("CLAUDE") or key == "AIPASS_BOT_ID":
             spawn_env.pop(key)
 
-    # Extract CWD from lock file path (branch_path/ai_mail.local/.dispatch.lock)
+    # Extract CWD from lock file path (branch_path/.ai_mail.local/.dispatch.lock)
     lock_path = Path(lock_file)
     branch_path = lock_path.parent.parent
     cwd = str(branch_path)

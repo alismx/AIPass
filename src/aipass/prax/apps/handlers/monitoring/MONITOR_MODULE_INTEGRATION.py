@@ -170,7 +170,7 @@ def example_with_interactive_commands():
                         console.print(f"  Log watcher: {'active' if is_log_watcher_active() else 'inactive'}")
                         console.print(f"  Queue size: {_event_queue.size() if _event_queue else 0}\n")
 
-                except:
+                except Exception:
                     pass
 
     # Running flag for threads

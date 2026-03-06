@@ -2,7 +2,7 @@
 CLI Standards Module
 
 Provides condensed CLI standards for AIPass branches.
-Run directly or via: drone @seed cli
+Run directly or via: seedgo cli
 """
 
 # =================== META ====================
@@ -65,14 +65,14 @@ def print_help():
     console.print()
 
     console.print("[yellow]USAGE:[/yellow]")
-    console.print("  drone @seed cli")
+    console.print("  seedgo cli")
     console.print("  python3 cli_standard.py")
     console.print("  python3 cli_standard.py --help")
     console.print()
 
     console.print("[yellow]EXAMPLES:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed cli")
+    console.print("  seedgo cli")
     console.print()
     console.print("  [dim]# Standalone[/dim]")
     console.print("  python3 cli_standard.py")
@@ -128,7 +128,7 @@ def run_demo():
     console.print()
 
     try:
-        subprocess.run(["python3", demo_path], check=True)
+        subprocess.run([sys.executable, demo_path], check=True)
     except subprocess.CalledProcessError as e:
         logger.error(f"Error running demo: {e}")
         console.print(f"[red]Error running demo: {e}[/red]")

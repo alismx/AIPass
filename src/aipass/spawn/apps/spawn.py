@@ -40,7 +40,7 @@ def print_help():
 
 def handle_create(args):
     """Handle the create command."""
-    from aipass.spawn.spawn import spawn_agent
+    from aipass.spawn.apps.modules.core import spawn_agent
 
     if not args:
         console.print("[red]Error: target path required[/red]")

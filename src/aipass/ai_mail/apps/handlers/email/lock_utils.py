@@ -31,7 +31,7 @@ from datetime import datetime
 
 # Standard logging
 
-# Lock file name - placed in branch's ai_mail.local/ directory
+# Lock file name - placed in branch's .ai_mail.local/ directory
 LOCK_FILENAME = ".dispatch.lock"
 
 # Stale lock timeout in seconds (10 minutes)
@@ -41,8 +41,8 @@ STALE_LOCK_TIMEOUT = 600
 def _get_lock_path(branch_path: Path) -> Path:
     """Get the lock file path for a branch."""
     if branch_path == Path("/"):
-        return Path.cwd() / "ai_mail.local" / LOCK_FILENAME
-    return branch_path / "ai_mail.local" / LOCK_FILENAME
+        return Path.cwd() / ".ai_mail.local" / LOCK_FILENAME
+    return branch_path / ".ai_mail.local" / LOCK_FILENAME
 
 
 def _is_pid_running(pid: int) -> bool:

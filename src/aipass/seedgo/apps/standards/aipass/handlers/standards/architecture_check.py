@@ -359,7 +359,7 @@ def _load_ignore_patterns(template_path: Path) -> Dict:
                 "ignore_files": data.get("ignore_files", []),
                 "ignore_patterns": data.get("ignore_patterns", [])
             }
-    except:
+    except Exception:
         return {"ignore_files": [], "ignore_patterns": []}
 
 

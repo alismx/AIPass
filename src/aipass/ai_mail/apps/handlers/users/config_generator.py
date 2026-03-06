@@ -54,8 +54,8 @@ def generate_local_config(branch_info: Dict) -> Dict:
     # Generate display name from branch info
     display_name = generate_display_name(branch_info)
 
-    # Generate mailbox path (ai_mail.local/ in branch directory)
-    mailbox_path = str(branch_path / "ai_mail.local")
+    # Generate mailbox path (.ai_mail.local/ in branch directory)
+    mailbox_path = str(branch_path / ".ai_mail.local")
 
     config = {
         "version": "1.0.0",
@@ -155,7 +155,7 @@ def create_local_config_file(branch_info: Dict, force: bool = False) -> Path | N
 
 def create_mailbox_directory(branch_path: Path) -> Path | None:
     """
-    Create ai_mail.local/ mailbox directory for a branch.
+    Create .ai_mail.local/ mailbox directory for a branch.
 
     Creates subdirectories: inbox/, sent/, deleted/
 
@@ -166,7 +166,7 @@ def create_mailbox_directory(branch_path: Path) -> Path | None:
         Path to mailbox directory, or None if failed
     """
     try:
-        mailbox_dir = branch_path / "ai_mail.local"
+        mailbox_dir = branch_path / ".ai_mail.local"
         mailbox_dir.mkdir(parents=True, exist_ok=True)
 
         # Create subdirectories
@@ -207,9 +207,9 @@ def setup_branch_for_aimail(branch_info: Dict, force: bool = False) -> bool:
 
     Creates:
     - ai_mail_config/user_config.json
-    - ai_mail.local/ mailbox directory
-    - ai_mail.local/inbox.json
-    - ai_mail.local/sent.json
+    - .ai_mail.local/ mailbox directory
+    - .ai_mail.local/inbox.json
+    - .ai_mail.local/sent.json
 
     Args:
         branch_info: Branch info dict from registry
@@ -263,7 +263,7 @@ if __name__ == "__main__":
     console.print("  1. Generate config from branch registry info")
     console.print("  2. Create ai_mail_config/ directory")
     console.print("  3. Write user_config.json with branch-specific settings")
-    console.print("  4. Create ai_mail.local/ mailbox directory")
+    console.print("  4. Create .ai_mail.local/ mailbox directory")
     console.print("  5. Initialize inbox.json and sent.json")
     console.print()
     console.print("="*70 + "\n")

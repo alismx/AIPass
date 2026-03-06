@@ -65,7 +65,7 @@ from aipass.prax.apps.handlers.discovery.watcher import (
 )
 from aipass.prax.apps.handlers.registry.save import save_module_registry
 from aipass.prax.apps.handlers.registry.load import load_module_registry
-from aipass.prax.apps.handlers.config.load import get_system_logs_dir, PRAX_JSON_DIR
+from aipass.prax.apps.handlers.config.load import get_module_logs_dir, PRAX_JSON_DIR
 from aipass.prax.apps.handlers.logging.direct import (
     get_direct_logger,
     direct_log,
@@ -162,7 +162,7 @@ def initialize_logging_system():
 
     # Log system startup
     system_logger_instance.info("Prax logging system initialized")
-    system_logger_instance.info(f"System logs directory: {get_system_logs_dir()}")
+    system_logger_instance.info(f"Module logs directory: {get_module_logs_dir('prax')}")
     system_logger_instance.info(f"Found {len(modules)} modules for logging setup")
 
     # Install logger override
@@ -242,7 +242,7 @@ def get_system_status() -> Dict[str, Any]:
         Dict with system status information:
         - total_modules: Number of discovered modules
         - individual_loggers: Number of active loggers
-        - system_logs_dir: Path to system logs
+        - module_logs_dir: Path to prax module logs
         - registry_file: Path to module registry
         - file_watcher_active: Watcher status
         - logger_override_active: Override status
@@ -252,7 +252,7 @@ def get_system_status() -> Dict[str, Any]:
     return {
         "total_modules": len(modules),
         "individual_loggers": get_captured_loggers_count(),
-        "system_logs_dir": str(get_system_logs_dir()),
+        "module_logs_dir": str(get_module_logs_dir("prax")),
         "registry_file": str(DATA_FILE),
         "file_watcher_active": is_file_watcher_active(),
         "logger_override_active": is_override_active()

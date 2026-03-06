@@ -172,7 +172,7 @@ def _refresh_pid_cache() -> None:
             try:
                 lock_data = _json.loads(lock_path.read_text(encoding="utf-8"))
                 pid = lock_data.get("pid", 0)
-                if pid and Path(f"/proc/{pid}").exists():
+                if pid and (sys.platform == "linux" and Path(f"/proc/{pid}").exists()):
                     name = branch.get("name", "").upper()
                     if name:
                         new_cache[name] = pid

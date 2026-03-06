@@ -84,7 +84,7 @@ def show_introspection() -> None:
     if branches:
         print(f"Registered Branches ({len(branches)}):")
         for name in sorted(branches):
-            print(f"  @{name}")
+            print(f"  {name}")
 
     if not modules and not branches:
         print("No branches or modules registered.")

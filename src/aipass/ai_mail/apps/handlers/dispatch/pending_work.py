@@ -32,8 +32,8 @@ PENDING_WORK_FILENAME = ".pending_work.json"
 def _get_pending_path(branch_path: Path) -> Path:
     """Get the pending work file path for a branch."""
     if branch_path == Path("/"):
-        return Path.cwd() / "ai_mail.local" / PENDING_WORK_FILENAME
-    return branch_path / "ai_mail.local" / PENDING_WORK_FILENAME
+        return Path.cwd() / ".ai_mail.local" / PENDING_WORK_FILENAME
+    return branch_path / ".ai_mail.local" / PENDING_WORK_FILENAME
 
 
 def load_pending_work(branch_path: Path) -> Dict[str, Any]:

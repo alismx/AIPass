@@ -1,51 +1,67 @@
-# FLOW
+# Flow
 
-**Purpose:** Plan lifecycle management - DPLAN/FPLAN/MPLAN creation, tracking, closure
-**Module:** `aipass.flow`
-**Created:** 2026-03-05
+Plan lifecycle management for AIPass. Creates, tracks, closes, and archives numbered work plans (FPLANs) with registry-backed state, async post-processing, and cross-branch aggregation.
 
----
+## Usage
 
-## Overview
+### CLI (via drone)
 
-### What I Do
+```bash
+drone @flow create . "Build authentication module"    # Create plan in current dir
+drone @flow create /path/to "Migration task" master   # Master plan (multi-phase)
+drone @flow close 42                                  # Close plan
+drone @flow close --all                               # Close all open plans
+drone @flow list                                      # List plans
+drone @flow aggregate                                 # Aggregate plans across branches
+drone @flow registry                                  # Registry health monitor
+```
 
+### Python
 
-### How I Work
-- **Entry Point:** `apps/flow.py`
-- **Pattern:** Auto-discovers and routes to modules
+```python
+from aipass.flow.apps.modules.create_plan import create_plan
+from aipass.flow.apps.modules.close_plan import close_plan
+from aipass.flow.apps.modules.list_plans import list_plans
+from aipass.flow.apps.handlers.registry.load_registry import load_registry
 
----
+# Load the plan registry
+registry = load_registry()
+```
 
 ## Architecture
 
 ```
-FLOW/
+flow/
 ├── apps/
-│   ├── flow.py       # Entry point
-│   ├── modules/            # Business logic
-│   ├── handlers/           # Implementation
-│   └── plugins/            # Extensions
-├── docs/
-├── tests/
-├── passport.json           # Identity
-├── local.json              # Session history
-├── observations.json       # Collaboration patterns
-└── README.md
+│   ├── flow.py                  # Entry point (auto-discovers modules)
+│   ├── modules/                 # Business logic
+│   │   ├── create_plan.py       # Plan creation with template support
+│   │   ├── close_plan.py        # Closure with async archival
+│   │   ├── list_plans.py        # Plan listing and filtering
+│   │   ├── restore_plan.py      # Plan recovery from backups
+│   │   ├── registry_monitor.py  # Orphan detection, auto-healing
+│   │   ├── aggregate_central.py # Cross-branch plan aggregation
+│   │   └── post_close_runner.py # Background post-processing
+│   └── handlers/                # Implementation details
+│       ├── plan/                # Lifecycle, file ops, validation
+│       ├── registry/            # Load, save, auto-heal
+│       ├── template/            # Plan templates (default, master, proposal)
+│       ├── dashboard/           # Status aggregation
+│       ├── mbank/               # Memory bank archival
+│       └── summary/             # AI-generated plan summaries
+├── templates/                   # Plan template files
+├── flow_json/                   # Configuration and registry data
+└── tests/
 ```
 
----
+## Plan Naming
 
-## Commands
+Plans follow the convention `FPLAN-XXXX_topic_slug_YYYY-MM-DD.md` where XXXX is an auto-incrementing number.
 
-*Configure after initialization*
+## Dependencies
 
----
+- `aipass.cli` — terminal formatting
+- `aipass.prax` — structured logging
+- `aipass.trigger` — error reporting (optional)
 
-## Integration Points
-
-### Depends On
-
-
-### Provides To
-
+Last Updated: 2026-03-06

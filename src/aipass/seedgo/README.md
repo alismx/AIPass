@@ -1,71 +1,54 @@
-# SEEDGO
+# Seedgo
 
-**Purpose:** Standards compliance platform with pluggable standard packs
-**Module:** `aipass.seedgo`
-**Created:** 2026-03-05
-**Last Updated:** 2026-03-05
+Standards compliance platform for AIPass modules. Audits Python code against configurable standard packs, scores each file, and reports violations. Ships with the `aipass` pack (21 standards covering imports, architecture, naming, logging, documentation, and more).
 
----
+## Usage
 
-## Overview
+### CLI
 
-### What I Do
-Seedgo audits code against configurable standard packs. Ships with the `aipass` pack (20 standards). Routes commands to packs — each pack is self-contained with its own handlers, modules, and manifests.
+```bash
+seedgo --help                        # Show packs and usage
+seedgo audit aipass                  # Audit all modules against aipass standards
+seedgo checklist aipass <file>       # Check a single file
+seedgo list                          # Show installed standard packs
+seedgo verify                        # Self-check seedgo internals
+```
 
-### How I Work
-- **Entry Point:** `apps/seedgo.py`
-- **Pattern:** Pack router — discovers packs, dispatches audit/verify/checklist commands
+### Python
 
----
+```python
+from aipass.seedgo.apps.seedgo import main, discover_packs
+
+# List available standard packs
+packs = discover_packs()
+print(packs)  # {'aipass': PosixPath('...')}
+```
 
 ## Architecture
 
 ```
 seedgo/
 ├── apps/
-│   ├── seedgo.py                  # Entry point + pack router
+│   ├── seedgo.py              # Entry point + pack router
 │   ├── modules/
-│   │   └── seedgo_verify.py       # Self-check module
-│   ├── handlers/
-│   ├── plugins/
+│   │   └── seedgo_verify.py   # Self-check module
 │   └── standards/
-│       └── aipass/                 # Built-in standard pack
-│           ├── pack.json           # Pack manifest (20 standards)
-│           ├── pack_entry.py       # Pack entry point
-│           ├── handlers/           # Standard check implementations
-│           └── modules/            # Standard orchestrators
+│       └── aipass/             # Built-in standard pack (21 standards)
+│           ├── pack.json       # Pack manifest
+│           ├── pack_entry.py   # Pack entry point
+│           ├── handlers/       # Standard check implementations
+│           └── modules/        # Standard display + orchestrators
 ├── tests/
 └── README.md
 ```
 
----
-
-## Commands
-
-```
-seedgo --help              # Show packs and usage
-seedgo list                # Show installed standard packs
-seedgo verify              # Self-check (5 checks)
-seedgo audit <pack>        # Run full standards audit
-seedgo checklist <pack> <file>  # Check single file
-```
-
----
-
 ## Standard Packs
 
-### aipass (built-in)
-20 standards for AIPass framework modules: imports, architecture, naming, CLI, handlers, modules, documentation, error handling, testing, encapsulation, triggers, logging, permissions, META, README, JSON structure, type checking, CLI flags.
+The `aipass` pack checks: architecture, CLI, CLI flags, diagnostics, documentation, encapsulation, error handling, handlers, imports, JSON structure, log handler, log level, log visibility, meta headers, modules, naming, permission flags, readme, shebang, testing, and trigger patterns.
 
-Custom packs can be added to `apps/standards/` — each needs a `pack.json` manifest and `pack_entry.py`.
+Custom packs go in `apps/standards/` — each needs a `pack.json` manifest and `pack_entry.py` entry point. See `apps/standards/app_development.example/` for a template.
 
----
+## Dependencies
 
-## Integration Points
-
-### Depends On
-- `aipass.cli` — display formatting (Rich)
-- `aipass.prax` — logging
-
-### Provides To
-- All modules — standards auditing and compliance checking
+- `aipass.cli` — Rich-based display formatting
+- `aipass.prax` — structured logging

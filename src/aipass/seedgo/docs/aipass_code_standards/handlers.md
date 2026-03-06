@@ -310,7 +310,7 @@ from cortex.apps.modules.error_tracking import track_operation
 
 **Location:** Each branch's `handlers/__init__.py`
 
-**Reference implementation:** `/home/aipass/aipass_core/prax/apps/handlers/__init__.py`
+**Reference implementation:** `<project_root>/prax/apps/handlers/__init__.py`
 
 **How it works:**
 1. Guard runs at import time when `handlers/` package is imported
@@ -395,8 +395,8 @@ Example with library services:
 Drone routes commands from CLI to branches:
 ```bash
 drone @flow create "new plan"
-# Drone resolves @flow → /home/aipass/aipass_core/flow/flow.py
-# Drone runs: python3 /home/aipass/aipass_core/flow/flow.py create "new plan"
+# Drone resolves @flow → <project_root>/flow/flow.py
+# Drone runs: python3 <project_root>/flow/flow.py create "new plan"
 ```
 
 The @ symbol is resolved by Drone BEFORE the command reaches the branch.
@@ -415,7 +415,7 @@ When a branch is invoked via Drone:
 drone @flow create @project1 --name "test"
 
 # Drone resolves @ symbols:
-@flow → /home/aipass/aipass_core/flow/flow.py
+@flow → <project_root>/flow/flow.py
 @project1 → /home/aipass/projects/project1
 
 # Flow receives:

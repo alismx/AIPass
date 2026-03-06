@@ -75,7 +75,7 @@ def get_json_structure_standards() -> str:
         "  [dim]Expected: 100/100 on JSON STRUCTURE standard[/dim]",
         "",
         "[bold cyan]SPECIAL JSONS:[/bold cyan]",
-        "  • [bold]Registries:[/bold] Collections (BRANCH_REGISTRY.json)",
+        "  • [bold]Registries:[/bold] Collections (AIPASS_REGISTRY.json)",
         "  • [bold]Custom:[/bold] Module-specific needs (no limit)",
         "  • [dim]Not part of three-JSON pattern[/dim]",
         "",

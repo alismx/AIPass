@@ -2,7 +2,7 @@
 Standards Checklist Module
 
 Validates modules against AIPass code standards.
-Run directly or via: drone @seed checklist
+Run directly or via: seedgo checklist
 """
 
 # =================== META ====================
@@ -56,6 +56,23 @@ from aipass.seedgo.apps.standards.aipass.handlers.standards import log_handler_c
 from aipass.seedgo.apps.standards.aipass.handlers.standards import log_visibility_check
 from aipass.seedgo.apps.standards.aipass.handlers.standards import permission_flags_check
 from aipass.seedgo.apps.standards.aipass.handlers.standards import shebang_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import log_structure_check
+
+# =============================================================================
+# REGISTRY DISCOVERY
+# =============================================================================
+
+def _find_registry() -> Path:
+    """Find AIPASS_REGISTRY.json by walking up from this file's location."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        candidate = parent / "AIPASS_REGISTRY.json"
+        if candidate.exists():
+            return candidate
+    return Path.cwd() / "AIPASS_REGISTRY.json"
+
+
+REGISTRY_PATH = _find_registry()
 
 # =============================================================================
 # BYPASS SYSTEM - .seed/ config per branch
@@ -91,7 +108,7 @@ BYPASS_TEMPLATE = {
 
 def get_branch_from_path(file_path: str) -> Optional[Dict[str, Any]]:
     """
-    Detect which branch a file belongs to using BRANCH_REGISTRY
+    Detect which branch a file belongs to using AIPASS_REGISTRY
 
     Args:
         file_path: Absolute path to file being checked
@@ -100,11 +117,11 @@ def get_branch_from_path(file_path: str) -> Optional[Dict[str, Any]]:
         Branch dict with name, path, etc. or None if not in a branch
     """
     try:
-        if not BRANCH_REGISTRY_PATH.exists():
-            logger.warning("[standards_checklist] BRANCH_REGISTRY.json not found")
+        if not REGISTRY_PATH.exists():
+            logger.warning("[standards_checklist] AIPASS_REGISTRY.json not found")
             return None
 
-        with open(BRANCH_REGISTRY_PATH, 'r', encoding='utf-8') as f:
+        with open(REGISTRY_PATH, 'r', encoding='utf-8') as f:
             registry = json.load(f)
 
         file_path = str(Path(file_path).resolve())
@@ -241,7 +258,7 @@ def print_help():
 
     console.print("[yellow]USAGE:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed checklist <module_path>")
+    console.print("  seedgo checklist <module_path>")
     console.print()
     console.print("  [dim]# Standalone[/dim]")
     console.print("  drone @seedgo checklist <module_path>")
@@ -846,10 +863,29 @@ def print_checklist(args: List[str]):
     console.print()
     logger.info(f"[{MODULE_NAME}] SHEBANG check complete: {shebang_score}/100")
 
+    # Run log_structure check
+    logger.info(f"[{MODULE_NAME}] Running LOG_STRUCTURE standard check on {file_path}")
+    console.print("[bold cyan]LOG_STRUCTURE STANDARD:[/bold cyan]")
+    log_structure_result = log_structure_check.check_module(file_path, bypass_rules=bypass_rules)
+
+    # Display results
+    for check in log_structure_result['checks']:
+        symbol = "[green]✓[/green]" if check['passed'] else "[red]✗[/red]"
+        console.print(f"  {symbol} {check['name']}: {check['message']}")
+
+    console.print()
+
+    # Show score
+    log_structure_score = log_structure_result['score']
+    log_structure_status = "[green]PASS[/green]" if log_structure_result['passed'] else "[red]FAIL[/red]"
+    console.print(f"  Score: {log_structure_score}/100 - {log_structure_status}")
+    console.print()
+    logger.info(f"[{MODULE_NAME}] LOG_STRUCTURE check complete: {log_structure_score}/100")
+
     # Overall summary
-    avg_score = int((imports_score + architecture_score + naming_score + cli_score + handlers_score + modules_score + documentation_score + json_structure_score + testing_score + error_handling_score + encapsulation_score + trigger_score + log_level_score + cli_flags_score + log_handler_score + log_visibility_score + permission_flags_score + shebang_score) / 18)
+    avg_score = int((imports_score + architecture_score + naming_score + cli_score + handlers_score + modules_score + documentation_score + json_structure_score + testing_score + error_handling_score + encapsulation_score + trigger_score + log_level_score + cli_flags_score + log_handler_score + log_visibility_score + permission_flags_score + shebang_score + log_structure_score) / 19)
     console.print("─" * 70)
-    console.print(f"[bold]OVERALL:[/bold] 18/18 standards checked - {avg_score}% average compliance")
+    console.print(f"[bold]OVERALL:[/bold] 19/19 standards checked - {avg_score}% average compliance")
     console.print("─" * 70)
     console.print()
     logger.info(f"[{MODULE_NAME}] Standards check complete: {avg_score}% average compliance")

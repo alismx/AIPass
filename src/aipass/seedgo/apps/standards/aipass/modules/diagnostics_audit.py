@@ -5,8 +5,8 @@ Runs pyright on all AIPass branches to detect type errors,
 undefined variables, and other static analysis issues.
 
 Usage:
-    drone @seed diagnostics           # All branches
-    drone @seed diagnostics flow      # Specific branch
+    seedgo diagnostics           # All branches
+    seedgo diagnostics flow      # Specific branch
 """
 
 # =================== META ====================
@@ -208,7 +208,7 @@ def print_introspection():
     console.print()
     console.print("[yellow]Commands:[/yellow] diagnostics")
     console.print()
-    console.print("[dim]Run 'drone @seed diagnostics --help' for usage[/dim]")
+    console.print("[dim]Run 'seedgo diagnostics --help' for usage[/dim]")
     console.print()
 
 
@@ -228,11 +228,11 @@ def print_help():
 
     console.print("[yellow]USAGE:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
-    console.print("  drone @seed diagnostics")
-    console.print("  drone @seed diagnostics flow")
+    console.print("  seedgo diagnostics")
+    console.print("  seedgo diagnostics flow")
     console.print()
-    console.print("  python3 seed.py diagnostics")
-    console.print("  python3 seed.py diagnostics cortex")
+    console.print("  seedgo diagnostics")
+    console.print("  seedgo diagnostics cortex")
     console.print()
 
     console.print("[yellow]WHAT IT CHECKS:[/yellow]")

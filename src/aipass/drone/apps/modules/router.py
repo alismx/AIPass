@@ -6,6 +6,7 @@ locating the branch's apps/{name}.py entry point, and executing via subprocess.
 """
 
 import logging
+import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -49,11 +50,15 @@ def route_command(
     relative_entry = str(entry_point.relative_to(branch_path))
     cmd_args = [relative_entry, command] + list(args)
 
+    # Pass caller's CWD so target branches can detect who invoked them
+    caller_env = {"AIPASS_CALLER_CWD": str(Path.cwd())}
+
     result = execute_command(
-        executable="python3",
+        executable=sys.executable,
         args=cmd_args,
         cwd=branch_path,
         timeout=timeout,
+        env=caller_env,
     )
 
     return CommandResult(
