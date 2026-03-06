@@ -1,0 +1,73 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: save_registry.py
+# Date: 2025-11-07
+# Version: 1.1.0
+# Category: flow/handlers/registry
+#
+# CHANGELOG:
+#   - v1.1.0 (2025-11-21): Removed Prax logging per 3-tier standard
+#   - v1.0.0 (2025-11-07): Extracted from flow_registry_monitor.py
+# =============================================
+
+"""
+Save Registry Handler
+
+Saves the Flow PLAN registry to JSON file with automatic timestamp updates.
+
+Features:
+- Saves flow_registry.json
+- Auto-updates last_updated timestamp
+- Creates directory if missing
+- Graceful error handling
+- Reusable across Flow modules
+
+Usage:
+    from aipass.flow.apps.handlers.registry.save_registry import save_registry
+    registry = {"plans": {}, "next_number": 1}
+    save_registry(registry)
+"""
+
+import json
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, Any
+
+# INFRASTRUCTURE IMPORT PATTERN
+_PKG_ROOT = Path(__file__).resolve().parents[4]
+FLOW_ROOT = _PKG_ROOT / "flow"
+
+# =============================================
+# CONFIGURATION
+# =============================================
+
+MODULE_NAME = "save_registry"
+FLOW_JSON_DIR = FLOW_ROOT / "flow_json"
+REGISTRY_FILE = FLOW_JSON_DIR / "flow_registry.json"
+
+# =============================================
+# HANDLER FUNCTION
+# =============================================
+
+def save_registry(registry: Dict[str, Any]) -> bool:
+    """Save PLAN registry
+
+    Args:
+        registry: Dictionary containing registry data
+
+    Returns:
+        True if save successful, False on error
+
+    Automatically updates the last_updated timestamp before saving.
+    Creates the flow_json directory if it doesn't exist.
+    """
+    try:
+        FLOW_JSON_DIR.mkdir(parents=True, exist_ok=True)
+        registry["last_updated"] = datetime.now(timezone.utc).isoformat()
+        with open(REGISTRY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(registry, f, indent=2, ensure_ascii=False)
+        return True
+    except Exception:
+        return False

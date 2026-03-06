@@ -1,0 +1,574 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: spawner.py - Claude Session Spawner
+# Date: 2026-02-03
+# Version: 4.3.0
+# Category: api/handlers/telegram
+#
+# CHANGELOG (Max 5 entries):
+#   - v4.3.0 (2026-02-12): Branch targeting - @branch prefix routes Claude to branch CWD
+#   - v4.2.0 (2026-02-10): Add raw_prompt flag to run_claude_capture (Phase 5 FPLAN-0312)
+#   - v4.1.0 (2026-02-10): Session persistence - use stored session_id for resume, deterministic as fallback
+#   - v4.0.0 (2026-02-10): Stream JSON output parsing - structured results with session_id, cost
+#   - v3.2.0 (2026-02-10): Security fix - subprocess_exec for capture mode (no shell injection)
+#   - v3.1.0 (2026-02-09): Fix session ID collision - random UUID for new sessions, deterministic for resume only
+#
+# CODE STANDARDS:
+#   - Pure functions with proper error raising
+#   - No Prax imports (handler tier 3)
+# =============================================
+
+"""
+Claude Session Spawner
+
+Two modes of operation:
+1. Visual mode: Spawn visible sessions (gnome-terminal/tmux) - fire and forget
+2. Capture mode: Run Claude directly and capture stdout for response
+
+Supports branch targeting: messages starting with @branch_name spawn Claude
+in that branch's directory. Default: /home/aipass/aipass_os/dev_central.
+"""
+
+import sys
+import os
+import re
+import json
+import subprocess
+import shutil
+import asyncio
+import uuid
+from pathlib import Path
+from typing import Tuple, Optional, List
+
+# Infrastructure
+AIPASS_ROOT = Path.home() / "aipass_core"
+sys.path.insert(0, str(AIPASS_ROOT))
+
+import logging
+logger = logging.getLogger("telegram_spawner")
+
+from api.apps.handlers.telegram.output_parser import OutputParser, ParsedResult
+from api.apps.handlers.telegram.session_store import get_session, save_session
+
+# Constants
+DEFAULT_SESSION_PATH = Path.home() / "aipass_os" / "dev_central"
+BRANCH_REGISTRY_PATH = Path.home() / "BRANCH_REGISTRY.json"
+CLAUDE_BIN = str(Path.home() / ".local" / "bin" / "claude")
+TMUX_SESSION_NAME = "telegram-claude"
+TELEGRAM_CHAR_LIMIT = 4096
+DEFAULT_TIMEOUT = 120  # seconds
+
+# Backwards compatibility
+SESSION_PATH = DEFAULT_SESSION_PATH
+
+
+def resolve_branch_target(message: str) -> Tuple[str, Path]:
+    """
+    Extract @branch target from message and resolve to a directory path.
+
+    If message starts with @branch_name, look up the branch in BRANCH_REGISTRY.json
+    and return the cleaned message (without the @branch prefix) and the branch path.
+    If no @branch prefix or branch not found, returns original message and DEFAULT_SESSION_PATH.
+
+    Returns:
+        Tuple of (cleaned_message, target_path)
+    """
+    match = re.match(r'^@(\w+)\s*(.*)', message, re.DOTALL)
+    if not match:
+        return message, DEFAULT_SESSION_PATH
+
+    branch_name = match.group(1).lower()
+    rest_of_message = match.group(2).strip()
+
+    try:
+        with open(BRANCH_REGISTRY_PATH, 'r', encoding='utf-8') as f:
+            registry = json.load(f)
+
+        branches = registry.get("branches", [])
+        for branch_entry in branches:
+            # Match against email (@branch_name) or name field
+            clean_email = branch_entry.get("email", "").replace("@", "").lower()
+            if clean_email == branch_name:
+                branch_path = Path(branch_entry.get("path", ""))
+                if branch_path.is_dir():
+                    logger.info("Branch target resolved: @%s -> %s", branch_name, branch_path)
+                    return rest_of_message or "hi", branch_path
+                else:
+                    logger.warning("Branch path not found on disk: %s", branch_path)
+                    return message, DEFAULT_SESSION_PATH
+
+    except (FileNotFoundError, json.JSONDecodeError, KeyError) as e:
+        logger.warning("Failed to resolve branch @%s: %s", branch_name, e)
+
+    return message, DEFAULT_SESSION_PATH
+
+
+def has_display() -> bool:
+    """Check if DISPLAY environment variable is set (GUI available)."""
+    return bool(os.environ.get("DISPLAY"))
+
+
+def has_gnome_terminal() -> bool:
+    """Check if gnome-terminal is available."""
+    return shutil.which("gnome-terminal") is not None
+
+
+def has_tmux() -> bool:
+    """Check if tmux is available."""
+    return shutil.which("tmux") is not None
+
+
+def build_prompt(message: str) -> str:
+    """
+    Build the Claude prompt from Telegram message (shell-escaped).
+
+    Used by visual mode (gnome-terminal, tmux) which still requires shell escaping.
+
+    Args:
+        message: The message text
+
+    Returns:
+        Formatted prompt string with shell-safe escaping
+    """
+    # Escape single quotes for shell safety
+    safe_message = message.replace("'", "'\"'\"'")
+    return f"Patrick via Telegram: {safe_message}"
+
+
+def build_prompt_clean(message: str) -> str:
+    """
+    Build the Claude prompt from Telegram message (no shell escaping).
+
+    Used by capture mode where subprocess_exec passes args directly,
+    bypassing the shell entirely.
+
+    Args:
+        message: The message text
+
+    Returns:
+        Formatted prompt string (raw, no escaping needed)
+    """
+    return f"Patrick via Telegram: {message}"
+
+
+def spawn_gnome_terminal(prompt: str) -> Tuple[bool, str, Optional[int]]:
+    """
+    Spawn Claude in a visible gnome-terminal window.
+
+    Args:
+        prompt: The prompt to pass to Claude
+
+    Returns:
+        Tuple of (success, message, pid or None)
+    """
+    try:
+        # Escape prompt for shell
+        safe_prompt = prompt.replace("'", "'\"'\"'")
+
+        # Build command: gnome-terminal spawns, runs claude, stays open
+        cmd = [
+            "gnome-terminal",
+            "--",
+            "bash", "-c",
+            f"cd {SESSION_PATH} && claude -p '{safe_prompt}' --session-id {uuid.uuid4()} --permission-mode bypassPermissions; exec bash"
+        ]
+
+        logger.info("Spawning gnome-terminal at %s", SESSION_PATH)
+
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            start_new_session=True
+        )
+
+        return True, f"gnome-terminal spawned (PID: {process.pid})", process.pid
+
+    except Exception as e:
+        logger.error("gnome-terminal spawn failed: %s", e)
+        return False, str(e), None
+
+
+def spawn_tmux(prompt: str) -> Tuple[bool, str, Optional[int]]:
+    """
+    Spawn Claude in a tmux session (headless fallback).
+
+    Creates or attaches to session named 'telegram-claude'.
+
+    Args:
+        prompt: The prompt to pass to Claude
+
+    Returns:
+        Tuple of (success, message, pid or None)
+    """
+    try:
+        # Escape prompt for shell
+        safe_prompt = prompt.replace("'", "'\"'\"'")
+
+        # Check if session already exists
+        check_cmd = ["tmux", "has-session", "-t", TMUX_SESSION_NAME]
+        session_exists = subprocess.run(
+            check_cmd,
+            capture_output=True
+        ).returncode == 0
+
+        if session_exists:
+            # Kill existing session to start fresh
+            subprocess.run(
+                ["tmux", "kill-session", "-t", TMUX_SESSION_NAME],
+                capture_output=True
+            )
+            logger.info("Killed existing tmux session: %s", TMUX_SESSION_NAME)
+
+        # Create new session with Claude
+        cmd = [
+            "tmux", "new-session",
+            "-d",  # Detached
+            "-s", TMUX_SESSION_NAME,
+            "-c", str(SESSION_PATH),  # Working directory
+            f"claude -p '{safe_prompt}' --session-id {uuid.uuid4()} --permission-mode bypassPermissions"
+        ]
+
+        logger.info("Spawning tmux session '%s' at %s", TMUX_SESSION_NAME, SESSION_PATH)
+
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL
+        )
+        process.wait()
+
+        if process.returncode == 0:
+            msg = f"tmux session '{TMUX_SESSION_NAME}' created. Attach with: tmux attach -t {TMUX_SESSION_NAME}"
+            return True, msg, None  # tmux doesn't give us the claude PID directly
+        else:
+            return False, f"tmux exited with code {process.returncode}", None
+
+    except Exception as e:
+        logger.error("tmux spawn failed: %s", e)
+        return False, str(e), None
+
+
+def spawn_claude_session(sender_name: str, message: str) -> Tuple[bool, str]:
+    """
+    Spawn a visible Claude session for a Telegram message.
+
+    Strategy:
+    1. If DISPLAY exists and gnome-terminal available → use gnome-terminal
+    2. Otherwise if tmux available → use tmux
+    3. If neither available → return error
+
+    Args:
+        sender_name: Telegram sender name/username
+        message: The message text from Telegram
+
+    Returns:
+        Tuple of (success, status_message)
+    """
+    _ = sender_name  # Reserved for future use (e.g., multi-user filtering)
+    prompt = build_prompt(message)
+
+    # Strategy 1: gnome-terminal (GUI)
+    if has_display() and has_gnome_terminal():
+        logger.info("Using gnome-terminal (DISPLAY available)")
+        success, msg, _ = spawn_gnome_terminal(prompt)
+        return success, msg
+
+    # Strategy 2: tmux (headless)
+    if has_tmux():
+        logger.info("Using tmux (headless fallback)")
+        success, msg, _ = spawn_tmux(prompt)
+        return success, msg
+
+    # No spawner available
+    error_msg = "No spawner available. Install gnome-terminal (GUI) or tmux (headless)."
+    logger.error(error_msg)
+    return False, error_msg
+
+
+# =============================================
+# RESPONSE CHUNKING
+# =============================================
+
+def chunk_response(text: str, limit: int = TELEGRAM_CHAR_LIMIT) -> List[str]:
+    """
+    Split text into chunks for Telegram's message limit.
+
+    Attempts to split at sentence boundaries when possible.
+
+    Args:
+        text: The full response text
+        limit: Maximum characters per chunk (default 4096)
+
+    Returns:
+        List of text chunks, each within the limit
+    """
+    if len(text) <= limit:
+        return [text]
+
+    chunks: List[str] = []
+    remaining = text
+
+    while remaining:
+        if len(remaining) <= limit:
+            chunks.append(remaining)
+            break
+
+        # Try to find a sentence boundary within limit
+        chunk = remaining[:limit]
+
+        # Look for sentence endings (. ! ?) followed by space or newline
+        best_break = -1
+        for i in range(len(chunk) - 1, max(0, len(chunk) - 500), -1):
+            if chunk[i] in '.!?' and (i + 1 >= len(chunk) or chunk[i + 1] in ' \n'):
+                best_break = i + 1
+                break
+
+        # If no sentence boundary, try paragraph break
+        if best_break == -1:
+            newline_pos = chunk.rfind('\n\n')
+            if newline_pos > limit // 2:
+                best_break = newline_pos + 2
+
+        # If still no good break, try single newline
+        if best_break == -1:
+            newline_pos = chunk.rfind('\n')
+            if newline_pos > limit // 2:
+                best_break = newline_pos + 1
+
+        # Last resort: break at space
+        if best_break == -1:
+            space_pos = chunk.rfind(' ')
+            if space_pos > limit // 2:
+                best_break = space_pos + 1
+
+        # Ultimate fallback: hard break at limit
+        if best_break == -1:
+            best_break = limit
+
+        chunks.append(remaining[:best_break].rstrip())
+        remaining = remaining[best_break:].lstrip()
+
+    return chunks
+
+
+# =============================================
+# CAPTURE MODE - Run Claude and capture output
+# =============================================
+
+def _chat_id_to_uuid(chat_id: int) -> str:
+    """Generate a deterministic UUID from a Telegram chat ID."""
+    namespace = uuid.UUID("a1a55000-0000-4000-8000-000000000000")
+    return str(uuid.uuid5(namespace, str(chat_id)))
+
+
+async def _run_claude_cmd(
+    args: List[str],
+    timeout: int = DEFAULT_TIMEOUT,
+    target_cwd: Optional[Path] = None
+) -> Tuple[bool, str, Optional[str]]:
+    """
+    Execute a Claude CLI command and capture output.
+
+    Uses subprocess_exec (no shell) to prevent shell injection attacks.
+    Parses stream-json output via OutputParser.
+
+    Args:
+        args: Command arguments as a list (e.g. [CLAUDE_BIN, '-p', prompt, ...])
+        timeout: Maximum seconds to wait for response
+        target_cwd: Working directory for the Claude process (defaults to DEFAULT_SESSION_PATH)
+
+    Returns:
+        Tuple of (success, response_text or error_message, session_id or None)
+    """
+    session_cwd = target_cwd or DEFAULT_SESSION_PATH
+    try:
+        process = await asyncio.create_subprocess_exec(
+            *args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+            cwd=session_cwd
+        )
+
+        try:
+            raw_stdout, raw_stderr = await asyncio.wait_for(
+                process.communicate(),
+                timeout=timeout
+            )
+        except asyncio.TimeoutError:
+            process.kill()
+            await process.wait()
+            return False, f"Claude timed out after {timeout} seconds", None
+
+        if process.returncode != 0:
+            error_text = raw_stderr.decode('utf-8', errors='replace').strip()
+            return False, f"Claude error: {error_text or 'Unknown error'}", None
+
+        raw_output = raw_stdout.decode('utf-8', errors='replace').strip()
+
+        if not raw_output:
+            return False, "Claude returned empty response", None
+
+        # Parse stream-json output
+        result = OutputParser.parse_stream(raw_output)
+
+        if result.success:
+            logger.info(
+                "Parsed response: %d chars, session=%s, cost=$%.4f",
+                len(result.text),
+                result.session_id or "unknown",
+                result.cost_usd or 0.0,
+            )
+            return True, result.text, result.session_id
+        else:
+            error = result.error_message or "Parse failed"
+            logger.warning("Parse error: %s", error)
+            return False, error, result.session_id
+
+    except Exception as e:
+        return False, f"Capture failed: {str(e)}", None
+
+
+async def run_claude_capture(
+    message: str,
+    chat_id: int = 0,
+    timeout: int = DEFAULT_TIMEOUT,
+    raw_prompt: bool = False,
+    target_cwd: Optional[Path] = None
+) -> Tuple[bool, str, Optional[str]]:
+    """
+    Run Claude CLI and capture its response with session persistence.
+
+    Strategy (when chat_id provided):
+    1. Look up stored session_id → try --resume with it
+    2. If no stored or resume fails → create new with random UUID
+    3. If random create fails → fall back to deterministic UUID
+
+    Args:
+        message: The message/prompt to send to Claude
+        chat_id: Telegram chat ID for session persistence
+        timeout: Maximum seconds to wait for response
+        raw_prompt: If True, use message as-is (skip build_prompt_clean)
+        target_cwd: Working directory for the Claude process (branch targeting)
+
+    Returns:
+        Tuple of (success, response_text or error_message, session_id or None)
+    """
+    if raw_prompt:
+        prompt = message
+    else:
+        prompt = build_prompt_clean(message)
+
+    if chat_id:
+        # Strategy 1: Try stored session_id from session_store
+        stored = get_session(chat_id)
+        if stored and stored.get("session_id"):
+            stored_id = stored["session_id"]
+            resume_args = [
+                CLAUDE_BIN, '-p', prompt,
+                '--resume', stored_id,
+                '--output-format', 'stream-json', '--verbose',
+                '--permission-mode', 'bypassPermissions'
+            ]
+            logger.info("Attempting resume with stored session %s for chat %s", stored_id[:8], chat_id)
+
+            success, response, session_id = await _run_claude_cmd(resume_args, timeout, target_cwd=target_cwd)
+            if success:
+                logger.info("Stored session resumed - response captured (%d chars)", len(response))
+                return True, response, session_id
+
+            logger.info("Stored session resume failed for chat %s, creating new session", chat_id)
+
+        # Strategy 2: Create new session with random UUID
+        random_id = str(uuid.uuid4())
+        logger.info("Creating new session for chat %s with random ID %s", chat_id, random_id[:8])
+        create_args = [
+            CLAUDE_BIN, '-p', prompt,
+            '--session-id', random_id,
+            '--output-format', 'stream-json', '--verbose',
+            '--permission-mode', 'bypassPermissions'
+        ]
+        success, response, session_id = await _run_claude_cmd(create_args, timeout, target_cwd=target_cwd)
+        if success:
+            return True, response, session_id
+
+        # Strategy 3: Deterministic UUID as last resort
+        deterministic_id = _chat_id_to_uuid(chat_id)
+        logger.info("Random create failed, falling back to deterministic ID %s", deterministic_id[:8])
+        fallback_args = [
+            CLAUDE_BIN, '-p', prompt,
+            '--resume', deterministic_id,
+            '--output-format', 'stream-json', '--verbose',
+            '--permission-mode', 'bypassPermissions'
+        ]
+        return await _run_claude_cmd(fallback_args, timeout, target_cwd=target_cwd)
+    else:
+        # No chat_id - one-shot with no session ID
+        one_shot_args = [
+            CLAUDE_BIN, '-p', prompt,
+            '--output-format', 'stream-json', '--verbose',
+            '--permission-mode', 'bypassPermissions'
+        ]
+        logger.info("Running Claude in one-shot mode (timeout: %ds)", timeout)
+        return await _run_claude_cmd(one_shot_args, timeout, target_cwd=target_cwd)
+
+
+async def spawn_and_capture(
+    sender_name: str,
+    message: str,
+    chat_id: int = 0,
+    timeout: int = DEFAULT_TIMEOUT,
+    target_cwd: Optional[Path] = None
+) -> Tuple[bool, List[str], Optional[str]]:
+    """
+    Run Claude and return chunked response for Telegram.
+
+    This is the main entry point for capture mode.
+
+    Args:
+        sender_name: Telegram sender name/username (for logging)
+        message: The message text from Telegram
+        chat_id: Telegram chat ID (for logging)
+        timeout: Maximum seconds to wait for Claude
+        target_cwd: Working directory for the Claude process (branch targeting)
+
+    Returns:
+        Tuple of (success, list_of_response_chunks, session_id or None)
+    """
+    logger.info("spawn_and_capture called by %s (chat_id: %s)", sender_name, chat_id)
+
+    success, response, session_id = await run_claude_capture(message, chat_id, timeout, target_cwd=target_cwd)
+
+    if not success:
+        return False, [response], session_id
+
+    chunks = chunk_response(response)
+    logger.info("Response split into %d chunk(s)", len(chunks))
+
+    return True, chunks, session_id
+
+
+if __name__ == "__main__":
+    # Test the spawner
+    print("=" * 60)
+    print("TELEGRAM CLAUDE SPAWNER")
+    print("=" * 60)
+    print()
+    print("Environment check:")
+    print(f"  DISPLAY: {os.environ.get('DISPLAY', 'Not set')}")
+    print(f"  gnome-terminal: {'Available' if has_gnome_terminal() else 'Not found'}")
+    print(f"  tmux: {'Available' if has_tmux() else 'Not found'}")
+    print()
+    print(f"Session path: {SESSION_PATH}")
+    print(f"tmux session name: {TMUX_SESSION_NAME}")
+    print()
+    print("Would spawn with:")
+    if has_display() and has_gnome_terminal():
+        print("  → gnome-terminal (GUI mode)")
+    elif has_tmux():
+        print("  → tmux (headless mode)")
+    else:
+        print("  → ERROR: No spawner available")
+    print()

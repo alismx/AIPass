@@ -1,5 +1,5 @@
-"""Drone modules - command routing services."""
+"""Drone modules — business logic for command routing."""
 
-def normalize_branch_arg(arg: str) -> str:
-    """Normalize branch argument (strip @, uppercase)."""
-    return arg.lstrip("@").upper()
+from aipass.drone.apps.modules.resolver import normalize_branch_arg
+
+__all__ = ["normalize_branch_arg"]

@@ -1,0 +1,158 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: output_parser.py - Claude Stream JSON Output Parser
+# Date: 2026-02-10
+# Version: 1.0.0
+# Category: api/handlers/telegram
+#
+# CHANGELOG (Max 5 entries):
+#   - v1.0.0 (2026-02-10): Initial - parse stream-json from Claude CLI
+#
+# CODE STANDARDS:
+#   - Pure functions with proper error raising
+#   - No Prax imports (handler tier 3)
+# =============================================
+
+"""
+Claude Stream JSON Output Parser
+
+Parses newline-delimited JSON output from Claude CLI when invoked with
+--output-format stream-json --verbose.
+
+Output format (3 line types):
+  1. system/init  - session_id, model, tools
+  2. assistant    - message content blocks (text, tool_use)
+  3. result       - success/error, session_id, cost, duration
+"""
+
+import sys
+import json
+import logging
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Optional
+
+# Infrastructure
+AIPASS_ROOT = Path.home() / "aipass_core"
+sys.path.insert(0, str(AIPASS_ROOT))
+
+logger = logging.getLogger("telegram_output_parser")
+
+
+@dataclass
+class ParsedResult:
+    """Structured result from parsing Claude stream-json output."""
+    success: bool
+    text: str
+    session_id: Optional[str] = None
+    cost_usd: Optional[float] = None
+    duration_ms: Optional[int] = None
+    error_message: Optional[str] = None
+
+
+class OutputParser:
+    """Parse Claude CLI stream-json output into structured results."""
+
+    @staticmethod
+    def parse_stream(raw_output: str) -> ParsedResult:
+        """
+        Parse raw stream-json output from Claude CLI.
+
+        Splits output by newlines, parses each line as JSON, and extracts:
+        - Text from assistant message content blocks (type='text' only)
+        - session_id from result line
+        - cost from result line total_cost_usd
+        - Error detection from result line is_error / subtype='error'
+
+        Falls back to returning raw text if JSON parsing fails entirely.
+
+        Args:
+            raw_output: Raw stdout from Claude CLI with --output-format stream-json
+
+        Returns:
+            ParsedResult with extracted fields
+        """
+        if not raw_output or not raw_output.strip():
+            return ParsedResult(success=False, text="", error_message="Empty output")
+
+        text_parts: List[str] = []
+        session_id: Optional[str] = None
+        cost_usd: Optional[float] = None
+        duration_ms: Optional[int] = None
+        is_error = False
+        error_message: Optional[str] = None
+        parsed_any = False
+
+        for line in raw_output.strip().splitlines():
+            line = line.strip()
+            if not line:
+                continue
+
+            try:
+                data = json.loads(line)
+            except json.JSONDecodeError:
+                logger.info("Skipping non-JSON line: %s", line[:100])
+                continue
+
+            parsed_any = True
+            line_type = data.get("type")
+
+            if line_type == "assistant":
+                # Extract text from content blocks
+                message = data.get("message", {})
+                content_blocks = message.get("content", [])
+                for block in content_blocks:
+                    if block.get("type") == "text":
+                        text_parts.append(block.get("text", ""))
+
+            elif line_type == "result":
+                # Extract session_id, cost, duration, error status
+                session_id = data.get("session_id", session_id)
+                cost_usd = data.get("total_cost_usd", cost_usd)
+                duration_ms = data.get("duration_ms", duration_ms)
+
+                if data.get("is_error", False) or data.get("subtype") == "error":
+                    is_error = True
+                    error_message = data.get("result", "Unknown error")
+
+            elif line_type == "system":
+                # Init line - capture session_id as fallback
+                if not session_id:
+                    session_id = data.get("session_id")
+
+        # If we couldn't parse any JSON at all, fall back to raw text
+        if not parsed_any:
+            logger.warning("No valid JSON lines found, returning raw output")
+            return ParsedResult(success=True, text=raw_output.strip())
+
+        combined_text = "\n".join(text_parts) if text_parts else ""
+
+        if is_error:
+            return ParsedResult(
+                success=False,
+                text=combined_text,
+                session_id=session_id,
+                cost_usd=cost_usd,
+                duration_ms=duration_ms,
+                error_message=error_message,
+            )
+
+        if not combined_text:
+            return ParsedResult(
+                success=False,
+                text="",
+                session_id=session_id,
+                cost_usd=cost_usd,
+                duration_ms=duration_ms,
+                error_message="No text content in response",
+            )
+
+        return ParsedResult(
+            success=True,
+            text=combined_text,
+            session_id=session_id,
+            cost_usd=cost_usd,
+            duration_ms=duration_ms,
+        )

@@ -1,0 +1,253 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: push_central.py
+# Date: 2025-11-21
+# Version: 1.1.0
+# Category: flow/handlers/dashboard
+#
+# CHANGELOG:
+#   - v1.1.0 (2025-11-21): Integrated aggregate_central for self-healing
+#   - v1.0.0 (2025-11-21): Initial creation - push Flow's plans to central aggregation
+# =============================================
+
+"""
+Push to Plans Central Handler
+
+Pushes Flow's plan data to the central PLANS.central.json file at AI_CENTRAL.
+This handler follows the 3-tier logging standard (no Prax imports, no logging).
+
+Features:
+- Reads flow_registry.json to get Flow's plans
+- Extracts only plans where location='flow' (Flow's own plans)
+- Updates branches.flow section in PLANS.central.json
+- Preserves all other branch sections
+- Calls aggregate_central to rebuild top-level active_plans
+- Calculates global statistics across all branches
+- Pure handler - returns boolean for success/failure
+
+Usage:
+    from aipass.flow.apps.handlers.dashboard.push_central import push_to_plans_central
+    success = push_to_plans_central()
+"""
+
+import json
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, Any, List
+
+# INFRASTRUCTURE IMPORT PATTERN
+_PKG_ROOT = Path(__file__).resolve().parents[4]
+FLOW_ROOT = _PKG_ROOT / "flow"
+
+# Module imports
+from aipass.flow.apps.modules.aggregate_central import aggregate_central
+
+# =============================================
+# CONFIGURATION
+# =============================================
+
+MODULE_NAME = "push_central"
+FLOW_JSON_DIR = FLOW_ROOT / "flow_json"
+REGISTRY_FILE = FLOW_JSON_DIR / "flow_registry.json"
+AI_CENTRAL_DIR = Path.home() / "aipass_os" / "AI_CENTRAL"
+CENTRAL_FILE = AI_CENTRAL_DIR / "PLANS.central.json"
+
+# =============================================
+# HELPER FUNCTIONS
+# =============================================
+
+def _load_registry() -> Dict[str, Any]:
+    """Load flow_registry.json
+
+    Returns:
+        Registry dict or empty structure if file doesn't exist
+    """
+    if not REGISTRY_FILE.exists():
+        return {"plans": {}, "next_number": 1}
+
+    try:
+        with open(REGISTRY_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {"plans": {}, "next_number": 1}
+
+
+def _extract_flow_plans(registry: Dict[str, Any]) -> tuple[List[Dict], List[Dict]]:
+    """Extract Flow's own plans from registry
+
+    Args:
+        registry: The flow_registry.json data
+
+    Returns:
+        Tuple of (active_plans, recently_closed_plans)
+    """
+    plans = registry.get("plans", {})
+    active = []
+    closed = []
+
+    for plan_num, plan_data in plans.items():
+        # Only include plans where location is 'flow' (Flow's own plans)
+        location = plan_data.get("location", "")
+        if location != "/home/aipass/aipass_core/flow":
+            continue
+
+        # Build plan entry
+        plan_entry = {
+            "plan_id": f"FPLAN-{plan_num.zfill(4)}",
+            "subject": plan_data.get("subject", ""),
+            "status": plan_data.get("status", "open"),
+            "created": plan_data.get("created", ""),
+            "file_path": plan_data.get("file_path", ""),
+            "relative_path": plan_data.get("relative_path", "")
+        }
+
+        if plan_data.get("status") == "open":
+            active.append(plan_entry)
+        else:
+            # Add closed metadata
+            plan_entry["closed"] = plan_data.get("closed", "")
+            plan_entry["closed_reason"] = plan_data.get("closed_reason", "")
+            closed.append(plan_entry)
+
+    # Sort active by created date (newest first)
+    active.sort(key=lambda x: x.get("created", ""), reverse=True)
+
+    # Sort closed by closed date (newest first) and limit to last 5
+    closed.sort(key=lambda x: x.get("closed", ""), reverse=True)
+    recently_closed = closed[:5]
+
+    return active, recently_closed
+
+
+def _load_central() -> Dict[str, Any]:
+    """Load existing PLANS.central.json
+
+    Returns:
+        Central file data or empty structure if file doesn't exist
+    """
+    if not CENTRAL_FILE.exists():
+        return {
+            "generated_at": "",
+            "branches": {},
+            "global_statistics": {
+                "total_active": 0,
+                "total_closed": 0,
+                "branches_reporting": 0
+            }
+        }
+
+    try:
+        with open(CENTRAL_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception:
+        return {
+            "generated_at": "",
+            "branches": {},
+            "global_statistics": {
+                "total_active": 0,
+                "total_closed": 0,
+                "branches_reporting": 0
+            }
+        }
+
+
+def _calculate_global_statistics(central_data: Dict[str, Any]) -> Dict[str, int]:
+    """Calculate global statistics by summing all branches
+
+    Args:
+        central_data: The full central file data
+
+    Returns:
+        Dict with total_active, total_closed, branches_reporting
+    """
+    branches = central_data.get("branches", {})
+    total_active = 0
+    total_closed = 0
+
+    for branch_data in branches.values():
+        stats = branch_data.get("statistics", {})
+        total_active += stats.get("active_count", 0)
+        total_closed += stats.get("total_closed", 0)
+
+    return {
+        "total_active": total_active,
+        "total_closed": total_closed,
+        "branches_reporting": len(branches)
+    }
+
+
+# =============================================
+# MAIN HANDLER FUNCTION
+# =============================================
+
+def push_to_plans_central() -> bool:
+    """Push Flow's plan data to AI_CENTRAL/PLANS.central.json
+
+    Algorithm:
+    1. Read flow_registry.json
+    2. Extract only plans where location='flow' (Flow's own plans)
+    3. Format for central structure with branch metadata
+    4. Read existing PLANS.central.json if exists
+    5. Update ONLY branches.flow section
+    6. Update global_statistics (total counts across all branches)
+    7. Preserve ALL other branch sections
+    8. Write back to PLANS.central.json
+    9. Call aggregate_central to rebuild top-level active_plans with validation
+
+    Returns:
+        True on success, False on failure
+    """
+    try:
+        # Ensure AI_CENTRAL directory exists
+        AI_CENTRAL_DIR.mkdir(parents=True, exist_ok=True)
+
+        # Load registry
+        registry = _load_registry()
+
+        # Extract Flow's plans
+        active_plans, recently_closed = _extract_flow_plans(registry)
+
+        # Build Flow's branch section
+        now = datetime.now(timezone.utc).isoformat()
+        flow_section = {
+            "branch_name": "FLOW",
+            "branch_path": str(FLOW_ROOT),
+            "last_updated": now,
+            "active_plans": active_plans,
+            "recently_closed": recently_closed,
+            "statistics": {
+                "active_count": len(active_plans),
+                "total_closed": len([p for p in registry.get("plans", {}).values()
+                                    if p.get("location") == "/home/aipass/aipass_core/flow"
+                                    and p.get("status") == "closed"])
+            }
+        }
+
+        # Load existing central file
+        central_data = _load_central()
+
+        # Update Flow's section
+        if "branches" not in central_data:
+            central_data["branches"] = {}
+        central_data["branches"]["flow"] = flow_section
+
+        # Update global statistics
+        central_data["global_statistics"] = _calculate_global_statistics(central_data)
+
+        # Update generated_at timestamp
+        central_data["generated_at"] = now
+
+        # Write back to central file
+        with open(CENTRAL_FILE, 'w', encoding='utf-8') as f:
+            json.dump(central_data, f, indent=2, ensure_ascii=False)
+
+        # Call aggregate_central to rebuild top-level arrays with validation
+        # This ensures active_plans is built from all branches and validates files exist
+        aggregate_central(heal=True)
+
+        return True
+
+    except Exception:
+        return False

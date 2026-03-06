@@ -1,0 +1,142 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: terminal_module.py - PRAX Terminal Command
+# Date: 2025-11-15
+# Version: 1.1.0
+# Category: prax/modules
+#
+# CHANGELOG (Max 5 entries):
+#   - v1.1.0 (2025-11-29): UX improvements - added help output for invalid/missing args
+#     * Added print_help() function with drone-compliant format
+#     * Updated handle_command() to show help instead of bare error message
+#     * Added --help and --introspect flag support in main block
+#     * Added error handling with try/except and logger.error
+#   - v1.0.0 (2025-11-15): Created with handle_command interface
+#
+# CODE STANDARDS:
+#   - Follows AIPass Prax standards
+#   - Implements handle_command(command: str, args: List[str]) -> bool interface
+#   - Uses Prax logger for system-wide logging
+# =============================================
+
+"""
+PRAX Terminal Module
+
+Implements the 'terminal' command using handle_command interface.
+"""
+
+import sys
+from pathlib import Path
+from typing import List
+
+from aipass.prax.apps.modules.logger import enable_terminal_output, disable_terminal_output, system_logger as logger
+from aipass.cli.apps.modules import console
+
+
+def print_introspection():
+    """Display module introspection - shows connected handlers"""
+    console.print()
+    console.print("[bold cyan]PRAX Terminal Module[/bold cyan]")
+    console.print()
+    console.print("[yellow]Purpose:[/yellow]")
+    console.print("  Enable or disable terminal output for PRAX logging system")
+    console.print()
+
+    console.print("[yellow]Connected Handlers:[/yellow]")
+    console.print()
+
+    console.print("  [cyan]prax/modules/[/cyan]")
+    console.print("    [dim]- logger.py[/dim] (enable_terminal_output, disable_terminal_output, system_logger)")
+    console.print()
+
+    console.print("[dim]Run 'python3 terminal_module.py --help' for usage[/dim]")
+    console.print()
+
+
+def print_help():
+    """Drone-compliant help output - command syntax and examples"""
+    console.print()
+    console.print("[bold cyan]PRAX Terminal - Logger Output Control[/bold cyan]")
+    console.print()
+
+    console.print("[yellow]Available Subcommands:[/yellow]")
+    console.print()
+    console.print("  [cyan]enable[/cyan]")
+    console.print("    Enable terminal output for PRAX logging")
+    console.print()
+    console.print("  [cyan]disable[/cyan]")
+    console.print("    Disable terminal output for PRAX logging")
+    console.print()
+
+    console.print("[yellow]Usage Examples:[/yellow]")
+    console.print()
+    console.print("  [dim]# Enable terminal output[/dim]")
+    console.print("  $ prax terminal enable")
+    console.print()
+    console.print("  [dim]# Disable terminal output[/dim]")
+    console.print("  $ prax terminal disable")
+    console.print()
+    console.print("  [dim]# Standalone execution[/dim]")
+    console.print("  $ python3 terminal_module.py enable")
+    console.print()
+
+    console.print("[dim]Commands: enable, disable[/dim]")
+    console.print()
+
+
+def handle_command(command: str, args: List[str]) -> bool:
+    """
+    Handle terminal command
+
+    Args:
+        command: Command name
+        args: Command arguments (expects 'enable' or 'disable')
+
+    Returns:
+        True if command was handled
+    """
+    if command != 'terminal':
+        return False
+
+    try:
+        if not args or args[0] not in ['enable', 'disable']:
+            print_help()
+            return True  # Command was handled, even if validation failed
+
+        if args[0] == 'enable':
+            enable_terminal_output()
+            console.print("✅ Terminal output enabled")
+        else:
+            disable_terminal_output()
+            console.print("✅ Terminal output disabled")
+
+        return True
+
+    except Exception as e:
+        logger.error(f"Error in terminal command: {e}")
+        console.print(f"[red]❌ ERROR: {e}[/red]")
+        return True
+
+
+if __name__ == "__main__":
+    # Show introspection when run without arguments
+    if len(sys.argv) == 1:
+        print_introspection()
+        sys.exit(0)
+
+    # Handle --help flag
+    if '--help' in sys.argv:
+        print_help()
+        sys.exit(0)
+
+    # Handle --introspect flag
+    if '--introspect' in sys.argv:
+        print_introspection()
+        sys.exit(0)
+
+    # Execute terminal command with remaining args
+    args = [arg for arg in sys.argv[1:] if not arg.startswith('--')]
+    handled = handle_command('terminal', args)
+    sys.exit(0 if handled else 1)

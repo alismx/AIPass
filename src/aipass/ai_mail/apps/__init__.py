@@ -1,1 +1,1 @@
-# AI_MAIL apps package
+# Apps package

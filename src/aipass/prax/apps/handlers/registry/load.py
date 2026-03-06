@@ -1,0 +1,87 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: load.py
+# Date: 2025-11-07
+# Version: 1.0.0
+# Category: prax/handlers/registry
+#
+# CHANGELOG:
+#   - v1.0.0 (2025-11-07): Extracted from prax_registry.py - module registry loading
+# =============================================
+
+"""
+Load Module Registry Handler
+
+Loads the Prax system-wide module discovery registry (prax_registry.json).
+Returns empty dict if file doesn't exist or on error.
+
+Features:
+- Loads prax_registry.json from prax_json directory
+- Extracts modules dict from registry structure
+- Graceful error handling with logger
+- Returns empty dict as fallback
+
+Usage:
+    from aipass.prax.apps.handlers.registry.load import load_module_registry
+
+    modules = load_module_registry()
+    print(f"Loaded {len(modules)} modules")
+"""
+
+import json
+from pathlib import Path
+from typing import Dict, Any
+
+from aipass.prax.apps.handlers.config.load import PRAX_ROOT
+
+# =============================================
+# CONFIGURATION
+# =============================================
+
+MODULE_NAME = "load"
+PRAX_JSON_DIR = PRAX_ROOT / "prax_json"
+REGISTRY_FILE = PRAX_JSON_DIR / "prax_registry.json"
+
+# =============================================
+# HANDLER FUNCTION
+# =============================================
+
+def load_module_registry() -> Dict[str, Dict[str, Any]]:
+    """Load module registry from prax_registry.json (system registry)
+
+    Returns:
+        Dict mapping module names to module info dicts.
+        Returns empty dict if file doesn't exist or on error.
+
+    The registry structure is:
+    {
+        "registry_version": "1.0.0",
+        "timestamp": "2025-11-07T...",
+        "modules": {
+            "module_name": {
+                "relative_path": "...",
+                "size": 1234,
+                "modified_time": "..."
+            }
+        },
+        "statistics": {...}
+    }
+
+    Example:
+        >>> modules = load_module_registry()
+        >>> if modules:
+        >>>     print(f"Found {len(modules)} modules")
+    """
+    if not REGISTRY_FILE.exists():
+        return {}
+
+    try:
+        with open(REGISTRY_FILE, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            modules = data.get('modules', {})
+            return modules
+    except Exception:
+        # Silently return empty dict - logging not available at this level
+        return {}

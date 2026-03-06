@@ -1,1 +1,1 @@
-# API apps package
+# Apps package

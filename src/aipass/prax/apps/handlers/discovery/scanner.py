@@ -1,0 +1,94 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: scanner.py - Directory Scanning
+# Date: 2025-11-10
+# Version: 1.1.0
+# Category: prax/handlers/discovery
+#
+# CODE STANDARDS:
+#   - HANDLERS: Pure handler - no console output, returns data only
+#   - IMPORTS: Uses package imports (aipass.prax...)
+#   - ERROR_HANDLING: Silent operation, no logger imports
+#
+# CHANGELOG (Max 5 entries):
+#   - v1.1.0 (2025-11-29): Removed console output - pure handler pattern
+#   - v1.0.0 (2025-11-10): Extracted from archive.temp/prax_discovery.py
+# =============================================
+
+"""
+PRAX Discovery Scanner
+
+Safe directory scanning for Python module discovery.
+"""
+
+from pathlib import Path
+
+from datetime import datetime, timezone
+from typing import Dict, Any
+
+# Import from prax config
+from aipass.prax.apps.handlers.config.load import (
+    ECOSYSTEM_ROOT,
+    SYSTEM_LOGS_DIR
+)
+
+# Import filtering
+from aipass.prax.apps.handlers.discovery.filtering import should_ignore_path
+
+def scan_directory_safely(directory: Path, modules: Dict, max_depth: int = 10):
+    """Safely scan directory with depth limit
+
+    Recursively scans directory for Python files, respecting ignore patterns
+    and depth limits to prevent infinite loops.
+
+    Args:
+        directory: Directory to scan
+        modules: Dict to populate with discovered modules
+        max_depth: Maximum recursion depth (default 10)
+    """
+    if max_depth <= 0:
+        return
+
+    try:
+        for item in directory.iterdir():
+            if should_ignore_path(item):
+                continue
+
+            if item.is_file() and item.suffix == '.py':
+                module_name = item.stem
+                relative_path = item.relative_to(ECOSYSTEM_ROOT)
+
+                modules[module_name] = {
+                    "file_path": str(item),
+                    "relative_path": str(relative_path),
+                    "log_file": str(SYSTEM_LOGS_DIR / f"prax_{module_name}.log"),
+                    "discovered_time": datetime.now(timezone.utc).isoformat(),
+                    "size": item.stat().st_size,
+                    "modified_time": datetime.fromtimestamp(item.stat().st_mtime).isoformat(),
+                    "enabled": True
+                }
+
+            elif item.is_dir():
+                scan_directory_safely(item, modules, max_depth - 1)
+
+    except PermissionError:
+        # Silent operation - permission denied directories are skipped
+        pass
+    except Exception:
+        # Silent operation - errors are skipped
+        pass
+
+def discover_python_modules() -> Dict[str, Dict[str, Any]]:
+    """Discover all Python modules in the ecosystem
+
+    Returns:
+        Dict mapping module names to their metadata
+    """
+    modules = {}
+
+    # Scan entire ecosystem recursively
+    scan_directory_safely(ECOSYSTEM_ROOT, modules)
+
+    return modules

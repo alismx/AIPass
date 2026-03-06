@@ -1,0 +1,223 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: branch_ping.py - Branch Ping Orchestration Module
+# Date: 2025-11-15
+# Version: 1.0.0
+# Category: ai_mail/modules
+#
+# CHANGELOG (Max 5 entries):
+#   - v1.0.0 (2025-11-15): Initial orchestration module for branch ping
+#
+# CODE STANDARDS:
+#   - Modules ORCHESTRATE (no business logic)
+#   - Delegate to handlers for all operations
+#   - Use json_handler.log_operation()
+#   - Keep modules 110-155 lines
+# =============================================
+
+"""
+Branch Ping Orchestration Module
+
+Orchestrates branch memory health monitoring - delegates all logic to handlers.
+Commands: ping, status, registry, thresholds
+"""
+
+import sys
+import argparse
+from pathlib import Path
+from typing import List
+
+from aipass.prax.apps.modules.logger import system_logger as logger
+
+# CLI services for formatting
+from aipass.cli.apps.modules import console
+from rich.panel import Panel
+
+# Import handlers
+from aipass.ai_mail.apps.handlers.monitoring.memory import count_file_lines, get_status_from_count
+from aipass.ai_mail.apps.handlers.registry.update import (
+    ping_registry,
+    get_branch_context,
+    update_json_memory_health
+)
+from aipass.ai_mail.apps.handlers.persistence.json_ops import log_operation
+
+MODULE_NAME = "branch_ping"
+THRESHOLDS = {"green": (0, 400), "yellow": (401, 550), "red": (551, float('inf'))}
+
+def handle_ping(verbose: bool = False) -> bool:
+    """Execute ping command - orchestrate health check"""
+    try:
+        branch_name, cwd = get_branch_context()
+        local_file = cwd / f"{branch_name}.local.json"
+        obs_file = cwd / f"{branch_name}.observations.json"
+
+        local_count = count_file_lines(local_file)
+        obs_count = count_file_lines(obs_file)
+        local_status_code = get_status_from_count(local_count)
+        obs_status_code = get_status_from_count(obs_count)
+
+        update_json_memory_health(local_file, local_count, local_status_code)
+        update_json_memory_health(obs_file, obs_count, obs_status_code)
+
+        local_status = {"line_count": local_count, "status": local_status_code}
+        obs_status = {"line_count": obs_count, "status": obs_status_code}
+        ping_registry(branch_name, cwd, local_status, obs_status)
+
+        log_operation("ping_executed", {"branch": branch_name, "local_count": local_count, "obs_count": obs_count})
+
+        if verbose:
+            console.print(f"Ping successful for {branch_name}")
+            console.print(f"  local.json: {local_count} lines ({local_status_code})")
+            console.print(f"  observations.json: {obs_count} lines ({obs_status_code})")
+        return True
+    except Exception as e:
+        logger.error(f"Ping failed: {e}")
+        if verbose:
+            console.print(f"Ping failed: {e}")
+        return False
+
+
+def handle_status() -> bool:
+    """Show current memory health status"""
+    try:
+        branch_name, cwd = get_branch_context()
+        local_file = cwd / f"{branch_name}.local.json"
+        obs_file = cwd / f"{branch_name}.observations.json"
+
+        local_count = count_file_lines(local_file)
+        obs_count = count_file_lines(obs_file)
+        local_status = get_status_from_count(local_count)
+        obs_status = get_status_from_count(obs_count)
+
+        console.print(f"\nBranch: {branch_name}\nDirectory: {cwd}")
+        console.print(f"\nMemory Health Status:")
+        console.print(f"  local.json:        {local_count} lines ({local_status})")
+        console.print(f"  observations.json: {obs_count} lines ({obs_status})\n")
+        return True
+    except Exception as e:
+        logger.error(f"Status check failed: {e}")
+        console.print(f"Error getting status: {e}")
+        return False
+
+
+def handle_registry() -> bool:
+    """View registry contents"""
+    try:
+        from aipass.ai_mail.apps.handlers.registry.update import REGISTRY_PATH
+        from aipass.ai_mail.apps.handlers.registry.load import load_registry
+
+        if not REGISTRY_PATH.exists():
+            console.print("Registry not yet created")
+            return True
+
+        registry = load_registry(REGISTRY_PATH)
+
+        console.print("\nMemory Health Registry")
+        console.print(f"Last Updated: {registry.get('last_updated', 'N/A')}\n")
+        stats = registry.get('statistics', {})
+        console.print(f"Statistics:")
+        console.print(f"  Total Branches: {stats.get('total_branches', 0)}")
+        console.print(f"  Green: {stats.get('green_status', 0)}, Yellow: {stats.get('yellow_status', 0)}, Red: {stats.get('red_status', 0)}\n")
+        return True
+    except Exception as e:
+        logger.error(f"Registry read failed: {e}")
+        console.print(f"Error reading registry: {e}")
+        return False
+
+
+def handle_thresholds() -> bool:
+    """Show compression thresholds"""
+    console.print("\nMemory Compression Thresholds:")
+    console.print(f"  Green:  0 - {THRESHOLDS['green'][1]} lines")
+    console.print(f"  Yellow: {THRESHOLDS['yellow'][0]} - {THRESHOLDS['yellow'][1]} lines")
+    console.print(f"  Red:    {THRESHOLDS['red'][0]}+ lines (compression required)")
+    console.print()
+    return True
+
+
+def print_help():
+    """Print help output using argparse"""
+    parser = argparse.ArgumentParser(
+        description='Branch Ping - Memory Health Monitoring Module',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+COMMANDS:
+  ping        - Execute health check and update registry
+  status      - Show current memory status for this branch
+  registry    - View registry contents and statistics
+  thresholds  - Show compression thresholds
+
+USAGE:
+  drone ai_mail branch_ping <command>
+  python3 branch_ping.py <command>
+  python3 branch_ping.py --help
+
+EXAMPLES:
+  # Check memory health and update registry
+  drone ai_mail branch_ping ping
+
+  # View current status
+  drone ai_mail branch_ping status
+
+  # View registry
+  drone ai_mail branch_ping registry
+
+  # Show thresholds
+  drone ai_mail branch_ping thresholds
+        """
+    )
+    parser.print_help()
+
+
+def handle_command(command: str, args: List[str]) -> bool:
+    """Handle incoming command - main orchestration entry point"""
+    # Check if this module handles this command
+    if command not in ["ping", "status", "registry", "thresholds"]:
+        return False
+
+    # Handle help flag
+    if args and args[0] in ['--help', '-h', 'help']:
+        print_help()
+        return True
+
+    if command == "ping":
+        return handle_ping("--verbose" in args or "-v" in args)
+    elif command == "status":
+        return handle_status()
+    elif command == "registry":
+        return handle_registry()
+    elif command == "thresholds":
+        return handle_thresholds()
+    return False
+
+
+if __name__ == "__main__":
+    # Handle --help flag
+    if len(sys.argv) > 1 and sys.argv[1] in ['--help', '-h', 'help']:
+        console.print()
+        console.print(Panel("[bold cyan]BRANCH PING - Memory Health Monitoring[/bold cyan]", expand=False))
+        console.print()
+        console.print("[yellow]Commands:[/yellow] ping, status, registry, thresholds, --help")
+        console.print()
+        console.print("[bold]USAGE:[/bold]")
+        console.print("  drone ai_mail branch_ping <command>")
+        console.print("  python3 branch_ping.py")
+        console.print("  python3 branch_ping.py --help")
+        console.print()
+        console.print("[bold]COMMANDS:[/bold]")
+        console.print("  [cyan]ping[/cyan]        - Execute health check")
+        console.print("  [cyan]status[/cyan]      - Show current memory status")
+        console.print("  [cyan]registry[/cyan]    - View registry contents")
+        console.print("  [cyan]thresholds[/cyan]  - Show compression thresholds")
+        console.print()
+        sys.exit(0)
+
+    console.print()
+    console.print(Panel("[bold cyan]BRANCH PING ORCHESTRATION MODULE[/bold cyan]", expand=False))
+    console.print()
+    console.print("[yellow]Commands:[/yellow] ping, status, registry, thresholds")
+    console.print("[dim]Usage: drone ai_mail branch_ping [command][/dim]")
+    console.print()

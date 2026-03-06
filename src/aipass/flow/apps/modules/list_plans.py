@@ -1,0 +1,289 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: list_plans.py - PLAN listing module with filtering
+# Date: 2025-11-21
+# Version: 1.0.0
+# Category: flow/modules
+#
+# CHANGELOG (Max 5 entries):
+#   - v1.0.0 (2025-11-21): Initial implementation, handler-based architecture
+#
+# CODE STANDARDS:
+#   - Seed v3.0 compliant (imports, architecture, error handling)
+# ==============================================
+
+"""
+List PLAN Module - Thin Orchestrator
+
+Orchestrates plan listing workflow by delegating to handlers.
+Module contains NO business logic - only workflow coordination.
+
+Workflow:
+    1. Parse arguments → command_parser handler
+    2. Load registry → registry handlers
+    3. Get statistics → registry handlers
+    4. Filter plans by status
+    5. Format and display results
+
+Usage:
+    From flow.py: flow plan list [filter]
+    Standalone: python3 list_plans.py [filter]
+
+Filters:
+    list          - List open plans only (default)
+    list open     - List open plans only
+    list closed   - List closed plans only
+    list all      - List all plans
+"""
+
+import sys
+from pathlib import Path
+from typing import List, Dict, Any
+
+# INFRASTRUCTURE IMPORT PATTERN
+_PKG_ROOT = Path(__file__).resolve().parents[3]  # file.py → modules/ → apps/ → flow/ → aipass/
+FLOW_ROOT = _PKG_ROOT / "flow"
+
+# External: Prax logger
+from aipass.prax.apps.modules.logger import system_logger as logger
+
+# JSON handler for operation tracking
+from aipass.flow.apps.handlers.json import json_handler
+
+# CLI services for display
+from aipass.cli.apps.modules import console
+
+# Registry handlers
+from aipass.flow.apps.handlers.registry.load_registry import load_registry
+from aipass.flow.apps.handlers.registry.statistics import get_registry_statistics
+
+# Plan display handler
+from aipass.flow.apps.handlers.plan.display import (
+    format_plan_info,
+    format_plans_list,
+    format_statistics_summary
+)
+
+# =============================================
+# CONFIGURATION
+# =============================================
+
+MODULE_NAME = "list_plans"
+
+# =============================================
+# INTROSPECTION FUNCTION
+# =============================================
+
+def print_introspection():
+    """Display module info and connected handlers"""
+    console.print()
+    console.print("[bold cyan]list_plans Module[/bold cyan]")
+    console.print()
+
+    console.print("[yellow]Connected Handlers:[/yellow]")
+    console.print()
+
+    # List handlers this module actually imports/uses
+    console.print("  [cyan]handlers/registry/[/cyan]")
+    console.print("    [dim]- load_registry.py[/dim]")
+    console.print("    [dim]- statistics.py[/dim]")
+    console.print()
+    console.print("  [cyan]handlers/plan/[/cyan]")
+    console.print("    [dim]- display.py[/dim]")
+    console.print()
+
+    console.print("[dim]Run 'python3 list_plans.py --help' for usage[/dim]")
+    console.print()
+
+
+def print_help():
+    """Print help information for list_plans module"""
+    console.print()
+    console.print("[bold cyan]list_plans.py[/bold cyan] - List PLAN files from registry")
+    console.print()
+    console.print("[yellow]COMMANDS:[/yellow]")
+    console.print("  list, list_plans")
+    console.print()
+    console.print("[yellow]USAGE:[/yellow]")
+    console.print("  python3 list_plans.py [filter]")
+    console.print("  python3 list_plans.py --help")
+    console.print()
+    console.print("[yellow]FILTERS:[/yellow]")
+    console.print("  (none)    List open plans only (default)")
+    console.print("  open      List open plans only")
+    console.print("  closed    List closed plans only")
+    console.print("  all       List all plans")
+    console.print()
+    console.print("[yellow]EXAMPLES:[/yellow]")
+    console.print("  [dim]# List open plans (default)[/dim]")
+    console.print("  python3 list_plans.py")
+    console.print("  python3 list_plans.py open")
+    console.print()
+    console.print("  [dim]# List closed plans[/dim]")
+    console.print("  python3 list_plans.py closed")
+    console.print()
+    console.print("  [dim]# List all plans[/dim]")
+    console.print("  python3 list_plans.py all")
+    console.print()
+
+
+# =============================================
+# ORCHESTRATION WORKFLOWS
+# =============================================
+
+def list_plans(filter_type: str = "open") -> bool:
+    """
+    Orchestrate plan listing workflow (thin orchestrator)
+
+    Delegates all business logic to handlers:
+    - Registry loading: load_registry handler
+    - Statistics: get_registry_statistics handler
+    - Display: format functions above
+
+    Args:
+        filter_type: Filter plans by status ("open", "closed", "all")
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # STEP 1: Load registry (handler)
+        registry = load_registry()
+
+        # STEP 2: Get plans
+        plans = registry.get("plans", {})
+
+        if not plans:
+            console.print("[yellow]No plans found in registry[/yellow]")
+            logger.info(f"[{MODULE_NAME}] No plans in registry")
+            return True  # Not an error, just empty
+
+        # STEP 3: Determine filter
+        if filter_type == "all":
+            filter_status = None
+        else:
+            filter_status = filter_type  # "open" or "closed"
+
+        # STEP 4: Format and display plans
+        formatted_list = format_plans_list(plans, filter_status)
+        console.print(formatted_list)
+
+        # STEP 5: Get and display statistics
+        stats = get_registry_statistics(registry)
+        summary = format_statistics_summary(stats)
+        console.print(summary)
+
+        # STEP 6: Log success
+        logger.info(f"[{MODULE_NAME}] Listed plans (filter: {filter_type})")
+
+        return True
+
+    except BrokenPipeError:
+        # Pipe closed by reader (e.g. automated subprocesses, head)
+        # Not a real error - command likely completed
+        logger.info(f"[{MODULE_NAME}] Broken pipe (stdout closed early)")
+        return True
+
+    except Exception as e:
+        error_msg = f"Error listing plans: {e}"
+        logger.error(f"[{MODULE_NAME}] {error_msg}")
+        try:
+            console.print(f"[red]ERROR: {error_msg}[/red]")
+        except BrokenPipeError:
+            pass
+        return False
+
+
+def handle_command(command: str, args: List[str]) -> bool:
+    """
+    Handle command routing for list_plans module (thin orchestrator)
+
+    Delegates to handlers:
+    - Argument parsing: handled locally (simple case)
+    - Workflow execution: list_plans orchestrator
+
+    Args:
+        command: Command name ("list" or "list_plans")
+        args: Additional arguments (filter type)
+
+    Returns:
+        bool indicating success or failure
+    """
+    # Check if this is our command
+    if command != "list":
+        return False
+
+    # Log the operation
+    json_handler.log_operation(
+        "plans_listed",
+        {"command": command, "args": args}
+    )
+
+    # STEP 1: Parse filter argument
+    filter_type = "open"  # Default to open plans
+
+    if args:
+        filter_arg = args[0].lower()
+        if filter_arg in ["open", "closed", "all"]:
+            filter_type = filter_arg
+        else:
+            console.print(f"[yellow]Unknown filter '{filter_arg}', defaulting to 'open'[/yellow]")
+            console.print("[dim]Valid filters: open, closed, all[/dim]")
+
+    # STEP 2: Execute workflow
+    success = list_plans(filter_type)
+
+    # STEP 3: Return result
+    return success
+
+
+# =============================================
+# STANDALONE EXECUTION (for testing)
+# =============================================
+
+if __name__ == "__main__":
+    try:
+        # Show introspection when run without arguments
+        if len(sys.argv) == 1:
+            print_introspection()
+            sys.exit(0)
+
+        # Handle help flag
+        if len(sys.argv) > 1 and sys.argv[1] in ['--help', '-h', 'help']:
+            print_help()
+            sys.exit(0)
+
+        # Confirm logger connection
+        logger.info("Prax logger connected to list_plans")
+
+        # Log standalone execution
+        json_handler.log_operation(
+            "plans_listed",
+            {"command": "standalone"}
+        )
+
+        # Call handle_command
+        args = sys.argv[1:] if len(sys.argv) > 1 else []
+
+        # If first arg is not our command, assume it's a filter (backward compatibility)
+        if args and args[0] not in ['list', 'list_plans']:
+            # First arg is filter
+            result = handle_command('list', args)
+        else:
+            # Standard command format
+            cmd = args[0] if args else 'list'
+            result = handle_command(cmd, args[1:] if len(args) > 1 else [])
+
+        # Exit with appropriate code
+        sys.exit(0 if result else 1)
+
+    except BrokenPipeError:
+        # Pipe closed by reader - exit cleanly
+        import os
+        try:
+            sys.stdout.close()
+        except Exception:
+            pass
+        os._exit(0)

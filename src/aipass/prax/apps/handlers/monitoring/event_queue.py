@@ -1,0 +1,119 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: event_queue.py - Thread-Safe Event Queue
+# Date: 2025-11-23
+# Version: 0.1.1
+# Category: prax/handlers/monitoring
+#
+# CHANGELOG (Max 5 entries):
+#   - v0.1.1 (2026-02-27): Added pid field to MonitoringEvent
+#   - v0.1.0 (2025-11-23): Created - thread-safe event queue with deduplication
+#
+# DESCRIPTION:
+#   Thread-safe event coordination for monitoring system.
+#   Provides MonitoringEvent dataclass and MonitoringQueue with deduplication.
+# =============================================
+
+"""Thread-safe event coordination for monitoring system"""
+
+from pathlib import Path
+
+from queue import Empty, PriorityQueue
+from dataclasses import dataclass, field
+from datetime import datetime
+from typing import Optional
+import threading
+
+@dataclass(order=True)
+class MonitoringEvent:
+    """Unified event structure for all monitoring sources"""
+    priority: int = field(compare=True)
+    timestamp: datetime = field(compare=False, default_factory=datetime.now)
+    event_type: str = field(compare=False, default='')  # 'file', 'log', 'module', 'command'
+    branch: str = field(compare=False, default='')
+    action: str = field(compare=False, default='')  # 'created', 'modified', 'deleted', 'executed'
+    message: str = field(compare=False, default='')
+    level: str = field(compare=False, default='info')  # 'info', 'warning', 'error'
+    caller: Optional[str] = field(compare=False, default=None)  # Branch that initiated command
+    pid: Optional[int] = field(compare=False, default=None)  # Process ID of the agent
+
+    def __post_init__(self):
+        # Convert level to priority number for queue ordering
+        if self.priority == 0:  # Not set
+            priority_map = {
+                'error': 1,
+                'warning': 2,
+                'info': 3,
+                'debug': 4
+            }
+            self.priority = priority_map.get(self.level, 3)
+
+class MonitoringQueue:
+    """Thread-safe event queue with deduplication"""
+
+    def __init__(self, maxsize: int = 1000):
+        self.queue = PriorityQueue(maxsize=maxsize)
+        self.recent_events = []  # For deduplication
+        self.lock = threading.Lock()
+        self.running = True
+
+    def enqueue(self, event: MonitoringEvent) -> bool:
+        """Add event to queue (thread-safe)"""
+        if not self.running:
+            return False
+
+        # Simple deduplication
+        if not self._is_duplicate(event):
+            try:
+                self.queue.put(event, block=False)
+                with self.lock:
+                    self.recent_events.append(event)
+                    if len(self.recent_events) > 100:
+                        self.recent_events.pop(0)
+                return True
+            except:
+                return False
+        return False
+
+    def dequeue(self, timeout: float = 0.1) -> Optional[MonitoringEvent]:
+        """Get next event from queue (thread-safe)"""
+        try:
+            return self.queue.get(timeout=timeout)
+        except Empty:
+            return None
+
+    def flush(self):
+        """Clear all events from queue"""
+        with self.lock:
+            while not self.queue.empty():
+                try:
+                    self.queue.get_nowait()
+                except Empty:
+                    break
+            self.recent_events.clear()
+
+    def stop(self):
+        """Stop accepting new events"""
+        self.running = False
+        self.flush()
+
+    def _is_duplicate(self, event: MonitoringEvent) -> bool:
+        """Check if event duplicates recent event"""
+        with self.lock:
+            for recent in self.recent_events[-10:]:
+                if (recent.event_type == event.event_type and
+                    recent.branch == event.branch and
+                    recent.action == event.action and
+                    recent.message == event.message and
+                    abs((event.timestamp - recent.timestamp).total_seconds()) < 1):
+                    return True
+        return False
+
+    def size(self) -> int:
+        """Get current queue size"""
+        return self.queue.qsize()
+
+# Global instance for the monitoring system
+global_queue = MonitoringQueue()

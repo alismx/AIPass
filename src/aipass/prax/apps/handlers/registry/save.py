@@ -1,0 +1,104 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: save.py
+# Date: 2025-11-07
+# Version: 1.0.0
+# Category: prax/handlers/registry
+#
+# CHANGELOG:
+#   - v1.0.0 (2025-11-07): Extracted from prax_registry.py - module registry saving
+# =============================================
+
+"""
+Save Module Registry Handler
+
+Saves the Prax system-wide module discovery registry with statistics.
+Auto-updates timestamp and calculates statistics before saving.
+
+Features:
+- Saves registry to prax_registry.json
+- Auto-updates timestamp to current UTC time
+- Includes statistics (total modules, last updated, scan location)
+- Creates directory if missing
+- Logs save operation
+
+Usage:
+    from aipass.prax.apps.handlers.registry.save import save_module_registry
+
+    modules = {"module1": {...}, "module2": {...}}
+    save_module_registry(modules)
+"""
+
+import json
+from pathlib import Path
+from datetime import datetime, timezone
+from typing import Dict, Any
+
+from aipass.prax.apps.handlers.config.load import PRAX_ROOT, ECOSYSTEM_ROOT
+
+# =============================================
+# CONFIGURATION
+# =============================================
+
+MODULE_NAME = "save"
+PRAX_JSON_DIR = PRAX_ROOT / "prax_json"
+REGISTRY_FILE = PRAX_JSON_DIR / "prax_registry.json"
+
+# =============================================
+# HANDLER FUNCTION
+# =============================================
+
+def save_module_registry(modules: Dict[str, Dict[str, Any]]) -> bool:
+    """Save module registry to prax_registry.json (system registry)
+
+    Args:
+        modules: Dict mapping module names to module info dicts
+
+    Returns:
+        True if save successful, False on error
+
+    The registry is saved with this structure:
+    {
+        "registry_version": "1.0.0",
+        "timestamp": "2025-11-07T...",
+        "modules": {...},
+        "statistics": {
+            "total_modules": 42,
+            "last_updated": "2025-11-07T...",
+            "scan_location": "/home/aipass/aipass_core"
+        }
+    }
+
+    Example:
+        >>> modules = {"test_module": {"relative_path": "test/module.py"}}
+        >>> success = save_module_registry(modules)
+        >>> if success:
+        >>>     print(f"Saved {len(modules)} modules")
+    """
+    try:
+        # Ensure directory exists
+        PRAX_JSON_DIR.mkdir(parents=True, exist_ok=True)
+
+        # Build registry structure with statistics
+        registry_structure = {
+            "registry_version": "1.0.0",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "modules": modules,
+            "statistics": {
+                "total_modules": len(modules),
+                "last_updated": datetime.now(timezone.utc).isoformat(),
+                "scan_location": str(ECOSYSTEM_ROOT)
+            }
+        }
+
+        # Save to file
+        with open(REGISTRY_FILE, 'w', encoding='utf-8') as f:
+            json.dump(registry_structure, f, indent=2, ensure_ascii=False)
+
+        return True
+
+    except Exception:
+        # Silently return False - logging not available at this level
+        return False

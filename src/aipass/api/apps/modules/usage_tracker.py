@@ -1,0 +1,276 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: usage_tracker.py - Usage Tracking Module
+# Date: 2025-11-15
+# Version: 1.0.0
+# Category: api/modules
+# CODE STANDARDS: Seed v1.0.0
+#
+# CHANGELOG (Max 5 entries):
+#   - v1.0.0 (2025-11-15): Initial module - orchestrates usage tracking
+# =============================================
+
+"""
+Usage Tracking Module
+
+Orchestrates API usage monitoring operations:
+- Track generation usage
+- Display statistics
+- Session summaries
+- Cleanup old data
+"""
+
+import sys
+from pathlib import Path
+
+from typing import List
+from aipass.prax.apps.modules.logger import system_logger as logger
+from aipass.cli.apps.modules import console, header, success, error, warning, section
+from aipass.api.apps.handlers.json import json_handler
+from aipass.api.apps.handlers.usage import tracking, aggregation, cleanup
+
+
+def print_introspection():
+    """Show module introspection - connected handlers and capabilities"""
+    console.print()
+    header("Usage Tracker Module Introspection")
+    console.print()
+
+    console.print("[cyan]Purpose:[/cyan] API usage monitoring and cost tracking")
+    console.print()
+
+    console.print("[cyan]Connected Handlers:[/cyan]")
+    console.print("  • api.apps.handlers.usage.tracking")
+    console.print("  • api.apps.handlers.usage.aggregation")
+    console.print("  • api.apps.handlers.usage.cleanup")
+    console.print("  • api.apps.handlers.json.json_handler")
+    console.print()
+
+    console.print("[cyan]Available Workflows:[/cyan]")
+    console.print("  • track_usage() - Track usage")
+    console.print("  • show_stats() - Show statistics")
+    console.print("  • show_session() - Show session")
+    console.print("  • show_caller_usage() - Caller stats")
+    console.print("  • cleanup_data() - Clean old data")
+    console.print()
+
+
+def print_help():
+    """Print module help with argparse"""
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        prog="python3 api.py",
+        description="Usage Tracker - Monitor API usage and costs",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+COMMANDS:
+  track            - Track API usage
+  stats            - Show usage statistics
+  session          - Show session data
+  caller-usage     - Show usage by caller
+  cleanup          - Clean up old usage data
+
+USAGE:
+  python3 api.py track <caller>
+  python3 api.py stats
+  python3 api.py session
+  python3 api.py caller-usage <caller>
+  python3 api.py cleanup [days]
+
+ARGUMENTS:
+  caller - Caller identifier
+  days - Number of days to retain (default: 30)
+
+EXAMPLES:
+  # Track usage for a caller
+  python3 api.py track my_application
+
+  # Show usage statistics
+  python3 api.py stats
+
+  # Show session data
+  python3 api.py session
+
+  # Show usage for specific caller
+  python3 api.py caller-usage my_application
+
+  # Cleanup data older than 60 days
+  python3 api.py cleanup 60
+        """
+    )
+
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # track command
+    track_parser = subparsers.add_parser("track", help="Track API usage")
+    track_parser.add_argument("caller", help="Caller identifier")
+
+    # stats command
+    subparsers.add_parser("stats", help="Show usage statistics")
+
+    # session command
+    subparsers.add_parser("session", help="Show session data")
+
+    # caller-usage command
+    caller_parser = subparsers.add_parser("caller-usage", help="Show usage by caller")
+    caller_parser.add_argument("caller", help="Caller identifier")
+
+    # cleanup command
+    cleanup_parser = subparsers.add_parser("cleanup", help="Clean up old usage data")
+    cleanup_parser.add_argument("days", nargs="?", default="30", help="Days to retain (default: 30)")
+
+    console.print(parser.format_help())
+
+
+def handle_command(command: str, args: List[str]) -> bool:
+    """
+    Handle usage tracking commands
+
+    Args:
+        command: Command name
+        args: Command arguments
+
+    Returns:
+        True if command was handled, False otherwise
+    """
+    try:
+        if command not in ["track", "stats", "session", "caller-usage", "cleanup"]:
+            return False
+
+        # Log operation
+        json_handler.log_operation(f"usage_{command}", {"command": command})
+
+        if command == "track":
+            track_usage(args)
+        elif command == "stats":
+            show_stats()
+        elif command == "session":
+            show_session()
+        elif command == "caller-usage":
+            show_caller_usage(args)
+        elif command == "cleanup":
+            cleanup_data(args)
+
+        return True
+    except Exception as e:
+        logger.error(f"Error in usage_tracker.handle_command: {e}")
+        raise
+
+
+def track_usage(args: List[str]):
+    """Orchestrate usage tracking workflow"""
+    header("Track API Usage")
+    console.print()
+
+    # TODO: Parse args for generation_id, caller, model
+    warning("Usage tracking workflow - TODO")
+
+
+def show_stats():
+    """Orchestrate statistics display workflow"""
+    header("Usage Statistics")
+    console.print()
+
+    # Call handler for session summary
+    stats = aggregation.get_session_summary()
+
+    if stats:
+        console.print(f"  Total Requests: {stats.get('total_requests', 0)}")
+        console.print(f"  Total Cost: ${stats.get('total_cost', 0.0):.6f}")
+        console.print(f"  Total Tokens: {stats.get('total_tokens', 0)}")
+    else:
+        warning("No usage data available")
+
+
+def show_session():
+    """Orchestrate session summary workflow"""
+    header("Session Summary")
+    console.print()
+
+    # Call handler for session data
+    summary = aggregation.get_session_summary()
+
+    if summary:
+        console.print(f"  Session Requests: {summary.get('total_requests', 0)}")
+        console.print(f"  Session Cost: ${summary.get('total_cost', 0.0):.6f}")
+        console.print(f"  Session Tokens: {summary.get('total_tokens', 0)}")
+    else:
+        warning("No session data available")
+
+
+def show_caller_usage(args: List[str]):
+    """Orchestrate caller usage display workflow"""
+    if not args:
+        error("Caller name required")
+        return
+
+    caller = args[0]
+
+    header(f"Usage for Caller: {caller}")
+    console.print()
+
+    # Call handler for caller stats
+    usage = aggregation.get_caller_usage(caller)
+
+    if usage:
+        console.print(f"  Requests: {usage.get('requests', 0)}")
+        console.print(f"  Total Cost: ${usage.get('total_cost', 0.0):.6f}")
+        console.print(f"  Total Tokens: {usage.get('total_tokens', 0)}")
+    else:
+        warning(f"No usage data found for caller: {caller}")
+
+
+def cleanup_data(args: List[str]):
+    """Orchestrate cleanup workflow"""
+    days = int(args[0]) if args else 30
+
+    header(f"Cleanup Old Data (retain {days} days)")
+    console.print()
+
+    # Call handler for cleanup
+    # Navigate: usage_tracker.py -> modules/ -> apps/ -> api/
+    API_JSON_DIR = Path(__file__).resolve().parent.parent.parent / "api_json"
+    data_path = API_JSON_DIR / "usage_tracker_data.json"
+    if cleanup.cleanup_old_data(data_path, days):
+        success(f"Cleaned up data older than {days} days")
+
+        # Fire trigger event
+        try:
+            from trigger.apps.modules.core import trigger
+            trigger.fire('usage_data_cleaned', days=days, data_path=str(data_path))
+        except ImportError:
+            pass  # Silent fallback
+    else:
+        error("Cleanup failed")
+
+
+if __name__ == "__main__":
+    """Standalone execution mode"""
+    args = sys.argv[1:]
+
+    # Show introspection when run without arguments
+    if len(args) == 0:
+        print_introspection()
+        sys.exit(0)
+
+    # Show help for explicit help flags
+    if args[0] in ['--help', '-h', 'help']:
+        print_help()
+        sys.exit(0)
+
+    # Execute command
+    command = args[0]
+    remaining_args = args[1:] if len(args) > 1 else []
+
+    if handle_command(command, remaining_args):
+        sys.exit(0)
+    else:
+        console.print()
+        console.print(f"[red]Unknown command: {command}[/red]")
+        console.print()
+        console.print("Run [dim]python3 usage_tracker.py --help[/dim] for available commands")
+        console.print()
+        sys.exit(1)

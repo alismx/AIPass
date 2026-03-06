@@ -1,0 +1,101 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: update_registry.py - Registry Update Handler
+# Date: 2025-11-15
+# Version: 0.1.0
+# Category: flow/handlers/plan
+#
+# CHANGELOG (Max 5 entries):
+#   - v0.1.0 (2025-11-15): Initial handler - registry add/remove operations
+#
+# CODE STANDARDS:
+#   - Pure data manipulation
+#   - Defensive programming (ensure keys exist)
+# =============================================
+
+"""
+Registry Update Handler
+
+Add and remove plan entries from registry.
+"""
+
+from typing import Dict, Any
+
+
+def add_plan_to_registry(
+    registry: Dict[str, Any],
+    plan_num: int,
+    entry: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Add plan entry to registry and increment counter
+
+    Ensures registry["plans"] exists, adds the entry with
+    formatted plan number as key, and increments next_number.
+
+    Args:
+        registry: Flow registry dictionary
+        plan_num: Plan number (e.g., 1, 42, 101)
+        entry: Plan entry dict from build_plan_registry_entry()
+
+    Returns:
+        Modified registry with new plan entry
+
+    Side effects:
+        - Ensures registry["plans"] exists
+        - Adds entry to registry["plans"][formatted_num]
+        - Increments registry["next_number"]
+
+    Example:
+        >>> registry = {"next_number": 1}
+        >>> entry = {"subject": "Test", "status": "open"}
+        >>> registry = add_plan_to_registry(registry, 1, entry)
+        >>> "0001" in registry["plans"]
+        True
+        >>> registry["next_number"]
+        2
+    """
+    # Ensure plans dict exists
+    if "plans" not in registry:
+        registry["plans"] = {}
+
+    # Add entry with formatted number as key
+    plan_key = f"{plan_num:04d}"
+    registry["plans"][plan_key] = entry
+
+    # Increment counter
+    registry["next_number"] = plan_num + 1
+
+    return registry
+
+
+def remove_plan_from_registry(
+    plan_key: str,
+    registry: Dict[str, Any]
+) -> Dict[str, Any]:
+    """
+    Remove plan entry from registry
+
+    Args:
+        plan_key: Normalized plan number (e.g., "0001")
+        registry: Registry dictionary
+
+    Returns:
+        Modified registry with plan removed
+
+    Note:
+        Modifies registry in place and returns it for chaining.
+        Safe to call even if plan_key doesn't exist.
+
+    Example:
+        >>> registry = {"plans": {"0001": {}, "0002": {}}}
+        >>> registry = remove_plan_from_registry("0001", registry)
+        >>> "0001" in registry.get("plans", {})
+        False
+    """
+    if plan_key in registry.get("plans", {}):
+        del registry["plans"][plan_key]
+
+    return registry

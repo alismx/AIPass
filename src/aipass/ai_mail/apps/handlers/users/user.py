@@ -1,0 +1,161 @@
+#!/usr/bin/env python3
+
+# =============================================
+# META DATA HEADER
+# Name: user.py - User Info Handler
+# Date: 2025-11-30
+# Version: 2.0.0
+# Category: ai_mail/handlers/users
+#
+# CHANGELOG:
+#   - v2.0.0 (2025-11-30): Removed all fallbacks - fail hard if branch detection fails
+#   - v1.1.0 (2025-11-15): Renamed domain config -> users for business purpose naming
+#   - v1.0.0 (2025-11-15): Extracted from ai_mail_cli.py
+# =============================================
+
+"""
+User Info Handler
+
+Handles user information retrieval and management for AI_Mail system.
+Uses branch detection to identify sender - NO FALLBACKS.
+
+PHILOSOPHY: Fail hard if detection fails. Fallbacks hide bugs.
+"""
+
+# =============================================
+# IMPORTS
+# =============================================
+from pathlib import Path
+from typing import Dict
+
+# Import branch detection functions
+from .branch_detection import detect_branch_from_pwd
+
+# =============================================
+# USER INFO FUNCTIONS
+# =============================================
+
+def get_current_user() -> Dict:
+    """
+    Get current user's information from branch detection (BRANCH_REGISTRY.json)
+
+    Uses PWD/CWD to detect which branch is calling, then looks up info
+    in BRANCH_REGISTRY.json. NO FALLBACKS - fails hard if detection fails.
+
+    Returns:
+        Dict containing user information:
+        {
+            "email_address": "@branch",
+            "display_name": "BRANCH_NAME",
+            "mailbox_path": "/path/to/branch/ai_mail.local",
+            "timestamp_format": "%Y-%m-%d %H:%M:%S"
+        }
+
+    Raises:
+        RuntimeError: If branch detection fails (not called from a branch directory)
+    """
+    # Detect branch from PWD
+    branch_info = detect_branch_from_pwd()
+
+    if not branch_info:
+        raise RuntimeError(
+            "BRANCH DETECTION FAILED: Could not detect branch from current directory.\n"
+            "AI_MAIL must be called from within a branch directory (with [BRANCH].id.json).\n"
+            f"Current directory: {Path.cwd()}\n"
+            "No fallback configured - this is intentional to catch bugs."
+        )
+
+    # Extract info from branch_info (from BRANCH_REGISTRY.json)
+    branch_name = branch_info.get("name")
+    path_str = branch_info.get("path")
+    branch_path = Path(path_str) if path_str else None
+    email = branch_info.get("email")
+
+    if not all([branch_name, branch_path, email]):
+        raise RuntimeError(
+            f"INVALID BRANCH INFO: Branch registry entry incomplete.\n"
+            f"Branch: {branch_name}\n"
+            f"Path: {branch_path}\n"
+            f"Email: {email}\n"
+            "Check BRANCH_REGISTRY.json for missing fields."
+        )
+
+    # Construct mailbox path (branch_path guaranteed non-None by check above)
+    assert branch_path is not None
+    mailbox_path = branch_path / "ai_mail.local"
+
+    # Return user info in expected format
+    return {
+        "email_address": email,
+        "display_name": branch_name,
+        "mailbox_path": str(mailbox_path),
+        "timestamp_format": "%Y-%m-%d %H:%M:%S"
+    }
+
+
+def get_user_by_email(email: str) -> Dict | None:
+    """
+    Get user information by email address from BRANCH_REGISTRY.json
+
+    Args:
+        email: Email address (e.g., "@seed")
+
+    Returns:
+        Dict containing user info, or None if not found
+    """
+    from .branch_detection import get_branch_info_from_registry
+
+    # Use registry lookup
+    registry_path = Path.home() / "BRANCH_REGISTRY.json"
+    if not registry_path.exists():
+        return None
+
+    try:
+        import json
+        with open(registry_path, 'r', encoding='utf-8') as f:
+            registry = json.load(f)
+
+        for branch in registry.get("branches", []):
+            if branch.get("email") == email:
+                branch_path = Path(branch.get("path", ""))
+                return {
+                    "email_address": branch.get("email"),
+                    "display_name": branch.get("name"),
+                    "mailbox_path": str(branch_path / "ai_mail.local"),
+                    "timestamp_format": "%Y-%m-%d %H:%M:%S"
+                }
+        return None
+    except Exception:
+        return None
+
+
+def get_all_users() -> Dict[str, Dict]:
+    """
+    Get all users from BRANCH_REGISTRY.json
+
+    Returns:
+        Dict mapping branch emails to user info dicts
+    """
+    registry_path = Path.home() / "BRANCH_REGISTRY.json"
+    if not registry_path.exists():
+        return {}
+
+    try:
+        import json
+        with open(registry_path, 'r', encoding='utf-8') as f:
+            registry = json.load(f)
+
+        users = {}
+        for branch in registry.get("branches", []):
+            email = branch.get("email", "")
+            if email:
+                branch_path = Path(branch.get("path", ""))
+                users[email] = {
+                    "email_address": email,
+                    "display_name": branch.get("name"),
+                    "mailbox_path": str(branch_path / "ai_mail.local"),
+                    "timestamp_format": "%Y-%m-%d %H:%M:%S"
+                }
+        return users
+    except Exception:
+        return {}

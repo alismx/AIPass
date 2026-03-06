@@ -1,0 +1,185 @@
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: monitor.py - File System Monitor Handler
+# Date: 2025-11-15
+# Version: 0.1.0
+# Category: aipass/handlers/watcher
+#
+# CHANGELOG (Max 5 entries):
+#   - v0.1.0 (2025-11-15): Initial version - file system monitoring
+#
+# CODE STANDARDS:
+#   - Error handling: Return None on errors, log failures
+#   - Logging: Use Prax logger
+# =============================================
+
+"""
+File System Monitor Handler
+
+Watches directories for file changes using watchdog library.
+Monitors all files (including __pycache__, .pyc, etc.) to provide
+complete visibility into branch modifications.
+"""
+
+from pathlib import Path
+from typing import List, Callable, Optional, TYPE_CHECKING, Any
+
+# =============================================================================
+# WATCHDOG IMPORT (external dependency)
+# =============================================================================
+
+try:
+    from watchdog.observers import Observer  # type: ignore
+    from watchdog.events import FileSystemEventHandler  # type: ignore
+    from watchdog.events import FileSystemEvent  # type: ignore
+    WATCHDOG_AVAILABLE = True
+except ImportError:
+    WATCHDOG_AVAILABLE = False
+    # Create placeholder classes for when watchdog not available
+    class Observer:  # type: ignore
+        def schedule(self, *args, **kwargs): pass
+        def start(self): pass
+        def stop(self): pass
+        def join(self): pass
+    class FileSystemEventHandler:  # type: ignore
+        pass
+    class FileSystemEvent:  # type: ignore
+        pass
+
+# =============================================================================
+# EVENT HANDLER
+# =============================================================================
+
+class BranchFileHandler(FileSystemEventHandler):
+    """
+    Custom file system event handler for branch monitoring
+
+    Captures all file events and passes them to callback function.
+    Ignores log files to prevent infinite loops.
+    """
+
+    def __init__(self, branch_name: str, callback: Callable):
+        """
+        Initialize handler
+
+        Args:
+            branch_name: Name of the branch being monitored
+            callback: Function to call with (branch_name, event_type, file_path)
+        """
+        super().__init__()
+        self.branch_name = branch_name
+        self.callback = callback
+
+    def _should_ignore(self, path: str) -> bool:
+        """
+        Check if file should be ignored
+
+        Args:
+            path: File path to check
+
+        Returns:
+            True if file should be ignored, False otherwise
+        """
+        # Ignore log files (prevents infinite loop)
+        if path.endswith('.log'):
+            return True
+
+        # Ignore temporary and backup files
+        if '.tmp.' in path or path.endswith('.tmp'):
+            return True
+        if path.endswith('.backup') or path.endswith('.bak'):
+            return True
+        if path.endswith('~'):  # Editor backup files
+            return True
+        if path.endswith('.swp') or path.endswith('.swo'):  # Vim swap files
+            return True
+
+        # Ignore log directories
+        if '/logs/' in path or '/system_logs/' in path:
+            return True
+
+        # Ignore system/config directories (prevents watching non-branch files)
+        ignore_dirs = [
+            '/.claude/',
+            '/.local/',
+            '/.cache/',
+            '/.config/',
+            '/.vscode/',
+            '/.git/',
+            '/__pycache__/',
+            '/.pytest_cache/',
+            '/node_modules/',
+            '/.venv/',
+            '/venv/'
+        ]
+
+        for ignore_dir in ignore_dirs:
+            if ignore_dir in path:
+                return True
+
+        return False
+
+    def on_created(self, event) -> None:
+        """File or directory created"""
+        if not event.is_directory and not self._should_ignore(event.src_path):
+            self.callback(self.branch_name, 'CREATED', event.src_path)
+
+    def on_modified(self, event) -> None:
+        """File or directory modified"""
+        if not event.is_directory and not self._should_ignore(event.src_path):
+            self.callback(self.branch_name, 'MODIFIED', event.src_path)
+
+    def on_deleted(self, event) -> None:
+        """File or directory deleted"""
+        if not event.is_directory and not self._should_ignore(event.src_path):
+            self.callback(self.branch_name, 'DELETED', event.src_path)
+
+    def on_moved(self, event) -> None:
+        """File or directory moved/renamed"""
+        if not event.is_directory and not self._should_ignore(event.src_path):
+            self.callback(self.branch_name, 'MOVED', f"{event.src_path} → {event.dest_path}")
+
+# =============================================================================
+# MONITOR FUNCTIONS
+# =============================================================================
+
+def start_monitoring(branch_paths: List[tuple], callback: Callable) -> Any:
+    """
+    Start monitoring multiple branch directories
+
+    Args:
+        branch_paths: List of (branch_name, path) tuples
+        callback: Function to call with (branch_name, event_type, file_path)
+
+    Returns:
+        Observer instance, or None if watchdog not available
+    """
+    if not WATCHDOG_AVAILABLE:
+        return None
+
+    observer = Observer()
+
+    for branch_name, path in branch_paths:
+        if not path.exists():
+            continue
+
+        event_handler = BranchFileHandler(branch_name, callback)
+        observer.schedule(event_handler, str(path), recursive=True)
+
+    observer.start()
+
+    return observer
+
+
+def stop_monitoring(observer: Any) -> None:
+    """
+    Stop monitoring
+
+    Args:
+        observer: Observer instance to stop
+    """
+    if observer:
+        observer.stop()
+        observer.join()

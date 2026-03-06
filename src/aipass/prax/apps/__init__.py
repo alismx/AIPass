@@ -1,1 +1,1 @@
-# PRAX apps package
+# Apps package - Branch application modules and handlers

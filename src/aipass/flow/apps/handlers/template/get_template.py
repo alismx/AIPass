@@ -1,0 +1,148 @@
+#!/home/aipass/.venv/bin/python3
+# -*- coding: utf-8 -*-
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: get_template.py
+# Date: 2025-11-30
+# Version: 1.2.0
+# Category: flow/handlers/template
+# CODE STANDARDS: Seed v3.0
+#
+# CHANGELOG:
+#   - v1.2.0 (2025-11-30): Changed TEMPLATES_DIR from .cached_templates to templates (Flow owns templates now)
+#   - v1.1.0 (2025-11-21): Removed Prax logging per 3-tier standard
+#   - v1.0.0 (2025-11-07): Extracted from flow_template_handler.py
+# =============================================
+
+"""
+Get Template Handler
+
+Loads and formats PLAN templates from template directories.
+
+Features:
+- Loads templates from /home/aipass/aipass_core/templates/flow/
+- Supports placeholder replacement ({number}, {subject}, {location}, {today})
+- Automatic fallback to default template
+- Multi-directory search support
+- Reusable across Flow modules
+
+Usage:
+    from aipass.flow.apps.handlers.template.get_template import get_template
+
+    content = get_template("default", number=101, location="flow", subject="My Task")
+    content = get_template("master", number=102, location="flow/DOCUMENTS", subject="Big Project")
+"""
+
+from pathlib import Path
+from datetime import datetime
+from typing import Optional
+
+# INFRASTRUCTURE IMPORT PATTERN
+_PKG_ROOT = Path(__file__).resolve().parents[4]
+
+# =============================================
+# CONFIGURATION
+# =============================================
+
+MODULE_NAME = "get_template"
+FLOW_ROOT = _PKG_ROOT / "flow"
+TEMPLATES_DIR = FLOW_ROOT / "templates"
+DEFAULT_TEMPLATE = "default"
+
+# =============================================
+# HELPER FUNCTIONS
+# =============================================
+
+def _template_search_dirs() -> list[Path]:
+    """Determine the ordered list of directories to search for templates"""
+    return [TEMPLATES_DIR]
+
+
+def _find_template_file(template_name: str) -> Path:
+    """
+    Locate the requested template (or default fallback) across supported directories.
+
+    Args:
+        template_name: Name of template (without .md extension)
+
+    Returns:
+        Path to template file
+
+    Raises:
+        FileNotFoundError: When neither the requested nor default template exists
+    """
+    search_paths = _template_search_dirs()
+
+    # Look for the requested template
+    candidate = search_paths[0] / f"{template_name}.md"
+    if candidate.exists():
+        return candidate
+
+    # Fallback to default template
+    default_candidate = search_paths[0] / f"{DEFAULT_TEMPLATE}.md"
+    if default_candidate.exists():
+        return default_candidate
+
+    # Nothing found – raise helpful error
+    searched = ", ".join(str(path) for path in search_paths)
+    error_msg = (
+        f"Templates not found. Searched for '{template_name}.md' and "
+        f"'{DEFAULT_TEMPLATE}.md' in: {searched}"
+    )
+    raise FileNotFoundError(error_msg)
+
+# =============================================
+# HANDLER FUNCTION
+# =============================================
+
+def get_template(template_name: str = "default",
+                 number: int = 0,
+                 location: str = "",
+                 subject: str = "") -> str:
+    """
+    Load and format a PLAN template from the configured template directories.
+
+    Args:
+        template_name: Name of template file (without .md extension)
+        number: PLAN number for formatting
+        location: Plan location (relative path)
+        subject: Plan subject/title
+
+    Returns:
+        Formatted template content with placeholders replaced
+
+    Raises:
+        FileNotFoundError: If template not found
+        Exception: If template loading/formatting fails
+
+    Examples:
+        >>> get_template("default", 101, "flow", "My Task")
+        # Returns default.md with {number}→101, {subject}→"My Task", etc.
+
+        >>> get_template("master", 102, "flow/DOCUMENTS", "Big Project")
+        # Returns master.md with placeholders filled
+    """
+    try:
+        # Resolve template file (with fallback handling across directories)
+        template_file = _find_template_file(template_name)
+
+        # Read template file
+        with open(template_file, 'r', encoding='utf-8') as f:
+            template_content = f.read()
+
+        # Get current date for {today} placeholder
+        today = datetime.now().strftime('%Y-%m-%d')
+
+        # Format template with placeholders
+        formatted_content = template_content.format(
+            number=f"{number:04d}",  # Format as 4-digit number (0001, 0042, 0101)
+            subject=subject,
+            location=location,
+            today=today
+        )
+
+        return formatted_content
+
+    except Exception:
+        raise

@@ -1,38 +1,415 @@
-"""CLI Display - Minimal stub for AIPass public repo."""
+#!/home/aipass/.venv/bin/python3
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: display.py - CLI Display Module
+# Date: 2025-11-15
+# Version: 0.4.0
+# Category: cli/modules
+#
+# CHANGELOG (Max 5 entries):
+#   - v0.4.0 (2025-11-15): Replaced argparse help with Rich formatted help (SEED pattern)
+#   - v0.3.0 (2025-11-15): Restructured to follow SEED module pattern
+#   - v0.2.0 (2025-11-12): Implemented Rich library formatting
+#   - v0.1.0 (2025-11-12): Public API for display functions
+#
+# CODE STANDARDS:
+#   - PUBLIC API - thin wrapper over handler implementation
+#   - Follows SEED module pattern (introspection/help/command handling)
+# =============================================
+
+"""
+CLI Display Module - PUBLIC API
+
+Provides display functions for all branches:
+- header() - Bordered section headers
+- success() - Green checkmark + message
+- error() - Red X + error message
+- warning() - Yellow warning + message
+- section() - Visual section breaks
+
+Uses Rich library for beautiful terminal output.
+"""
+
+import sys
+from pathlib import Path
+from typing import Dict, Any, Optional, List
+
+# Rich library
 from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
+from rich.columns import Columns
 
-console = Console()
+# Initialize Rich console (lowercase follows service instance pattern)
+CONSOLE = Console()  # Internal constant
+console = CONSOLE  # Primary export (lowercase service instance pattern)
+
+# Trigger loaded lazily to avoid circular import
+_trigger = None
+_trigger_loaded = False
 
 
-def header(title: str, details: dict | None = None) -> None:
-    """Display a bordered header."""
-    console.print(f"\n[bold cyan]{'─' * 40}[/bold cyan]")
-    console.print(f"[bold white]{title}[/bold white]")
+# ============================================================================
+# MODULE PATTERN FUNCTIONS (SEED compliant)
+# ============================================================================
+
+def print_introspection():
+    """Display module info and connected handlers"""
+    CONSOLE.print()
+    CONSOLE.print("[bold cyan]CLI Display Module[/bold cyan]")
+    CONSOLE.print()
+
+    CONSOLE.print("[yellow]Connected Handlers:[/yellow]")
+    CONSOLE.print()
+
+    # Auto-discover handler files from handlers/display/
+    handlers_dir = Path(__file__).parent.parent / "handlers" / "display"
+
+    if handlers_dir.exists():
+        handler_files = sorted([f for f in handlers_dir.iterdir() if f.is_file() and f.suffix == '.py' and f.name != '__init__.py'])
+
+        if handler_files:
+            CONSOLE.print("  [cyan]handlers/display/[/cyan]")
+            for handler_file in handler_files:
+                CONSOLE.print(f"    [dim]- {handler_file.name}[/dim]")
+            CONSOLE.print()
+        else:
+            CONSOLE.print("  [dim]handlers/display/ (empty - no handlers yet)[/dim]")
+            CONSOLE.print()
+    else:
+        CONSOLE.print("  [dim]handlers/display/ (not found)[/dim]")
+        CONSOLE.print()
+
+    CONSOLE.print("[dim]Run 'python3 display.py --help' for usage[/dim]")
+    CONSOLE.print()
+
+
+def print_help():
+    """Display Rich-formatted help - CLI Display Module showpiece!"""
+
+    CONSOLE.print()
+
+    # =========================================================================
+    # RICH FORMATTING TIP: Use header() function for main titles
+    # header() creates a bordered box automatically
+    # =========================================================================
+    header("CLI Display Module")
+
+    CONSOLE.print()
+
+    # RICH FORMATTING TIP: [dim] makes text appear dimmed/grayed out
+    CONSOLE.print("[dim]Rich terminal output formatting for all AIPass branches[/dim]")
+    CONSOLE.print()
+    CONSOLE.print("─" * 70)  # Separator line (matches handler style)
+    CONSOLE.print()
+
+    # =========================================================================
+    # RICH FORMATTING TIP: Match handler style - simple [bold cyan]LABEL:[/bold cyan] format
+    # NO decorative borders (═══), just clean headers like handlers use
+    # =========================================================================
+    CONSOLE.print("[bold cyan]WHAT IS DISPLAY?[/bold cyan]")
+    CONSOLE.print()
+    CONSOLE.print("Display is the [bold]CLI's universal output service[/bold] that provides:")
+    # RICH FORMATTING TIP: Use [green]✓[/green] for checkmarks in lists
+    CONSOLE.print("  [green]✓[/green] Consistent Rich-formatted output across all branches")
+    CONSOLE.print("  [green]✓[/green] Five core display functions ([green]header, success, error, warning, section[/green])")
+    CONSOLE.print("  [green]✓[/green] Beautiful terminal output with colors, panels, and formatting")
+    CONSOLE.print("  [green]✓[/green] Integration with CLI error handler for advanced error display")
+    CONSOLE.print()
+
+    # =========================================================================
+    # RICH FORMATTING TIP: Tables are powerful for structured data
+    # Create with Table(), add columns, add rows, then print
+    # =========================================================================
+    CONSOLE.print("[bold cyan]PUBLIC API FUNCTIONS (5 total):[/bold cyan]")
+    CONSOLE.print()
+
+    # RICH FORMATTING TIP: Table styling - show_header, header_style, border_style
+    table = Table(show_header=True, header_style="bold cyan", border_style="dim")
+    table.add_column("Function", style="green")  # Column styling
+    table.add_column("Signature", style="yellow")
+    table.add_column("Purpose", style="dim")
+
+    table.add_row("header()", "title, details=None", "Bordered section headers with optional key-value details")
+    table.add_row("success()", "message, **kwargs", "Success messages with green checkmark + optional details")
+    table.add_row("error()", "message, suggestion=None", "Error messages with red X + optional suggestion")
+    table.add_row("warning()", "message, details=None", "Warning messages with yellow symbol + optional details")
+    table.add_row("section()", "title", "Visual section separators with title and line")
+
+    # RICH FORMATTING TIP: Print the table after adding all rows
+    CONSOLE.print(table)
+    CONSOLE.print()
+    CONSOLE.print("─" * 70)
+    CONSOLE.print()
+
+    # =========================================================================
+    # RICH FORMATTING TIP: Columns layout for side-by-side content
+    # Columns([item1, item2, item3], equal=True, expand=True)
+    # =========================================================================
+    CONSOLE.print("[bold cyan]USAGE:[/bold cyan]")
+    CONSOLE.print()
+
+    usage_examples = [
+        "[yellow]Module Info:[/yellow]\n  [dim]python3 display.py[/dim]\n  [dim]drone cli display[/dim]",
+        "[yellow]Run Demo:[/yellow]\n  [dim]python3 display.py demo[/dim]\n  [dim]drone cli demo[/dim]",
+        "[yellow]Show Help:[/yellow]\n  [dim]python3 display.py --help[/dim]\n  [dim]drone cli display --help[/dim]"
+    ]
+
+    # RICH FORMATTING TIP: Columns creates side-by-side layout
+    CONSOLE.print(Columns(usage_examples, equal=True, expand=True))
+    CONSOLE.print()
+    CONSOLE.print("─" * 70)
+    CONSOLE.print()
+
+    # =========================================================================
+    # RICH FORMATTING TIP: Panels are good for highlighted content blocks
+    # Panel(content, border_style="color", padding=(top/bottom, left/right))
+    # =========================================================================
+    CONSOLE.print("[bold cyan]CODE EXAMPLES:[/bold cyan]")
+    CONSOLE.print()
+
+    code_examples = """[bold]Import and use in your Python code:[/bold]
+
+  [yellow]from aipass.cli.apps.modules.display import header, success, error, warning, section[/yellow]
+
+  [dim]# Display section header[/dim]
+  header('Create Branch', {'Name': 'new_branch', 'Type': 'module'})
+
+  [dim]# Show success with details[/dim]
+  success('Branch created successfully', items=5, time='2.3s')
+
+  [dim]# Display error with suggestion[/dim]
+  error('Branch not found', suggestion='Check branch name spelling')
+
+  [dim]# Show warning[/dim]
+  warning('Template version mismatch', details='Expected v2.1, found v2.0')
+
+  [dim]# Create section break[/dim]
+  section('Validation Results')"""
+
+    # RICH FORMATTING TIP: Panel wraps content in a bordered box
+    CONSOLE.print(Panel(code_examples, border_style="green", padding=(1, 2)))
+    CONSOLE.print()
+    CONSOLE.print("─" * 70)
+    CONSOLE.print()
+
+    # Simple header style (matching handlers)
+    CONSOLE.print("[bold cyan]INTEGRATION:[/bold cyan]")
+    CONSOLE.print()
+    CONSOLE.print("  [green]✓[/green] [bold]Rich Formatting:[/bold] Beautiful terminal output with colors and styles")
+    CONSOLE.print("  [green]✓[/green] [bold]All Branches:[/bold] Import and use display functions for consistent output")
+    CONSOLE.print("  [green]✓[/green] [bold]Rich Library:[/bold] Built on Rich for beautiful terminal formatting")
+    CONSOLE.print()
+    CONSOLE.print("─" * 70)
+    CONSOLE.print()
+
+    # Simple header style (matching handlers)
+    CONSOLE.print("[bold cyan]REFERENCE:[/bold cyan]")
+    CONSOLE.print()
+    # RICH FORMATTING TIP: Use [yellow] for labels, [dim] for paths
+    CONSOLE.print("  [yellow]Module:[/yellow]      [dim]/home/aipass/aipass_core/cli/apps/modules/display.py[/dim]")
+    CONSOLE.print("  [yellow]Handlers:[/yellow]    [dim]/home/aipass/aipass_core/cli/apps/handlers/display/[/dim]")
+    CONSOLE.print("  [yellow]Standards:[/yellow]   [dim]/home/aipass/standards/CODE_STANDARDS/cli.md[/dim]")
+    CONSOLE.print()
+    CONSOLE.print("─" * 70)
+    CONSOLE.print()
+
+    # RICH FORMATTING TIP: Use [bold] for emphasis without color
+    CONSOLE.print("[bold]TIP:[/bold] Run [green]python3 display.py demo[/green] to see all functions in action!")
+    CONSOLE.print()
+    CONSOLE.print("─" * 70)
+    CONSOLE.print()
+
+    # RICH FORMATTING TIP: Commands line required for drone discovery
+    # This is how drone finds available commands - keep [dim] style
+    CONSOLE.print("[dim]Commands: display, show, demo, --help[/dim]")
+    CONSOLE.print()
+
+
+def handle_command(command: str, args: List[str]) -> bool:
+    """Handle module commands"""
+    if command == "demo":
+        run_demo()
+        return True
+    elif command in ["display", "show"]:
+        print_introspection()
+        return True
+    else:
+        return False
+
+
+def run_demo():
+    """Run display function demonstrations"""
+    CONSOLE.print()
+    header("CLI Display Module - Demo")
+
+    CONSOLE.print("[bold]Display functions with Rich formatting:[/bold]")
+    CONSOLE.print()
+
+    # Demo success
+    success("Operation completed successfully", items=5, time="2.3s")
+    CONSOLE.print()
+
+    # Demo warning
+    warning("Template version mismatch", details="Expected v2.1, found v2.0")
+    CONSOLE.print()
+
+    # Demo error
+    error("Cannot create virtual environment", suggestion="sudo apt install python3-venv")
+    CONSOLE.print()
+
+    # Demo section
+    section("Summary")
+    CONSOLE.print("  ✅ 3 operations succeeded")
+    CONSOLE.print("  ⚠️  1 warning")
+    CONSOLE.print("  ❌ 1 error")
+    CONSOLE.print()
+
+    CONSOLE.print("[bold green]✨ Rich library integration complete![/bold green]")
+    CONSOLE.print("[dim]All display functions now use Rich for beautiful terminal output[/dim]")
+    CONSOLE.print()
+
+
+# ============================================================================
+# PUBLIC API FUNCTIONS (Keep existing - don't break compatibility)
+# ============================================================================
+
+def header(title: str, details: Optional[Dict[str, Any]] = None) -> None:
+    """
+    Display bordered section header using Rich Panel
+
+    Args:
+        title: Header title
+        details: Optional key-value pairs to display
+
+    Example:
+        header('Create Branch', {'Name': 'new_branch', 'Type': 'module'})
+    """
+    CONSOLE.print(Panel(f"[bold cyan]{title}[/bold cyan]", expand=False))
     if details:
-        for k, v in details.items():
-            console.print(f"  {k}: {v}")
-    console.print(f"[bold cyan]{'─' * 40}[/bold cyan]\n")
+        CONSOLE.print()
+        for key, value in details.items():
+            CONSOLE.print(f"  [dim]{key}:[/dim] {value}")
+    # Fire trigger event for header display (lazy load to avoid circular import)
+    global _trigger, _trigger_loaded
+    if not _trigger_loaded:
+        _trigger_loaded = True
+        try:
+            from aipass.trigger.apps.modules.core import trigger as t
+            _trigger = t
+        except ImportError:
+            pass
+    if _trigger:
+        _trigger.fire('cli_header_displayed', title=title)
+    CONSOLE.print()
 
 
 def success(message: str, **kwargs) -> None:
-    """Display success message."""
-    console.print(f"[green]✓[/green] {message}")
+    """
+    Display success message with Rich styling
+
+    Args:
+        message: Success message
+        **kwargs: Optional details to display
+
+    Example:
+        success('Branch created', items=5, time='2.3s')
+    """
+    CONSOLE.print(f"✅ [green]{message}[/green]")
+    for key, value in kwargs.items():
+        CONSOLE.print(f"   [dim]{key}: {value}[/dim]")
 
 
 def error(message: str, suggestion: str | None = None) -> None:
-    """Display error message."""
-    console.print(f"[red]✗[/red] {message}")
+    """
+    Display error message with Rich styling
+
+    Args:
+        message: Error message
+        suggestion: Optional suggestion for fixing
+
+    Example:
+        error('Branch not found', suggestion='Check branch name spelling')
+    """
+    CONSOLE.print(f"❌ [red bold]{message}[/red bold]")
     if suggestion:
-        console.print(f"  [dim]{suggestion}[/dim]")
+        CONSOLE.print(f"   [yellow]→ Try: {suggestion}[/yellow]")
 
 
 def warning(message: str, details: str | None = None) -> None:
-    """Display warning message."""
-    console.print(f"[yellow]⚠[/yellow] {message}")
+    """
+    Display warning message with Rich styling
+
+    Args:
+        message: Warning message
+        details: Optional additional details
+
+    Example:
+        warning('Branch already exists, skipping')
+    """
+    CONSOLE.print(f"⚠️  [yellow]{message}[/yellow]")
     if details:
-        console.print(f"  [dim]{details}[/dim]")
+        CONSOLE.print(f"   [dim]{details}[/dim]")
 
 
 def section(title: str) -> None:
-    """Display section title."""
-    console.print(f"\n[bold]{title}[/bold]")
+    """
+    Display section separator with Rich styling
+
+    Args:
+        title: Section title
+
+    Example:
+        section('Validation Results')
+    """
+    CONSOLE.print()
+    CONSOLE.print(f"[bold]{title}[/bold]")
+    CONSOLE.print("─" * 50)
+
+
+# ============================================================================
+# MODULE EXPORTS
+# ============================================================================
+
+# Note: __all__ uses lowercase by convention (Python standard library pattern)
+__all__ = [
+    'console',  # Primary export (service instance pattern)
+    'CONSOLE',  # Internal constant (kept for backward compatibility)
+    'header',
+    'success',
+    'error',
+    'warning',
+    'section',
+]
+
+# ============================================================================
+# ENTRY POINT (SEED pattern)
+# ============================================================================
+
+if __name__ == "__main__":
+    try:
+        # Show introspection when run without arguments
+        if len(sys.argv) == 1:
+            print_introspection()
+            sys.exit(0)
+
+        # Handle help flag (drone compliance)
+        if sys.argv[1] in ['--help', '-h', 'help']:
+            print_help()
+            sys.exit(0)
+
+        # Route commands
+        command = sys.argv[1]
+        args = sys.argv[2:] if len(sys.argv) > 2 else []
+
+        if handle_command(command, args):
+            sys.exit(0)
+        else:
+            CONSOLE.print(f"[red]Unknown command: {command}[/red]")
+            CONSOLE.print("[dim]Run 'python3 display.py --help' for usage[/dim]")
+            sys.exit(1)
+    except Exception as e:
+        # Note: Can't use Prax logger here due to circular import (display <- prax <- display)
+        CONSOLE.print(f"[red]Error: {e}[/red]")
+        sys.exit(1)
