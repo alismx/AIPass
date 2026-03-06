@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 """
 Monitoring Handlers Package

@@ -48,10 +48,10 @@ dev = [
 
 [project.scripts]
 drone = "aipass.drone.cli:main"
-seedgo = "seedgo.cli:main"
+seedgo = "aipass.seedgo.apps.seedgo:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/aipass", "src/seedgo"]
+packages = ["src/aipass"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

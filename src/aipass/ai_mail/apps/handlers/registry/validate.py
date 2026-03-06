@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -235,8 +234,8 @@ if __name__ == "__main__":
     # Sample test data
     test_branches = [
         {"name": "AIPASS.admin", "path": "/", "email": "@admin"},
-        {"name": "FLOW", "path": "/home/aipass/flow", "email": "@flow"},
-        {"name": "DRONE", "path": "/home/aipass/drone", "email": "@drone"},
+        {"name": "FLOW", "path": "src/aipass/flow", "email": "@flow"},
+        {"name": "DRONE", "path": "src/aipass/drone", "email": "@drone"},
     ]
 
     has_collisions, collisions = check_email_collisions(test_branches)

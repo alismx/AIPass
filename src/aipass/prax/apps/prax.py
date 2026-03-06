@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -66,7 +65,7 @@ def discover_command_modules() -> List[Callable]:
 
         try:
             # Import module dynamically
-            module_name = f"prax.apps.modules.{module_file.stem}"
+            module_name = f"aipass.prax.apps.modules.{module_file.stem}"
             module = importlib.import_module(module_name)
 
             # Check for handle_command interface

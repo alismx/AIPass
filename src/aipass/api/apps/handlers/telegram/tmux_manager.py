@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -44,7 +43,7 @@ from typing import List, Optional
 # Constants
 SESSION_PREFIX = "telegram-"
 DEFAULT_BRANCH = "dev_central"
-CLAUDE_BIN = str(Path.home() / ".local" / "bin" / "claude")
+CLAUDE_BIN = shutil.which("claude") or "claude"
 SEND_KEYS_DELAY = 0.5  # seconds between text injection and Enter
 
 

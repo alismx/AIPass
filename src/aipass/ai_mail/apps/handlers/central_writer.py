@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -25,7 +24,7 @@ This file serves as AI_MAIL's API output for AIPASS dashboard integration.
 Architecture:
 - Scans all ai_mail.local/inbox.json files across the system
 - Calculates per-branch unread/total message counts
-- Writes aggregated stats to /home/aipass/aipass_os/AI_CENTRAL/AI_MAIL.central.json
+- Writes aggregated stats to AI_CENTRAL/AI_MAIL.central.json (under repo root)
 """
 
 # CRITICAL: Use importlib to bypass local json/ directory and get stdlib json
@@ -51,10 +50,19 @@ from typing import Dict, Any, List, Tuple
 # CONSTANTS
 # =============================================================================
 
-AIPASS_HOME = Path.home()  # /home/aipass - scan from user home
-AI_CENTRAL_DIR = Path.home() / "aipass_os" / "AI_CENTRAL"
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+_REPO_ROOT = _find_repo_root()
+AI_CENTRAL_DIR = _REPO_ROOT / "aipass_os" / "AI_CENTRAL"
 CENTRAL_FILE = AI_CENTRAL_DIR / "AI_MAIL.central.json"
-BRANCH_REGISTRY = Path.home() / "BRANCH_REGISTRY.json"
+BRANCH_REGISTRY = _REPO_ROOT / "AIPASS_REGISTRY.json"
 
 
 # =============================================================================
@@ -65,7 +73,7 @@ def find_all_inbox_files() -> List[Path]:
     """
     Find all inbox.json files in ai_mail.local directories.
 
-    Scans the entire /home/aipass directory for ai_mail.local/inbox.json files.
+    Scans the repo root directory for ai_mail.local/inbox.json files.
     Excludes backup directories to avoid counting archived data.
 
     Returns:
@@ -77,7 +85,7 @@ def find_all_inbox_files() -> List[Path]:
     inbox_files = []
 
     # Search pattern: any directory ending in ai_mail.local containing inbox.json
-    for ai_mail_dir in AIPASS_HOME.rglob("ai_mail.local"):
+    for ai_mail_dir in _REPO_ROOT.rglob("ai_mail.local"):
         # Skip backup/archive directories (but NOT backup_system branch itself)
         path_str = str(ai_mail_dir)
         if ".backup" in path_str or ".archive" in path_str or "/backups/" in path_str:
@@ -94,10 +102,10 @@ def extract_branch_name(inbox_path: Path) -> str:
     """
     Extract branch name from inbox.json path.
 
-    Given: /home/aipass/seed/ai_mail.local/inbox.json
+    Given: .../seed/ai_mail.local/inbox.json
     Returns: SEED
 
-    Given: /home/aipass/aipass_core/prax/ai_mail.local/inbox.json
+    Given: .../prax/ai_mail.local/inbox.json
     Returns: PRAX
 
     Args:
@@ -275,7 +283,7 @@ def update_central() -> Dict[str, Any]:
     1. Scans all branch ai_mail.local/inbox.json files
     2. Aggregates unread and total message counts per branch
     3. Calculates system-wide totals
-    4. Writes results to /home/aipass/aipass_os/AI_CENTRAL/AI_MAIL.central.json
+    4. Writes results to AI_CENTRAL/AI_MAIL.central.json (under repo root)
 
     Returns:
         The data written to central file (for logging/verification)

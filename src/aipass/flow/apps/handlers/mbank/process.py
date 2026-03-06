@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -52,9 +51,19 @@ from typing import Dict, List, Optional, Any
 
 FLOW_ROOT = _PKG_ROOT / "flow"
 FLOW_JSON_DIR = FLOW_ROOT / "flow_json"
-MEMORY_BANK_PATH = Path.home() / "MEMORY_BANK" / "plans"
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+_REPO_ROOT = _find_repo_root()
+MEMORY_BANK_PATH = _REPO_ROOT / "MEMORY_BANK" / "plans"
 PROCESSED_PLANS_DIR = _PKG_ROOT / "backup_system" / "processed_plans"
-PRIVATE_BRANCH_REGISTRY = Path.home() / "PRIVATE_BRANCH_REGISTRY.json"
+PRIVATE_BRANCH_REGISTRY = _REPO_ROOT / "PRIVATE_BRANCH_REGISTRY.json"
 REGISTRY_FILE = FLOW_JSON_DIR / "flow_registry.json"
 CONFIG_FILE = FLOW_JSON_DIR / "flow_mbank_config.json"
 TRL_REGISTRY_FILE = FLOW_JSON_DIR / "flow_mbank_registry.json"

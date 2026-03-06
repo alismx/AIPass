@@ -31,13 +31,13 @@ from typing import List
 # Prax logger (system-wide, always first)
 from aipass.prax import logger
 # JSON handler for tracking
-from handlers.json import json_handler
+from aipass.seedgo.apps.standards.aipass.handlers.json import json_handler
 
 # CLI services (display/output formatting)
 from aipass.cli import console, header
 
 # Handler (implementation)
-from handlers.standards.readme_ops import (
+from aipass.seedgo.apps.standards.aipass.handlers.standards.readme_ops import (
     load_generator,
     resolve_targets,
     SECTION_NAMES,

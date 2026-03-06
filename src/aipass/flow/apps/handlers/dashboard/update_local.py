@@ -1,5 +1,3 @@
-#!/home/aipass/.venv/bin/python3
-# -*- coding: utf-8 -*-
 
 # ===================AIPASS====================
 # META DATA HEADER

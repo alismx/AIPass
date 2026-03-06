@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -239,7 +238,7 @@ def cleanup_data(args: List[str]):
 
         # Fire trigger event
         try:
-            from trigger.apps.modules.core import trigger
+            from aipass.trigger.apps.modules.core import trigger
             trigger.fire('usage_data_cleaned', days=days, data_path=str(data_path))
         except ImportError:
             pass  # Silent fallback

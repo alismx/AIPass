@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -57,8 +56,11 @@ def _get_console() -> Any:
 
 def _get_update_section() -> Any:
     """Lazy import update_section."""
-    from aipass.dev_central.devpulse.apps.modules.dashboard import update_section
-    return update_section
+    try:
+        from aipass.devpulse.apps.modules.dashboard import update_section
+        return update_section
+    except ImportError:
+        return None
 
 
 def _get_push_dashboard_update() -> Any:

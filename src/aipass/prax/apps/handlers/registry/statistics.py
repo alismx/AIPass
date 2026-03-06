@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -57,7 +56,7 @@ def get_registry_statistics() -> Dict[str, Any]:
             "total_modules": 42,
             "registry_exists": True,
             "last_updated": "2025-11-07T...",
-            "scan_location": "/home/aipass/aipass_core"
+            "scan_location": "src/aipass"
         }
 
         If registry doesn't exist or error occurs:

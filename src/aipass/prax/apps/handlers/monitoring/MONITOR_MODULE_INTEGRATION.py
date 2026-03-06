@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 """
 EXAMPLE: How to integrate log_watcher into monitor_module.py
@@ -60,7 +59,7 @@ def handle_command(command: str, args: List[str]) -> bool:
     try:
         _log_observer = start_log_watcher(_event_queue)
         console.print("[green]✓ Log watcher started[/green]")
-        console.print(f"[dim]  Monitoring: /home/aipass/system_logs/*.log[/dim]")
+        console.print(f"[dim]  Monitoring: system_logs/*.log[/dim]")
     except Exception as e:
         error(f"Failed to start log watcher: {e}")
         logger.error(f"Log watcher startup failed: {e}")

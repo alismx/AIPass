@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -71,7 +70,7 @@ def start_bot(bot_id: str) -> int | None:
     if not bot_token:
         return None
 
-    work_dir = Path(config.get("work_dir", str(Path.home())))
+    work_dir = Path(config.get("work_dir", str(Path.cwd())))
     bot_name = config.get("bot_name", f"AIPass {bot_id} Bot")
     allowed_user_ids = config.get("allowed_user_ids", [])
     branch_name = config.get("branch_name")

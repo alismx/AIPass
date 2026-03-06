@@ -1,0 +1,78 @@
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Starting standards compliance check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - ERROR - [standards_checklist] Error reading branch registry: name 'BRANCH_REGISTRY_PATH' is not defined
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running IMPORTS standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] IMPORTS check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running ARCHITECTURE standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] ARCHITECTURE check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running NAMING standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] NAMING check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running CLI standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] CLI check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running HANDLERS standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] HANDLERS check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running MODULES standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] MODULES check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running DOCUMENTATION standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] DOCUMENTATION check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running JSON_STRUCTURE standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] JSON_STRUCTURE check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running TESTING standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] TESTING check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running ERROR_HANDLING standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] ERROR_HANDLING check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running ENCAPSULATION standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] ENCAPSULATION check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running TRIGGER standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] TRIGGER check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running LOG_LEVEL standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] LOG_LEVEL check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running CLI_FLAGS standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] CLI_FLAGS check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running LOG_HANDLER standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] LOG_HANDLER check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running LOG_VISIBILITY standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] LOG_VISIBILITY check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running PERMISSION_FLAGS standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] PERMISSION_FLAGS check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Running SHEBANG standard check on src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] SHEBANG check complete: 0/100
+2026-03-06 19:25:42 - captured_standards_checklist - INFO - [standards_checklist] Standards check complete: 0% average compliance
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Starting standards compliance check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - ERROR - [standards_checklist] Error reading branch registry: name 'BRANCH_REGISTRY_PATH' is not defined
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running IMPORTS standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] IMPORTS check complete: 80/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running ARCHITECTURE standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] ARCHITECTURE check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running NAMING standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] NAMING check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running CLI standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] CLI check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running HANDLERS standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] HANDLERS check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running MODULES standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] MODULES check complete: 60/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running DOCUMENTATION standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] DOCUMENTATION check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running JSON_STRUCTURE standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] JSON_STRUCTURE check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running TESTING standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] TESTING check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running ERROR_HANDLING standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] ERROR_HANDLING check complete: 66/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running ENCAPSULATION standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] ENCAPSULATION check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running TRIGGER standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] TRIGGER check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running LOG_LEVEL standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] LOG_LEVEL check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running CLI_FLAGS standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] CLI_FLAGS check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running LOG_HANDLER standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] LOG_HANDLER check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running LOG_VISIBILITY standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] LOG_VISIBILITY check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running PERMISSION_FLAGS standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] PERMISSION_FLAGS check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Running SHEBANG standard check on /home/coder/workspace/src/aipass/drone/apps/modules/config.py
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] SHEBANG check complete: 100/100
+2026-03-06 19:25:46 - captured_standards_checklist - INFO - [standards_checklist] Standards check complete: 94% average compliance

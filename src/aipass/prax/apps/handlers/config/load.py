@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -48,11 +47,28 @@ MODULE_NAME = "load"
 # Package path resolution (no hardcoded paths)
 PRAX_ROOT = Path(__file__).resolve().parents[3]  # config/load.py → handlers/ → apps/ → prax/
 ECOSYSTEM_ROOT = PRAX_ROOT.parent  # prax/ → aipass/ (contains all sibling modules)
-SYSTEM_LOGS_DIR = Path.home() / "system_logs"
 PRAX_JSON_DIR = PRAX_ROOT / "prax_json"
 
-# Self-healing: ensure SYSTEM_LOGS_DIR exists
-SYSTEM_LOGS_DIR.mkdir(parents=True, exist_ok=True)
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+# Lazy SYSTEM_LOGS_DIR — resolved on first access, not at import time.
+# Callers should use get_system_logs_dir() for guaranteed initialization.
+_system_logs_dir_cache: Path | None = None
+
+def get_system_logs_dir() -> Path:
+    """Lazily resolve and create system_logs directory (package-relative)."""
+    global _system_logs_dir_cache
+    if _system_logs_dir_cache is None:
+        repo_root = _find_repo_root()
+        _system_logs_dir_cache = repo_root / "system_logs"
+        _system_logs_dir_cache.mkdir(parents=True, exist_ok=True)
+    return _system_logs_dir_cache
 
 # Config file
 PRAX_LOGGER_CONFIG_FILE = PRAX_JSON_DIR / "prax_logger_config.json"

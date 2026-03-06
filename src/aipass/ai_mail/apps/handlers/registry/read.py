@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -38,13 +37,24 @@ from aipass.cli.apps.modules import console
 
 # Constants
 MODULE_NAME = "registry.read"
-BRANCH_REGISTRY_PATH = Path("/home/aipass/BRANCH_REGISTRY.json")
+
+
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+BRANCH_REGISTRY_PATH = _find_repo_root() / "AIPASS_REGISTRY.json"
 
 
 def get_all_branches() -> List[Dict]:
     """
     Get list of all branches for email selection.
-    Reads from AIPass branch registry at /home/aipass/BRANCH_REGISTRY.json
+    Reads from AIPass branch registry (AIPASS_REGISTRY.json at repo root)
 
     Returns:
         List of dicts with branch info:
@@ -155,7 +165,7 @@ def get_branch_path_map() -> Dict[str, str]:
 
     Returns:
         Dict mapping email -> path
-        Example: {"@admin": "/", "@flow": "/home/aipass/flow"}
+        Example: {"@admin": "/", "@flow": "src/aipass/flow"}
     """
     branches = get_all_branches()
     return {branch["email"]: branch["path"] for branch in branches}

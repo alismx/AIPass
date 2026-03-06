@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -66,7 +65,19 @@ from aipass.cli.apps.modules import console
 # =============================================
 
 MODULE_NAME = "aggregate_central"
-AI_CENTRAL_DIR = Path.home() / "aipass_os" / "AI_CENTRAL"
+
+
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+_REPO_ROOT = _find_repo_root()
+AI_CENTRAL_DIR = _REPO_ROOT / "AI_CENTRAL"
 CENTRAL_FILE = AI_CENTRAL_DIR / "PLANS.central.json"
 
 # =============================================

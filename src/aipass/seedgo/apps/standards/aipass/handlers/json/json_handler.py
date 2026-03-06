@@ -246,7 +246,7 @@ if __name__ == "__main__":
     update_data_metrics("seed", test_metric="working")
 
     console.print()
-    console.print("[green]Check /home/aipass/seed/seed_json/ for created files:[/green]")
+    console.print("[green]Check aipass_json/ directory for created files:[/green]")
     console.print("  [dim]•[/dim] seed_config.json")
     console.print("  [dim]•[/dim] seed_data.json")
     console.print("  [dim]•[/dim] seed_log.json")

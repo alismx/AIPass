@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -67,7 +66,7 @@ def save_module_registry(modules: Dict[str, Dict[str, Any]]) -> bool:
         "statistics": {
             "total_modules": 42,
             "last_updated": "2025-11-07T...",
-            "scan_location": "/home/aipass/aipass_core"
+            "scan_location": "src/aipass"
         }
     }
 

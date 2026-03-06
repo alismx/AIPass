@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -21,7 +20,7 @@ Business logic for aggregating usage statistics:
 - Cost, token, and latency aggregation
 - Model usage tracking and breakdown
 
-Extracted from: /home/aipass/aipass_core/api/apps/archive.temp/api_usage.py
+Extracted from legacy archive (api_usage.py).
 Functions: get_caller_usage(), get_session_summary(), get_daily_usage()
 """
 

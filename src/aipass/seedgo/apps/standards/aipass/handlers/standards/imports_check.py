@@ -49,6 +49,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     3. Prax logger via aipass.prax namespace (if applicable)
     4. Handler independence (no parent module imports)
     5. Import order (stdlib -> third-party -> aipass.*)
+    6. No bare/invalid imports (must use aipass.* namespace)
     """
     checks = []
     path = Path(module_path)
@@ -113,6 +114,12 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     order_check = check_import_order(import_lines, module_path, bypass_rules)
     if order_check:
         checks.append(order_check)
+
+    # Check 6: No bare/invalid imports (must use aipass.* namespace)
+    if not is_init_file:
+        bare_check = check_no_bare_imports(import_lines, module_path, bypass_rules)
+        if bare_check:
+            checks.append(bare_check)
 
     passed_checks = sum(1 for check in checks if check['passed'])
     total_checks = len(checks)
@@ -359,4 +366,104 @@ def check_import_order(lines: List[str], file_path: str = "", bypass_rules: list
         'name': 'Import order',
         'passed': True,
         'message': 'Import order correct (stdlib before aipass.*)'
+    }
+
+
+def check_no_bare_imports(lines: List[str], file_path: str = "", bypass_rules: list | None = None) -> Optional[Dict]:
+    """
+    Check that file does NOT use bare or invalid import patterns.
+
+    INVALID patterns:
+    - from handlers.{name} import ...  (bare handler import, missing namespace)
+    - from modules.{name} import ...   (bare module import, missing namespace)
+    - from {module}.apps...            (bare module, missing aipass. prefix)
+    - from seed.apps...                (old Dev-Pass namespace)
+    - from prax.apps...                (bare, should be from aipass.prax...)
+
+    VALID patterns:
+    - from aipass.{module}.apps.modules.{name} import ...
+    - from aipass.{module}.apps.handlers.{name} import ...
+    - from .{name} import ...  (relative re-export in __init__.py ONLY — excluded by caller)
+    - Standard library / third-party imports
+    """
+    if is_bypassed(file_path, 'imports', None, bypass_rules):
+        return {'name': 'No bare imports', 'passed': True, 'message': 'Bypassed by bypass rules'}
+
+    # Known AIPass module names (used to detect bare module imports like "from drone.apps...")
+    aipass_modules = {
+        'drone', 'seedgo', 'prax', 'cli', 'flow',
+        'ai_mail', 'api', 'trigger', 'spawn', 'devpulse',
+    }
+
+    # Old Dev-Pass namespaces that should not appear
+    old_namespaces = {'seed', 'cortex', 'nexus', 'atlas', 'sentinel'}
+
+    violations = []
+
+    for i, line in enumerate(lines, 1):
+        stripped = line.strip()
+        if not stripped or stripped.startswith('#'):
+            continue
+
+        code_part = line.split('#')[0].strip() if '#' in line else stripped
+
+        # Only check import statements
+        if not (code_part.startswith('from ') or code_part.startswith('import ')):
+            continue
+
+        # Extract the module path from "from X import Y" or "import X"
+        if code_part.startswith('from '):
+            # "from X.Y.Z import thing" -> extract "X.Y.Z"
+            match = re.match(r'from\s+([\w.]+)', code_part)
+            if not match:
+                continue
+            import_path = match.group(1)
+        else:
+            # "import X.Y.Z" -> extract "X.Y.Z"
+            match = re.match(r'import\s+([\w.]+)', code_part)
+            if not match:
+                continue
+            import_path = match.group(1)
+
+        parts = import_path.split('.')
+        first_part = parts[0] if parts else ''
+
+        # Check 1: Bare handler/module imports (from handlers.X or from modules.X)
+        if first_part in ('handlers', 'modules'):
+            violations.append(
+                f'Line {i}: bare import "from {import_path}" '
+                f'(must use aipass.* namespace, e.g. from aipass.seedgo.apps.standards.aipass.{import_path})'
+            )
+            continue
+
+        # Check 2: Old Dev-Pass namespaces (from seed.apps..., from cortex.apps...)
+        if first_part in old_namespaces and len(parts) > 1:
+            violations.append(
+                f'Line {i}: old namespace "from {import_path}" '
+                f'(Dev-Pass namespace, must use aipass.* namespace)'
+            )
+            continue
+
+        # Check 3: Bare AIPass module imports (from drone.apps... instead of from aipass.drone.apps...)
+        if first_part in aipass_modules and len(parts) > 1 and 'apps' in parts:
+            violations.append(
+                f'Line {i}: bare module import "from {import_path}" '
+                f'(missing aipass. prefix, should be from aipass.{import_path})'
+            )
+            continue
+
+    if violations:
+        # Show up to 3 violations in the message
+        shown = violations[:3]
+        extra = f' (+{len(violations) - 3} more)' if len(violations) > 3 else ''
+        return {
+            'name': 'No bare imports',
+            'passed': False,
+            'message': '; '.join(shown) + extra
+        }
+
+    return {
+        'name': 'No bare imports',
+        'passed': True,
+        'message': 'All imports use proper aipass.* namespace'
     }

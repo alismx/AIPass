@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -30,7 +29,7 @@ Usage:
         branch_name="dev_central",
         bot_id="dev_central",
         bot_token="123:ABC",
-        work_dir=Path("/home/aipass/aipass_os/dev_central"),
+        work_dir=Path.cwd(),
         bot_name="AIPass Dev Central Bot",
         allowed_user_ids=[7235222625],
     )
@@ -38,6 +37,7 @@ Usage:
 """
 
 # Infrastructure
+import os
 import sys
 from pathlib import Path
 
@@ -130,11 +130,15 @@ if __name__ == "__main__":
     parser.add_argument("--config", help="Path to bot config JSON")
     args = parser.parse_args()
 
-    # Load config from ~/.aipass/telegram_bots/{bot_id}.json or --config path
+    # Load config from data dir telegram_bots/{bot_id}.json or --config path
+    _env_data = os.environ.get("AIPASS_DATA_DIR")
+    _data_dir = Path(_env_data) if _env_data else (
+        Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "aipass"
+    )
     config_path = (
         Path(args.config)
         if args.config
-        else Path.home() / ".aipass" / "telegram_bots" / f"{args.bot_id}.json"
+        else _data_dir / "telegram_bots" / f"{args.bot_id}.json"
     )
 
     with open(config_path, "r", encoding="utf-8") as f:
@@ -157,7 +161,7 @@ if __name__ == "__main__":
         bot = BaseBot(
             bot_id=args.bot_id,
             bot_token=config["bot_token"],
-            work_dir=Path(config.get("work_dir", str(Path.home()))),
+            work_dir=Path(config.get("work_dir", str(Path.cwd()))),
             bot_name=config.get("bot_name", "AIPass Bot"),
             allowed_user_ids=config.get("allowed_user_ids", []),
             shared_session=shared_session,

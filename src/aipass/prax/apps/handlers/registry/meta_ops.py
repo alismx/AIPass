@@ -1,5 +1,3 @@
-#!/home/aipass/.venv/bin/python3
-# -*- coding: utf-8 -*-
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -32,7 +30,17 @@ from typing import Dict, Optional
 # CONSTANTS
 # =============================================================================
 
-TEMPLATE_DIR = Path.home() / "aipass_core" / "cortex" / "templates" / "branch_ template"
+def _find_repo_root() -> Path:
+    """Walk up from this file to find repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+def _get_template_dir() -> Path:
+    """Lazily resolve template directory (package-relative)."""
+    return _find_repo_root() / "src" / "aipass" / "cortex" / "templates" / "branch_template"
 
 # Files that get renamed during branch creation
 FILE_RENAMES = {
@@ -85,7 +93,7 @@ def load_template_registry() -> Optional[Dict]:
     Returns:
         Template registry dict or None if not found/error
     """
-    registry_path = TEMPLATE_DIR / "template_registry.json"
+    registry_path = _get_template_dir() / "template_registry.json"
 
     if not registry_path.exists():
         return None

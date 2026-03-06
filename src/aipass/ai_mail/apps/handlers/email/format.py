@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -31,7 +30,16 @@ from typing import Dict, Optional
 from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.cli.apps.modules import console
 
-REGISTRY_PATH = Path.home() / "BRANCH_REGISTRY.json"
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+REGISTRY_PATH = _find_repo_root() / "AIPASS_REGISTRY.json"
 
 
 def lookup_branch_alias(branch_name: str) -> Optional[str]:

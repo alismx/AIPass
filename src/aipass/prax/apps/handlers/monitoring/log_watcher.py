@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -42,7 +41,7 @@ from watchdog.observers import Observer as WatchdogObserver
 from watchdog.events import FileSystemEventHandler
 
 # Import from prax config
-from aipass.prax.apps.handlers.config.load import SYSTEM_LOGS_DIR
+from aipass.prax.apps.handlers.config.load import get_system_logs_dir
 
 # Import monitoring infrastructure
 from aipass.prax.apps.handlers.monitoring.event_queue import MonitoringEvent, MonitoringQueue
@@ -125,7 +124,7 @@ class LogFileWatcher(FileSystemEventHandler):
             return
 
         # Only watch files in system_logs directory
-        if str(SYSTEM_LOGS_DIR) not in file_path:
+        if str(get_system_logs_dir()) not in file_path:
             return
 
         try:
@@ -320,22 +319,22 @@ class LogFileWatcher(FileSystemEventHandler):
             if cmd_match:
                 cmd = cmd_match.group(1).strip()
                 # Extract target from command (e.g., "seed.py audit @prax" -> PRAX)
-                # Or "seed.py audit /home/aipass/aipass_core/prax" -> PRAX
+                # Or "seed.py audit /path/to/src/aipass/prax" -> PRAX
                 target = None
                 target_match = re.search(r'@(\w+)', cmd)
                 if target_match:
                     target = target_match.group(1).upper()
                 else:
-                    # Check for full path target
-                    path_match = re.search(r'/home/aipass/(?:aipass_core|aipass_os)/(\w+)', cmd)
+                    # Check for full path target (src/aipass/{module} structure)
+                    path_match = re.search(r'/aipass/(\w+)', cmd)
                     if path_match:
                         target = path_match.group(1).upper()
 
                 # Clean up command display - simplify paths
                 display_cmd = cmd
                 # Replace full paths with @branch notation
-                display_cmd = re.sub(r'/home/aipass/aipass_core/(\w+)/apps/\w+\.py', lambda m: f"@{m.group(1)}", display_cmd)
-                display_cmd = re.sub(r'/home/aipass/aipass_core/(\w+)', lambda m: f"@{m.group(1)}", display_cmd)
+                display_cmd = re.sub(r'[^\s]*/aipass/(\w+)/apps/\w+\.py', lambda m: f"@{m.group(1)}", display_cmd)
+                display_cmd = re.sub(r'[^\s]*/aipass/(\w+)', lambda m: f"@{m.group(1)}", display_cmd)
 
                 return {'command': display_cmd, 'caller': caller, 'target': target}
 
@@ -466,11 +465,11 @@ class LogFileWatcher(FileSystemEventHandler):
         Only show NEW entries after watcher starts.
         Copied from discovery/watcher.py start_file_watcher()
         """
-        if not SYSTEM_LOGS_DIR.exists():
-            logger.warning(f"System logs directory not found: {SYSTEM_LOGS_DIR}")
+        if not get_system_logs_dir().exists():
+            logger.warning(f"System logs directory not found: {get_system_logs_dir()}")
             return
 
-        for log_file in SYSTEM_LOGS_DIR.glob("*.log"):
+        for log_file in get_system_logs_dir().glob("*.log"):
             try:
                 self.log_positions[str(log_file)] = log_file.stat().st_size
             except Exception as e:
@@ -502,12 +501,12 @@ def start_log_watcher(event_queue: MonitoringQueue) -> Any:
 
     # Create and start observer
     observer = WatchdogObserver()
-    observer.schedule(watcher, str(SYSTEM_LOGS_DIR), recursive=False)
+    observer.schedule(watcher, str(get_system_logs_dir()), recursive=False)
     observer.start()
 
     _log_observer = observer
 
-    logger.info(f"Log watcher started, monitoring: {SYSTEM_LOGS_DIR}")
+    logger.info(f"Log watcher started, monitoring: {get_system_logs_dir()}")
 
     return observer
 
@@ -554,7 +553,7 @@ if __name__ == '__main__':
 
     console.print("[bold cyan]PRAX Log Watcher Test[/bold cyan]")
     console.print()
-    console.print(f"Monitoring: {SYSTEM_LOGS_DIR}")
+    console.print(f"Monitoring: {get_system_logs_dir()}")
     console.print("Press Ctrl+C to stop")
     console.print()
 

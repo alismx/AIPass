@@ -31,19 +31,19 @@ from collections import defaultdict
 # Prax logger (system-wide, always first)
 from aipass.prax import logger
 # JSON handler for tracking
-from handlers.json import json_handler
+from aipass.seedgo.apps.standards.aipass.handlers.json import json_handler
 
 # CLI services (display/output formatting)
 from aipass.cli import console, header
 
 # Audit handlers (implementation)
-from handlers.audit.discovery import discover_branches, _is_branch_private
-from handlers.audit.branch_audit import audit_branch
-from handlers.audit.bypass_audit import audit_bypasses
-from handlers.audit.display import print_branch_summary, print_system_summary, print_bypass_audit
+from aipass.seedgo.apps.standards.aipass.handlers.audit.discovery import discover_branches, _is_branch_private
+from aipass.seedgo.apps.standards.aipass.handlers.audit.branch_audit import audit_branch
+from aipass.seedgo.apps.standards.aipass.handlers.audit.bypass_audit import audit_bypasses
+from aipass.seedgo.apps.standards.aipass.handlers.audit.display import print_branch_summary, print_system_summary, print_bypass_audit
 
 # Bypass system - import from checklist
-from modules.standards_checklist import load_bypass_rules
+from aipass.seedgo.apps.standards.aipass.modules.standards_checklist import load_bypass_rules
 
 # Drone services for @ resolution
 from aipass.drone.apps.modules import normalize_branch_arg

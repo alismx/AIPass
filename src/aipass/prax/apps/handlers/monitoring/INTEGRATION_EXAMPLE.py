@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 """
 Example: File Watcher Integration with monitor_module.py
@@ -124,7 +123,7 @@ def example_custom_event_handling():
     watcher.start()
 
     print("Watching PRAX branch for 30 seconds...")
-    print("Try modifying a file in /home/aipass/aipass_core/prax/")
+    print("Try modifying a file in src/aipass/prax/")
     print()
 
     import time

@@ -28,7 +28,7 @@ def run_branch_diagnostics(branch: Dict) -> Dict:
         Dict with diagnostics results
     """
     # Import diagnostics checker
-    from seed.apps.handlers.standards.diagnostics_check import check_branch
+    from aipass.seedgo.apps.standards.aipass.handlers.standards.diagnostics_check import check_branch
 
     branch_name = branch.get('name', 'UNKNOWN')
     branch_path = branch.get('path', '')

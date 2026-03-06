@@ -1,4 +1,4 @@
-#!/home/aipass/.venv/bin/python3
+#!/usr/bin/env python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -34,9 +34,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List, Optional
 
-# Infrastructure
-AIPASS_ROOT = Path.home() / "aipass_core"
-sys.path.insert(0, str(AIPASS_ROOT))
+# Infrastructure — disabled file, no sys.path manipulation needed
 
 logger = logging.getLogger("telegram_output_parser")
 

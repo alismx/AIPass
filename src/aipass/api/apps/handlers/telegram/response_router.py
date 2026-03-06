@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -21,9 +20,8 @@ CWD-Safe Response Routing for Multi-Bot Architecture
 
 Fixes the CWD mismatch bug in the Stop hook. When Claude fires the Stop hook,
 the working directory may be a subdirectory of the branch root (e.g.,
-/home/aipass/aipass_os/dev_central/git_repo/ instead of
-/home/aipass/aipass_os/dev_central/). The old logic used Path.cwd().name
-which fails in subdirectories.
+<branch_root>/git_repo/ instead of <branch_root>/). The old logic used
+Path.cwd().name which fails in subdirectories.
 
 New logic uses cwd.relative_to(work_dir) which succeeds if CWD is ANYWHERE
 in the bot's directory tree.
@@ -52,7 +50,15 @@ from aipass.prax.apps.modules.logger import system_logger as logger
 # CONSTANTS
 # =============================================
 
-PENDING_DIR = Path.home() / ".aipass" / "telegram_pending"
+def _aipass_data_dir() -> Path:
+    """User data directory for AIPass runtime files."""
+    env = os.environ.get("AIPASS_DATA_DIR")
+    if env:
+        return Path(env)
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "aipass"
+
+_DATA_DIR = _aipass_data_dir()
+PENDING_DIR = _DATA_DIR / "telegram_pending"
 PENDING_TTL = 3600  # 1 hour
 
 
@@ -225,7 +231,7 @@ def find_pending_bot(
         try:
             cwd = Path.cwd()
         except OSError:
-            cwd = Path.home()
+            cwd = Path.cwd()
 
     if env_bot_id is None:
         env_bot_id = os.environ.get("AIPASS_BOT_ID")

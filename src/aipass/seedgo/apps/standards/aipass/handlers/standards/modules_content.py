@@ -73,11 +73,11 @@ def get_modules_standards() -> str:
         "  • Heavy file operations belong in handlers, not modules",
         "",
         "[bold cyan]DEMONSTRATION:[/bold cyan]",
-        "  [dim]/home/aipass/seed/apps/modules/cli_standard.py[/dim] (135 lines - perfect example)",
-        "  [dim]/home/aipass/seed/apps/modules/test_cli_errors.py[/dim] (283 lines - advanced patterns)",
+        "  [dim]src/aipass/seedgo/apps/standards/aipass/modules/cli_standard.py[/dim] (reference example)",
+        "  [dim]src/aipass/seedgo/apps/standards/aipass/modules/ (all standard modules)[/dim]",
         "",
         "[bold cyan]REFERENCE:[/bold cyan]",
-        "  [dim]/home/aipass/standards/CODE_STANDARDS/modules.md[/dim]",
+        "  [dim]See: seedgo standards pack (modules)[/dim]",
     ]
 
     return "\n".join(lines)

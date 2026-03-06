@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -279,7 +278,7 @@ if __name__ == "__main__":
     update_data_metrics("flow", test_metric="working")
 
     console.print()
-    console.print("[green]Check /home/aipass/aipass_core/flow/flow_json/ for created files:[/green]")
+    console.print("[green]Check flow/flow_json/ for created files:[/green]")
     console.print("  [dim]•[/dim] flow_config.json")
     console.print("  [dim]•[/dim] flow_data.json")
     console.print("  [dim]•[/dim] flow_log.json")

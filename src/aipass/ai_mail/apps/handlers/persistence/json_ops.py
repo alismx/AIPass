@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # =============================================
 # META DATA HEADER
@@ -31,13 +30,12 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 import inspect
 
-# Infrastructure paths
-AIPASS_ROOT = Path.home() / "aipass_core"
+# Infrastructure paths (package-relative)
+_AI_MAIL_ROOT = Path(__file__).resolve().parents[3]  # ai_mail/
 
 # Constants
-AI_MAIL_ROOT = AIPASS_ROOT / "ai_mail"
-AI_MAIL_JSON_DIR = AI_MAIL_ROOT / "ai_mail_json"
-JSON_TEMPLATES_DIR = AI_MAIL_ROOT / "apps" / "json_templates"
+AI_MAIL_JSON_DIR = _AI_MAIL_ROOT / "ai_mail_json"
+JSON_TEMPLATES_DIR = _AI_MAIL_ROOT / "apps" / "json_templates"
 
 
 def _get_caller_module_name() -> str:

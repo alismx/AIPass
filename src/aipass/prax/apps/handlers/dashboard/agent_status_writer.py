@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -42,7 +41,18 @@ from typing import Any, Dict, List
 # CONSTANTS
 # =============================================================================
 
-BRANCH_REGISTRY = Path.home() / "BRANCH_REGISTRY.json"
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+def _get_branch_registry() -> Path:
+    """Lazily resolve AIPASS_REGISTRY.json path."""
+    return _find_repo_root() / "AIPASS_REGISTRY.json"
+
 STALE_THRESHOLD_MINUTES = 120
 
 
@@ -58,10 +68,11 @@ def _get_all_branches() -> List[Dict[str, Any]]:
         List of dicts with 'name' and 'path' keys
     """
     try:
-        if not BRANCH_REGISTRY.exists():
+        registry = _get_branch_registry()
+        if not registry.exists():
             return []
 
-        data = json.loads(BRANCH_REGISTRY.read_text(encoding="utf-8"))
+        data = json.loads(registry.read_text(encoding="utf-8"))
         branches = []
         for branch in data.get("branches", []):
             branch_path = Path(branch.get("path", ""))
@@ -241,7 +252,6 @@ def _write_section_to_all_branches(section_name: str, section_data: Dict,
         script = (
             "import sys, json\n"
             "from pathlib import Path\n"
-            f"sys.path.insert(0, '{Path.home() / 'aipass_os' / 'dev_central'}')\n"
             "from aipass.devpulse.apps.modules.dashboard import write_section\n"
             "data = json.loads(sys.stdin.read())\n"
             "section_name = data['section_name']\n"

@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -20,7 +19,7 @@
 PRAX Log Audit Module
 
 Implements the 'log-audit' command for system log health monitoring.
-Scans /home/aipass/system_logs/ for oversized files, reports status,
+Scans the system_logs/ directory for oversized files, reports status,
 and optionally enforces size limits by truncating bloated logs.
 """
 

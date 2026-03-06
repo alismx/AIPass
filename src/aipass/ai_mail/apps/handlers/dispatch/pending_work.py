@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -32,8 +31,8 @@ PENDING_WORK_FILENAME = ".pending_work.json"
 
 def _get_pending_path(branch_path: Path) -> Path:
     """Get the pending work file path for a branch."""
-    if branch_path == Path("/") or branch_path == Path.home():
-        return Path.home() / "ai_mail.local" / PENDING_WORK_FILENAME
+    if branch_path == Path("/"):
+        return Path.cwd() / "ai_mail.local" / PENDING_WORK_FILENAME
     return branch_path / "ai_mail.local" / PENDING_WORK_FILENAME
 
 

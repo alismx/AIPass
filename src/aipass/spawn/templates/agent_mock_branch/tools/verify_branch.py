@@ -1,5 +1,3 @@
-#!/home/aipass/.venv/bin/python3
-# -*- coding: utf-8 -*-
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -30,12 +28,14 @@ from pathlib import Path
 from typing import Set, List, Tuple
 from fnmatch import fnmatch
 
-# INFRASTRUCTURE IMPORT PATTERN
-AIPASS_ROOT = Path.home() / "aipass_core"
-sys.path.insert(0, str(AIPASS_ROOT))
+# Resolve paths relative to this file's location
+# verify_branch.py lives at <module>/tools/verify_branch.py
+# Template dir is at <spawn>/templates/agent.template/
+_THIS_DIR = Path(__file__).resolve().parent
+_MODULE_DIR = _THIS_DIR.parent  # The module (or template) root
 
-# Get template directory
-TEMPLATE_DIR = AIPASS_ROOT / "cortex" / "templates" / "branch_template"
+# Get template directory — walk up to spawn/templates/agent.template/
+TEMPLATE_DIR = _MODULE_DIR
 
 
 def load_ignore_patterns() -> Tuple[List[str], List[str]]:

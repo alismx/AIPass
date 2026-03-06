@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -41,8 +40,8 @@ STALE_LOCK_TIMEOUT = 600
 
 def _get_lock_path(branch_path: Path) -> Path:
     """Get the lock file path for a branch."""
-    if branch_path == Path("/") or branch_path == Path.home():
-        return Path.home() / "ai_mail.local" / LOCK_FILENAME
+    if branch_path == Path("/"):
+        return Path.cwd() / "ai_mail.local" / LOCK_FILENAME
     return branch_path / "ai_mail.local" / LOCK_FILENAME
 
 

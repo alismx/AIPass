@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -51,7 +50,15 @@ from aipass.prax.apps.modules.logger import get_direct_logger
 # CONSTANTS
 # =============================================
 
-SYSTEM_LOGS_DIR = Path("/home/aipass/system_logs")
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+SYSTEM_LOGS_DIR = _find_repo_root() / "logs"
 BATCH_INTERVAL = 5.0
 TELEGRAM_MAX_LENGTH = 4000
 

@@ -1,11 +1,10 @@
-#!/home/aipass/.venv/bin/python3
 
 # META DATA HEADER
 # Name: file_watcher_integration.py - File Watcher Integration
 # Version: 0.1.0
 # Purpose: Connect file watcher to monitoring event queue
 # Created: 2025-11-23
-# Location: /home/aipass/aipass_core/prax/apps/handlers/monitoring/file_watcher_integration.py
+# Location: src/aipass/prax/apps/handlers/monitoring/file_watcher_integration.py
 
 """
 File Watcher Integration Handler
@@ -86,7 +85,8 @@ def load_branch_paths(branch_filter: Optional[List[str]] = None) -> List[Tuple[s
         Empty list if registry not found or error
     """
     try:
-        registry_path = Path.home() / "BRANCH_REGISTRY.json"
+        from aipass.prax.apps.handlers.config.load import _find_repo_root
+        registry_path = _find_repo_root() / "AIPASS_REGISTRY.json"
 
         if not registry_path.exists():
             logger.warning(f"BRANCH_REGISTRY.json not found at {registry_path}")

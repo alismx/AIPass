@@ -224,7 +224,7 @@ def _get_file_comment(file_path: Path) -> str:
 
     try:
         content = file_path.read_text(encoding='utf-8', errors='ignore')
-        # Try to extract from META DATA HEADER Name line
+        # Try to extract from META header Name line
         name_match = re.search(r'^# Name:\s*\S+\s*-\s*(.+)$', content, re.MULTILINE)
         if name_match:
             return name_match.group(1).strip()
@@ -311,7 +311,7 @@ def _extract_module_description(module_path: Path) -> str:
     Extract description from a Python module file.
 
     Tries (in order):
-    1. META DATA HEADER Name line (after the dash)
+    1. META header Name line (after the dash)
     2. First line of module docstring
     3. Empty string
 
@@ -324,7 +324,7 @@ def _extract_module_description(module_path: Path) -> str:
     try:
         content = module_path.read_text(encoding='utf-8', errors='ignore')
 
-        # Try META DATA HEADER Name line
+        # Try META header Name line
         name_match = re.search(r'^# Name:\s*\S+\s*-\s*(.+)$', content, re.MULTILINE)
         if name_match:
             return name_match.group(1).strip()

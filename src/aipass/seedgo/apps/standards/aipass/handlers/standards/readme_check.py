@@ -52,7 +52,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     Check if branch README follows standards
 
     Args:
-        module_path: Path to branch entry point (e.g., /home/aipass/seed/apps/seed.py)
+        module_path: Path to branch entry point (e.g., src/aipass/seedgo/apps/branch.py)
         bypass_rules: Optional list of bypass rules to skip certain checks
 
     Returns:
@@ -331,7 +331,7 @@ def check_directory_tree(lines: List[str], branch_root: Path, file_path: str, by
 
     # Extract directory names from tree block, line by line
     # Strip inline comments (text after #) to avoid false positives
-    # Skip the first non-empty line (root label, e.g., "seed/" or "/home/aipass/.../cortex/")
+    # Skip the first non-empty line (root label, e.g., "seed/" or "src/aipass/.../cortex/")
     # Common tree formats: "apps/", "├── apps/", "│   ├── handlers/", "  apps/"
     dir_pattern = re.compile(r'[\w\-_.]+/')
     branch_name = branch_root.name.lower()

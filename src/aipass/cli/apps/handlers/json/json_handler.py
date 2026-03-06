@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -23,8 +22,8 @@ from typing import Dict, List, Any, Optional
 import sys
 import inspect
 
-# Constants
-CLI_ROOT = Path.home() / "aipass_core" / "cli"
+# Constants — package-relative paths (portable across any machine)
+CLI_ROOT = Path(__file__).resolve().parents[3]  # json_handler.py -> json -> handlers -> apps -> cli
 CLI_JSON_DIR = CLI_ROOT / "cli_json"
 JSON_TEMPLATES_DIR = CLI_ROOT / "apps" / "json_templates"
 
@@ -256,7 +255,7 @@ if __name__ == "__main__":
     update_data_metrics("cli", test_metric="working")
 
     console.print()
-    console.print("[green]Check /home/aipass/aipass_core/cli/cli_json/ for created files:[/green]")
+    console.print(f"[green]Check {CLI_JSON_DIR}/ for created files:[/green]")
     console.print("  [dim]•[/dim] cli_config.json")
     console.print("  [dim]•[/dim] cli_data.json")
     console.print("  [dim]•[/dim] cli_log.json")

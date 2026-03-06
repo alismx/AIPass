@@ -1,0 +1,18 @@
+[
+  {
+    "timestamp": "2026-03-06T19:25:53.833365",
+    "operation": "plans_listed",
+    "data": {
+      "command": "list",
+      "args": []
+    }
+  },
+  {
+    "timestamp": "2026-03-06T19:26:49.120795",
+    "operation": "plans_listed",
+    "data": {
+      "command": "list",
+      "args": []
+    }
+  }
+]

@@ -121,9 +121,9 @@ def get_trigger_standards() -> str:
         "  [dim]•[/dim] Graceful degradation if Trigger unavailable",
         "",
         "[bold cyan]REFERENCE:[/bold cyan]",
-        "  [dim]/home/aipass/seed/standards/CODE_STANDARDS/trigger.md[/dim]",
-        "  [dim]/home/aipass/aipass_core/trigger/apps/modules/core.py[/dim]",
-        "  [dim]/home/aipass/aipass_core/trigger/apps/handlers/events/[/dim]",
+        "  [dim]See: seedgo standards pack (trigger)[/dim]",
+        "  [dim]See: src/aipass/trigger/apps/modules/core.py[/dim]",
+        "  [dim]See: src/aipass/trigger/apps/handlers/events/[/dim]",
     ]
 
     return "\n".join(lines)

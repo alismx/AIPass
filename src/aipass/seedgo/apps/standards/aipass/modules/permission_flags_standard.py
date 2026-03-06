@@ -19,8 +19,8 @@ from pathlib import Path
 from typing import List
 
 from aipass.prax import logger
-from handlers.json import json_handler
-from handlers.standards.permission_flags_content import get_permission_flags_standards
+from aipass.seedgo.apps.standards.aipass.handlers.json import json_handler
+from aipass.seedgo.apps.standards.aipass.handlers.standards.permission_flags_content import get_permission_flags_standards
 
 from aipass.cli import console, header
 

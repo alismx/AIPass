@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -24,10 +23,9 @@ the Seed architecture standard requiring apps/handlers/json/json_handler.py.
 
 from pathlib import Path
 
-# Infrastructure paths
-AIPASS_ROOT = Path.home() / "aipass_core"
-AI_MAIL_ROOT = Path.home() / "aipass_core" / "ai_mail"
-AI_MAIL_JSON_DIR = AI_MAIL_ROOT / "ai_mail_json"
+# Infrastructure paths (package-relative)
+_AI_MAIL_ROOT = Path(__file__).resolve().parents[3]  # ai_mail/
+AI_MAIL_JSON_DIR = _AI_MAIL_ROOT / "ai_mail_json"
 
 from aipass.ai_mail.apps.handlers.json_utils.json_handler import (  # noqa: F401
     load_json,

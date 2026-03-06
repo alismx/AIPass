@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -20,7 +19,7 @@
 Branch Log Events Module - Public API for branch log watching
 
 Provides start/stop/status commands for the branch log watcher.
-Watches /home/aipass/aipass_core/*/logs/*.log for ERROR entries.
+Watches src/aipass/*/logs/*.log for ERROR entries.
 Fires error_detected events handled by AI_Mail's error_handler.
 
 Commands: start, stop, status
@@ -49,7 +48,7 @@ def start() -> bool:
     """
     Start the branch log watcher.
 
-    Watches /home/aipass/aipass_core/*/logs/*.log for ERROR entries.
+    Watches src/aipass/*/logs/*.log for ERROR entries.
     Fires error_detected events to registered handlers.
 
     Returns:

@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 """Shared pytest fixtures for drone tests."""
 
 import json

@@ -1,5 +1,3 @@
-#!/home/aipass/.venv/bin/python3
-# -*- coding: utf-8 -*-
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -27,8 +25,8 @@ Features:
 - Reusable across Flow modules
 
 Global vs Local Pattern:
-- **Global:** /home/aipass/CLAUDE.json (all plans, all branches)
-- **Local:** /home/aipass/aipass_core/[branch]/CLAUDE.local.md (branch-specific)
+- **Global:** {repo_root}/CLAUDE.json (all plans, all branches)
+- **Local:** {repo_root}/src/aipass/[branch]/CLAUDE.local.md (branch-specific)
 
 Usage:
     from aipass.flow.apps.handlers.summary.write_plan_outputs import write_plan_outputs
@@ -54,7 +52,19 @@ FLOW_ROOT = _PKG_ROOT / "flow"
 # =============================================
 
 MODULE_NAME = "write_plan_outputs"
-CLAUDE_JSON_FILE = Path.home() / "CLAUDE.json"
+
+
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+_REPO_ROOT = _find_repo_root()
+CLAUDE_JSON_FILE = _REPO_ROOT / "CLAUDE.json"
 
 # =============================================
 # HELPER FUNCTIONS
@@ -78,7 +88,7 @@ def _normalize_plan_entry(plan_num: str, info: Dict[str, Any]) -> Optional[Dict[
     if file_path:
         path_obj = Path(file_path)
         if not path_obj.is_absolute():
-            path_obj = Path.home() / file_path
+            path_obj = _PKG_ROOT / file_path
 
     branch_dir: Optional[Path] = None
     branch_relative_path = ""
@@ -90,7 +100,7 @@ def _normalize_plan_entry(plan_num: str, info: Dict[str, Any]) -> Optional[Dict[
             branch_dir = path_obj
 
         try:
-            branch_relative_path = str(path_obj.relative_to(Path.home()))
+            branch_relative_path = str(path_obj.relative_to(_PKG_ROOT))
         except Exception:
             branch_relative_path = str(path_obj)
     else:
@@ -103,7 +113,7 @@ def _normalize_plan_entry(plan_num: str, info: Dict[str, Any]) -> Optional[Dict[
 
     if branch_dir is not None and not branch_name:
         try:
-            branch_name = branch_dir.relative_to(Path.home()).parts[0]
+            branch_name = branch_dir.relative_to(_PKG_ROOT).parts[0]
         except Exception:
             branch_name = branch_dir.name if branch_dir.name else "unknown"
 
@@ -139,7 +149,7 @@ def _normalize_plan_entry(plan_num: str, info: Dict[str, Any]) -> Optional[Dict[
 
     if branch_dir is not None:
         try:
-            branch_dir.relative_to(Path.home())
+            branch_dir.relative_to(_PKG_ROOT)
             entry["branch_path"] = branch_dir
         except Exception:
             entry["branch_path"] = None
@@ -322,7 +332,7 @@ def write_plan_outputs(summaries: Dict[str, Any], hide_empty: bool = True) -> bo
         ...     "0001": {
         ...         "summary": "Task description",
         ...         "status": "open",
-        ...         "file_path": "/home/aipass/aipass_core/flow/plans/FPLAN-0001.md",
+        ...         "file_path": "flow/plans/FPLAN-0001.md",
         ...         "subject": "Flow restructuring",
         ...         "location": "flow",
         ...         "is_empty": False

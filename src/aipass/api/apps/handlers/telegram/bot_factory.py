@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -38,6 +37,8 @@ from pathlib import Path
 
 # Standard library
 import json
+import os
+import shutil
 import subprocess
 from datetime import datetime, timezone
 from typing import Optional
@@ -57,9 +58,26 @@ from aipass.api.apps.handlers.telegram.bot_registry import (
 # =============================================
 
 TELEGRAM_API = "https://api.telegram.org/bot{token}"
-BOT_CONFIG_DIR = Path.home() / ".aipass" / "telegram_bots"
-BRANCH_REGISTRY = Path.home() / "BRANCH_REGISTRY.json"
-SYSTEMD_DIR = Path.home() / ".config" / "systemd" / "user"
+
+def _aipass_data_dir() -> Path:
+    """User data directory for AIPass runtime files."""
+    env = os.environ.get("AIPASS_DATA_DIR")
+    if env:
+        return Path(env)
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "aipass"
+
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+_DATA_DIR = _aipass_data_dir()
+BOT_CONFIG_DIR = _DATA_DIR / "telegram_bots"
+BRANCH_REGISTRY = _find_repo_root() / "AIPASS_REGISTRY.json"
+SYSTEMD_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "systemd" / "user"
 
 # Default commands set on every new bot via BotFather
 DEFAULT_BOT_COMMANDS = [
@@ -269,7 +287,7 @@ def start_bot_process(bot_id: str) -> bool:
         True if the process was launched successfully, False otherwise.
     """
     BASE_BOT_PATH = Path(__file__).resolve().parent / "base_bot.py"
-    PYTHON = str(Path.home() / ".venv" / "bin" / "python3")
+    PYTHON = shutil.which("python3") or sys.executable
 
     try:
         proc = subprocess.Popen(
@@ -366,7 +384,7 @@ def create_bot(
     BOT_USERNAME = bot_info.get("username", "unknown")
 
     # Step 2: Validate branch if provided
-    RESOLVED_WORK_DIR = str(Path.home()) if work_dir is None else str(work_dir)
+    RESOLVED_WORK_DIR = str(Path.cwd()) if work_dir is None else str(work_dir)
     if branch_name:
         branch_info = validate_branch(branch_name)
         if not branch_info:
@@ -516,7 +534,7 @@ def delete_bot(bot_id: str, kill_tmux: bool = True) -> bool:
             logger.warning("Failed to remove config file: %s", e)
 
     # Step 4: Clean up pending files (both v1 and v2 naming)
-    PENDING_DIR = Path.home() / ".aipass" / "telegram_pending"
+    PENDING_DIR = _DATA_DIR / "telegram_pending"
     BRANCH_NAME = bot.get("branch_name", bot_id)
 
     # v2 naming: bot-{bot_id}.json

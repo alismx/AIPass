@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -20,7 +19,7 @@
 """
 Centralized Log Watcher - Trigger owns all log event detection
 
-Watches /home/aipass/system_logs for log file changes.
+Watches system_logs/ for log file changes.
 Detects ERROR/WARNING/INFO entries and fires appropriate events.
 
 Events fired:
@@ -41,13 +40,12 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any
 
-AIPASS_HOME = Path.home()
-
 # Logger - use standard logging to avoid circular imports with Prax
 logger = logging.getLogger(__name__)
 
-# System logs directory
-SYSTEM_LOGS_DIR = AIPASS_HOME / "system_logs"
+# System logs directory (package-relative via config)
+from aipass.trigger.apps.config import TRIGGER_ROOT
+SYSTEM_LOGS_DIR = TRIGGER_ROOT.parent.parent / "system_logs"
 
 # Try to import watchdog
 try:

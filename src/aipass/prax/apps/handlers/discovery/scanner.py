@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -31,7 +30,7 @@ from typing import Dict, Any
 # Import from prax config
 from aipass.prax.apps.handlers.config.load import (
     ECOSYSTEM_ROOT,
-    SYSTEM_LOGS_DIR
+    get_system_logs_dir
 )
 
 # Import filtering
@@ -63,7 +62,7 @@ def scan_directory_safely(directory: Path, modules: Dict, max_depth: int = 10):
                 modules[module_name] = {
                     "file_path": str(item),
                     "relative_path": str(relative_path),
-                    "log_file": str(SYSTEM_LOGS_DIR / f"prax_{module_name}.log"),
+                    "log_file": str(get_system_logs_dir() / f"prax_{module_name}.log"),
                     "discovered_time": datetime.now(timezone.utc).isoformat(),
                     "size": item.stat().st_size,
                     "modified_time": datetime.fromtimestamp(item.stat().st_mtime).isoformat(),

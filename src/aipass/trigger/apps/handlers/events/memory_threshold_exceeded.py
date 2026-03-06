@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -39,7 +38,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-AIPASS_HOME = Path.home()
+
+# Path resolution not needed - this handler uses only event data passed in kwargs
 
 
 def _build_compression_message(

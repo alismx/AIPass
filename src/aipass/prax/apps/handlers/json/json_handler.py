@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -270,7 +269,7 @@ if __name__ == "__main__":
     increment_counter("prax", "test_counter", 1)
     update_data_metrics("prax", test_metric="working")
 
-    print("\nCheck /home/aipass/aipass_core/prax/prax_json/ for created files:")
+    print("\nCheck src/aipass/prax/prax_json/ for created files:")
     print("  - prax_config.json")
     print("  - prax_data.json")
     print("  - prax_log.json")

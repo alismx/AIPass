@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -43,7 +42,7 @@ Architecture:
     is held in-memory (resets on process restart).
 
 Storage:
-    /home/aipass/aipass_core/trigger/trigger_json/error_registry.json
+    trigger/trigger_json/error_registry.json
     Format: {
         "errors": {fingerprint: ErrorEvent_as_dict, ...},
         "metadata": {"version": "2.0.0", "last_updated": "..."}
@@ -455,7 +454,7 @@ def normalize_message(message: str) -> str:
     # Strip date-only patterns (2026-02-13)
     normalized = re.sub(r'\d{4}-\d{2}-\d{2}', '<date>', normalized)
 
-    # Strip absolute paths (/home/aipass/... or any /path/to/something)
+    # Strip absolute paths (any /path/to/something)
     normalized = re.sub(r'/[\w./-]+', '<path>', normalized)
 
     # Strip line numbers ("line 42" -> "line N")

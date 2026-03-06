@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -51,7 +50,17 @@ from aipass.flow.apps.modules.aggregate_central import aggregate_central
 MODULE_NAME = "push_central"
 FLOW_JSON_DIR = FLOW_ROOT / "flow_json"
 REGISTRY_FILE = FLOW_JSON_DIR / "flow_registry.json"
-AI_CENTRAL_DIR = Path.home() / "aipass_os" / "AI_CENTRAL"
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+_REPO_ROOT = _find_repo_root()
+AI_CENTRAL_DIR = _REPO_ROOT / "AI_CENTRAL"
 CENTRAL_FILE = AI_CENTRAL_DIR / "PLANS.central.json"
 
 # =============================================
@@ -90,7 +99,7 @@ def _extract_flow_plans(registry: Dict[str, Any]) -> tuple[List[Dict], List[Dict
     for plan_num, plan_data in plans.items():
         # Only include plans where location is 'flow' (Flow's own plans)
         location = plan_data.get("location", "")
-        if location != "/home/aipass/aipass_core/flow":
+        if location != str(FLOW_ROOT):
             continue
 
         # Build plan entry
@@ -220,7 +229,7 @@ def push_to_plans_central() -> bool:
             "statistics": {
                 "active_count": len(active_plans),
                 "total_closed": len([p for p in registry.get("plans", {}).values()
-                                    if p.get("location") == "/home/aipass/aipass_core/flow"
+                                    if p.get("location") == str(FLOW_ROOT)
                                     and p.get("status") == "closed"])
             }
         }

@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -51,7 +50,7 @@ from logging.handlers import RotatingFileHandler
 from typing import Dict, Optional, Tuple
 
 from aipass.prax.apps.handlers.config.load import (
-    SYSTEM_LOGS_DIR,
+    get_system_logs_dir,
     DEFAULT_LOG_LEVEL,
     load_log_config,
     lines_to_bytes
@@ -109,7 +108,7 @@ def _create_direct_logger(
     Args:
         module_name: Name of the calling module (e.g., 'log_watcher')
         branch_name: Short branch name (e.g., 'prax', 'trigger', 'api')
-        branch_path: Full branch path (e.g., 'aipass_core/prax') or None
+        branch_path: Module/branch name (e.g., 'prax') or None
 
     Returns:
         Configured logger with dual file handlers and no propagation.
@@ -128,7 +127,7 @@ def _create_direct_logger(
     )
 
     # Handler 1: System-wide log
-    SYS_LOG_FILE = SYSTEM_LOGS_DIR / f"{branch_name}_{module_name}.log"
+    SYS_LOG_FILE = get_system_logs_dir() / f"{branch_name}_{module_name}.log"
     SYS_LIMITS = config['system_logs']
     sys_handler = RotatingFileHandler(
         SYS_LOG_FILE,
@@ -141,7 +140,8 @@ def _create_direct_logger(
 
     # Handler 2: Branch-local log
     if branch_path:
-        LOCAL_LOGS_DIR = Path.home() / branch_path / "logs"
+        from aipass.prax.apps.handlers.config.load import _find_repo_root
+        LOCAL_LOGS_DIR = _find_repo_root() / branch_path / "logs"
         LOCAL_LOGS_DIR.mkdir(parents=True, exist_ok=True)
         LOCAL_LOG_FILE = LOCAL_LOGS_DIR / f"{module_name}.log"
         LOCAL_LIMITS = config['local_logs']

@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -56,13 +55,13 @@ def resolve_plan_location(
         - error_message: Empty string on success, error details on failure
 
     Examples:
-        >>> resolve_plan_location("/home/aipass/aipass_core/flow", Path("/home/aipass/aipass_core"))
-        (True, Path("/home/aipass/aipass_core/flow"), "")
+        >>> resolve_plan_location("/repo/src/aipass/flow", Path("/repo/src/aipass"))
+        (True, Path("/repo/src/aipass/flow"), "")
 
-        >>> resolve_plan_location(None, Path("/home/aipass/aipass_core"))
+        >>> resolve_plan_location(None, Path("/repo/src/aipass"))
         (True, Path.cwd(), "")
 
-        >>> resolve_plan_location("/nonexistent", Path("/home/aipass/aipass_core"))
+        >>> resolve_plan_location("/nonexistent", Path("/repo/src/aipass"))
         (False, Path.cwd(), "Directory /nonexistent does not exist")
     """
     # Determine target directory

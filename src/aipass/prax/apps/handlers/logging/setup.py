@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -26,7 +25,7 @@ from logging.handlers import RotatingFileHandler
 
 # Import from prax config
 from aipass.prax.apps.handlers.config.load import (
-    SYSTEM_LOGS_DIR,
+    get_system_logs_dir,
     DEFAULT_LOG_LEVEL,
     load_log_config,
     lines_to_bytes
@@ -59,8 +58,8 @@ def setup_individual_logger(module_name: str) -> logging.Logger:
     """Setup individual logger for a specific module with dual logging support
 
     Creates:
-    - System-wide log: /home/aipass/system_logs/prax_{module_name}.log
-    - Branch-local log: /home/aipass/{branch}/logs/{module_name}.log (if in a branch)
+    - System-wide log: {repo_root}/system_logs/prax_{module_name}.log
+    - Branch-local log: {repo_root}/src/aipass/{branch}/logs/{module_name}.log (if in a branch)
     - Terminal handler (if enabled)
 
     Args:
@@ -89,9 +88,8 @@ def setup_individual_logger(module_name: str) -> logging.Logger:
     branch_path = detect_branch_from_path(module_path) if module_path else None
 
     # Extract branch name from path
-    # "aipass_core/cortex" → "cortex"
-    # "aipass_core/flow" → "flow"
-    # "some_project" → "some_project"
+    # "prax" → "prax"
+    # "flow" → "flow"
     if branch_path:
         branch_name = branch_path.split('/')[-1]
     else:
@@ -104,7 +102,7 @@ def setup_individual_logger(module_name: str) -> logging.Logger:
     )
 
     # HANDLER 1: System-wide log (named after calling branch)
-    system_log_file = SYSTEM_LOGS_DIR / f"{branch_name}_{module_name}.log"
+    system_log_file = get_system_logs_dir() / f"{branch_name}_{module_name}.log"
     system_limits = log_config['system_logs']
     system_max_bytes = lines_to_bytes(system_limits['max_lines'])
     system_handler = RotatingFileHandler(
@@ -121,8 +119,9 @@ def setup_individual_logger(module_name: str) -> logging.Logger:
 
     if branch:
         # Create branch logs directory if it doesn't exist
-        # Branch format is now "aipass_core/module" or "project_name"
-        branch_logs_dir = Path.home() / branch / "logs"
+        # Use repo-relative path for branch logs
+        from aipass.prax.apps.handlers.config.load import _find_repo_root
+        branch_logs_dir = _find_repo_root() / branch / "logs"
         branch_logs_dir.mkdir(parents=True, exist_ok=True)
 
         # Create branch-local log file
@@ -179,7 +178,7 @@ def setup_system_logger() -> logging.Logger:
     _system_logger.handlers.clear()
 
     # Create prax_logger's own log file
-    log_file = SYSTEM_LOGS_DIR / "prax_logger.log"
+    log_file = get_system_logs_dir() / "prax_logger.log"
 
     # Create rotating file handler with config-driven limits
     system_limits = log_config['system_logs']

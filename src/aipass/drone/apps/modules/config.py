@@ -37,8 +37,8 @@ def _find_registry() -> Path:
         if candidate.exists():
             return candidate
 
-    # Fallback
-    return Path.home() / ".aipass" / "AIPASS_REGISTRY.json"
+    # Fallback — use package-relative path (no filesystem assumptions)
+    return Path(__file__).resolve().parents[4] / "AIPASS_REGISTRY.json"
 
 
 def get_registry_path() -> Path:

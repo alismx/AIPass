@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -257,7 +256,7 @@ if __name__ == "__main__":
     update_data_metrics("trigger", test_metric="working")
 
     console.print()
-    console.print("[green]Check /home/aipass/aipass_core/trigger/trigger_json/ for created files:[/green]")
+    console.print("[green]Check trigger/trigger_json/ for created files:[/green]")
     console.print("  [dim]•[/dim] trigger_config.json")
     console.print("  [dim]•[/dim] trigger_data.json")
     console.print("  [dim]•[/dim] trigger_log.json")

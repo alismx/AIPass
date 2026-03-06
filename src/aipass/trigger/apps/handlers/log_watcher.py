@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -34,8 +33,8 @@ Also watches ~/system_logs/ for system-level services.
 Fires error_detected events for the Trigger event system.
 
 Architecture:
-    - Watches: /home/aipass/aipass_core/*/logs/*.log
-    - Watches: /home/aipass/system_logs/*.log (mapped to owning branch)
+    - Watches: src/aipass/*/logs/*.log (branch log directories)
+    - Watches: system_logs/*.log (mapped to owning branch)
     - Parses: Prax format (timestamp | module | LEVEL | message)
     - Fires: error_detected event (via callback, branch=..., module=..., message=..., log_path=...)
     - Primary dedup: error_registry.report() with SHA1 fingerprinting (Medic v2)
@@ -50,8 +49,6 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Set, Optional, Callable
 from aipass.trigger.apps.config import TRIGGER_ROOT, AIPASS_PKG_ROOT
-
-AIPASS_HOME = Path.home()
 
 from aipass.prax.apps.modules.logger import get_direct_logger
 
@@ -121,7 +118,7 @@ SYSTEM_LOGS_BRANCH_MAP: Dict[str, str] = {
     'telegram_chats.log': 'API',
 }
 
-SYSTEM_LOGS_DIR = AIPASS_HOME / "system_logs"
+SYSTEM_LOGS_DIR = AIPASS_PKG_ROOT.parent.parent / "system_logs"
 
 # Known branch prefixes that appear in system_logs filenames (<prefix>_<module>.log).
 # Sorted longest-first so "MEMORY_BANK" matches before "MEMORY", "backup_system" before "backup", etc.
@@ -275,9 +272,9 @@ def _detect_branch_from_path(log_path: str) -> str:
     Detect branch name from log file path.
 
     Handles two path patterns:
-        - /home/aipass/aipass_core/<branch>/logs/<file>.log
-        - /home/aipass/system_logs/<file>.log (mapped via SYSTEM_LOGS_BRANCH_MAP,
-          falls back to branch prefix in filename like "api_api.log" → API)
+        - src/aipass/<branch>/logs/<file>.log
+        - system_logs/<file>.log (mapped via SYSTEM_LOGS_BRANCH_MAP,
+          falls back to branch prefix in filename like "api_api.log" -> API)
 
     Args:
         log_path: Full path to log file
@@ -301,11 +298,13 @@ def _detect_branch_from_path(log_path: str) -> str:
                     return prefix.upper()
             return 'UNKNOWN'
 
-        # Standard aipass_core/<branch>/logs/ pattern
+        # Standard src/aipass/<branch>/logs/ pattern
         parts = path.parts
         for i, part in enumerate(parts):
-            if part == 'aipass_core' and i + 1 < len(parts):
-                return parts[i + 1].upper()
+            if part == 'aipass' and i + 1 < len(parts) and parts[i + 1] != '__pycache__':
+                # Check if this looks like a branch dir (has logs/ subdir)
+                if i + 2 < len(parts) and parts[i + 2] == 'logs':
+                    return parts[i + 1].upper()
         return 'UNKNOWN'
     except Exception:
         return 'UNKNOWN'
@@ -414,7 +413,7 @@ class BranchLogWatcher(WatchdogFileSystemEventHandler if WATCHDOG_AVAILABLE else
     """
     Watch branch log files and fire error_detected events.
 
-    Monitors /home/aipass/aipass_core/*/logs/*.log for ERROR entries.
+    Monitors src/aipass/*/logs/*.log for ERROR entries.
     Persists file positions to disk so restarts resume from last-processed offset.
     """
 
@@ -446,8 +445,8 @@ class BranchLogWatcher(WatchdogFileSystemEventHandler if WATCHDOG_AVAILABLE else
         if filename.lower() in _EXCLUDED_LOG_FILES_LOWER:
             return
 
-        # Only process branch logs (aipass_core/*/logs/) or system_logs/
-        is_branch_log = '/aipass_core/' in file_path and '/logs/' in file_path
+        # Only process branch logs (aipass/*/logs/) or system_logs/
+        is_branch_log = '/aipass/' in file_path and '/logs/' in file_path
         is_system_log = '/system_logs/' in file_path
         if not is_branch_log and not is_system_log:
             return
@@ -596,12 +595,12 @@ class BranchLogWatcher(WatchdogFileSystemEventHandler if WATCHDOG_AVAILABLE else
         Loads saved positions from trigger_data.json first (survives restarts).
         For files not in persisted state, snaps to current EOF.
         Validates persisted positions against actual file sizes (handles rotation).
-        Covers both aipass_core/*/logs/ and system_logs/.
+        Covers both aipass/*/logs/ and system_logs/.
         """
         # Load persisted positions from disk first
         persisted = _load_log_positions()
 
-        # Branch logs under aipass_core/*/logs/
+        # Branch logs under aipass/*/logs/
         for branch_dir in AIPASS_PKG_ROOT.iterdir():
             if not branch_dir.is_dir():
                 continue
@@ -640,7 +639,7 @@ def start_branch_log_watcher() -> Any:
     """
     Start the branch log watcher.
 
-    Watches /home/aipass/aipass_core/*/logs/*.log for ERROR entries.
+    Watches src/aipass/*/logs/*.log for ERROR entries.
     Loads persisted positions from disk so restarts resume correctly.
 
     Returns:

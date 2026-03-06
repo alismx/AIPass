@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -58,9 +57,17 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 from aipass.trigger.apps.config import TRIGGER_ROOT
 
-AIPASS_HOME = Path.home()
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
 
-BRANCH_REGISTRY_FILE = AIPASS_HOME / "BRANCH_REGISTRY.json"
+_REPO_ROOT = _find_repo_root()
+
+BRANCH_REGISTRY_FILE = _REPO_ROOT / "BRANCH_REGISTRY.json"
 TRIGGER_CONFIG_FILE = TRIGGER_ROOT / "trigger_json" / "trigger_config.json"
 
 # Email send callback (set by module layer, avoids handler importing from modules)

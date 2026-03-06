@@ -32,29 +32,30 @@ from datetime import datetime
 # Prax logger (system-wide, always first)
 from aipass.prax import logger
 # JSON handler for tracking
-from handlers.json import json_handler
+from aipass.seedgo.apps.standards.aipass.handlers.json import json_handler
 
 # CLI services (display/output formatting)
 from aipass.cli import console, header
 
 # Standards checkers
-from handlers.standards import imports_check
-from handlers.standards import architecture_check
-from handlers.standards import naming_check
-from handlers.standards import cli_check
-from handlers.standards import handlers_check
-from handlers.standards import modules_check
-from handlers.standards import documentation_check
-from handlers.standards import json_structure_check
-from handlers.standards import testing_check
-from handlers.standards import error_handling_check
-from handlers.standards import encapsulation_check
-from handlers.standards import trigger_check
-from handlers.standards import log_level_check
-from handlers.standards import cli_flags_check
-from handlers.standards import log_handler_check
-from handlers.standards import log_visibility_check
-from handlers.standards import permission_flags_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import imports_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import architecture_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import naming_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import cli_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import handlers_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import modules_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import documentation_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import json_structure_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import testing_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import error_handling_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import encapsulation_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import trigger_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import log_level_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import cli_flags_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import log_handler_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import log_visibility_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import permission_flags_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import shebang_check
 
 # =============================================================================
 # BYPASS SYSTEM - .seed/ config per branch
@@ -243,25 +244,25 @@ def print_help():
     console.print("  drone @seed checklist <module_path>")
     console.print()
     console.print("  [dim]# Standalone[/dim]")
-    console.print("  python3 /home/aipass/seed/apps/modules/standards_checklist.py <module_path>")
-    console.print("  python3 /home/aipass/seed/apps/modules/standards_checklist.py --introspect")
-    console.print("  python3 /home/aipass/seed/apps/modules/standards_checklist.py --help")
+    console.print("  drone @seedgo checklist <module_path>")
+    console.print("  drone @seedgo checklist --introspect")
+    console.print("  drone @seedgo checklist --help")
     console.print()
 
     console.print("[yellow]EXAMPLES:[/yellow]")
-    console.print("  [dim]# Check a seed module[/dim]")
-    console.print("  python3 /home/aipass/seed/apps/modules/standards_checklist.py /home/aipass/seed/apps/modules/imports_standard.py")
+    console.print("  [dim]# Check a seedgo module[/dim]")
+    console.print("  drone @seedgo checklist src/aipass/seedgo/apps/standards/aipass/modules/imports_standard.py")
     console.print()
     console.print("  [dim]# Check a different branch module[/dim]")
-    console.print("  python3 /home/aipass/seed/apps/modules/standards_checklist.py /home/aipass/aipass_core/api/apps/api.py")
+    console.print("  drone @seedgo checklist src/aipass/api/apps/branch.py")
     console.print()
     console.print("  [dim]# Show json_handler introspection[/dim]")
-    console.print("  python3 /home/aipass/seed/apps/modules/standards_checklist.py --introspect")
+    console.print("  drone @seedgo checklist --introspect")
     console.print()
 
     console.print("[yellow]REFERENCE:[/yellow]")
     console.print("  Checks imports, architecture, naming, CLI, handlers, modules,")
-    console.print("  documentation, JSON structure, testing, and error handling standards.")
+    console.print("  documentation, JSON structure, testing, error handling, and shebang standards.")
     console.print()
 
 
@@ -271,7 +272,7 @@ def print_json_handler_introspection():
     header("json_handler.py INTROSPECTION")
     console.print()
     console.print("[bold cyan]Auto-Creating & Self-Healing JSON System[/bold cyan]")
-    console.print("[dim]Location: /home/aipass/seed/apps/handlers/json/json_handler.py[/dim]")
+    console.print("[dim]Location: aipass/seedgo/apps/standards/aipass/handlers/json/json_handler.py[/dim]")
     console.print()
 
     # OVERVIEW
@@ -359,12 +360,12 @@ def print_json_handler_introspection():
 
     # FILE LOCATIONS
     console.print("[bold white]FILE LOCATIONS:[/bold white]")
-    console.print("  Templates: [cyan]/home/aipass/seed/apps/json_templates/default/[/cyan]")
+    console.print("  Templates: [cyan]<package>/apps/json_templates/default/[/cyan]")
     console.print("    - config.json")
     console.print("    - data.json")
     console.print("    - log.json")
     console.print()
-    console.print("  Generated: [cyan]/home/aipass/seed/seed_json/[/cyan]")
+    console.print("  Generated: [cyan]<package>/aipass_json/[/cyan]")
     console.print("    - {module_name}_config.json")
     console.print("    - {module_name}_data.json")
     console.print("    - {module_name}_log.json")
@@ -383,7 +384,7 @@ def print_json_handler_introspection():
 
     # CONSTANTS
     console.print("[bold white]CONSTANTS:[/bold white]")
-    console.print("  [dim]SEED_ROOT = Path.home() / 'seed'[/dim]")
+    console.print("  [dim]PACK_ROOT = Path(__file__).resolve().parent.parent.parent[/dim]")
     console.print("  [dim]SEED_JSON_DIR = SEED_ROOT / 'seed_json'[/dim]")
     console.print("  [dim]JSON_TEMPLATES_DIR = SEED_ROOT / 'apps' / 'json_templates'[/dim]")
     console.print()
@@ -440,16 +441,16 @@ def print_checklist(args: List[str]):
         header("Standards Checklist")
         console.print()
         console.print("[yellow]USAGE:[/yellow]")
-        console.print("  python3 /home/aipass/seed/apps/modules/standards_checklist.py <module_path>")
+        console.print("  drone @seedgo checklist <module_path>")
         console.print()
         console.print("[yellow]EXAMPLES:[/yellow]")
-        console.print("  # Check a seed module")
-        console.print("  python3 /home/aipass/seed/apps/modules/standards_checklist.py /home/aipass/seed/apps/modules/imports_standard.py")
+        console.print("  # Check a seedgo module")
+        console.print("  drone @seedgo checklist src/aipass/seedgo/apps/standards/aipass/modules/imports_standard.py")
         console.print()
         console.print("  # Check a different branch module")
-        console.print("  python3 /home/aipass/seed/apps/modules/standards_checklist.py /home/aipass/aipass_core/api/apps/api.py")
+        console.print("  drone @seedgo checklist src/aipass/api/apps/branch.py")
         console.print()
-        console.print("[yellow]AVAILABLE CHECKERS (17/17 COMPLETE):[/yellow]")
+        console.print("[yellow]AVAILABLE CHECKERS (18/18 COMPLETE):[/yellow]")
         console.print("  [green]✓[/green] imports_check          - Import standards validation")
         console.print("  [green]✓[/green] architecture_check     - Architecture standards validation")
         console.print("  [green]✓[/green] naming_check           - Naming standards validation")
@@ -465,6 +466,7 @@ def print_checklist(args: List[str]):
         console.print("  [green]✓[/green] log_handler_check      - Log handler rotation (RotatingFileHandler required)")
         console.print("  [green]✓[/green] log_visibility_check   - Log visibility (prax system_logger required)")
         console.print("  [green]✓[/green] permission_flags_check - Permission flags (no --skip-permissions)")
+        console.print("  [green]✓[/green] shebang_check          - Shebang line detection (no #!/... in pip packages)")
         console.print()
         console.print("─" * 70)
         console.print()
@@ -825,10 +827,29 @@ def print_checklist(args: List[str]):
     console.print()
     logger.info(f"[{MODULE_NAME}] PERMISSION_FLAGS check complete: {permission_flags_score}/100")
 
+    # Run shebang check
+    logger.info(f"[{MODULE_NAME}] Running SHEBANG standard check on {file_path}")
+    console.print("[bold cyan]SHEBANG STANDARD:[/bold cyan]")
+    shebang_result = shebang_check.check_module(file_path, bypass_rules=bypass_rules)
+
+    # Display results
+    for check in shebang_result['checks']:
+        symbol = "[green]✓[/green]" if check['passed'] else "[red]✗[/red]"
+        console.print(f"  {symbol} {check['name']}: {check['message']}")
+
+    console.print()
+
+    # Show score
+    shebang_score = shebang_result['score']
+    shebang_status = "[green]PASS[/green]" if shebang_result['passed'] else "[red]FAIL[/red]"
+    console.print(f"  Score: {shebang_score}/100 - {shebang_status}")
+    console.print()
+    logger.info(f"[{MODULE_NAME}] SHEBANG check complete: {shebang_score}/100")
+
     # Overall summary
-    avg_score = int((imports_score + architecture_score + naming_score + cli_score + handlers_score + modules_score + documentation_score + json_structure_score + testing_score + error_handling_score + encapsulation_score + trigger_score + log_level_score + cli_flags_score + log_handler_score + log_visibility_score + permission_flags_score) / 17)
+    avg_score = int((imports_score + architecture_score + naming_score + cli_score + handlers_score + modules_score + documentation_score + json_structure_score + testing_score + error_handling_score + encapsulation_score + trigger_score + log_level_score + cli_flags_score + log_handler_score + log_visibility_score + permission_flags_score + shebang_score) / 18)
     console.print("─" * 70)
-    console.print(f"[bold]OVERALL:[/bold] 17/17 standards checked - {avg_score}% average compliance")
+    console.print(f"[bold]OVERALL:[/bold] 18/18 standards checked - {avg_score}% average compliance")
     console.print("─" * 70)
     console.print()
     logger.info(f"[{MODULE_NAME}] Standards check complete: {avg_score}% average compliance")

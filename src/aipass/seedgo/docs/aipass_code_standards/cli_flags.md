@@ -31,7 +31,7 @@ When Patrick or an agent runs `drone @flow --verbose` or `drone @trigger --versi
 | Flag | Short | Behavior |
 |------|-------|----------|
 | `--help` | `-h`, `help` | Show Rich-formatted help with Commands line for drone discovery |
-| `--version` | `-V` | Print branch name and version from META DATA HEADER |
+| `--version` | `-V` | Print branch name and version from META header |
 
 ### Tier 2: Recommended (when applicable)
 
@@ -62,12 +62,12 @@ Print the branch name and version, then exit.
 BRANCH_NAME v1.2.3
 ```
 
-**Where the version comes from:** Every branch entry point has a META DATA HEADER with a `Version:` field. Read it from there.
+**Where the version comes from:** Every branch entry point has a META header with a `Version:` field. Read it from there.
 
 **Implementation:**
 ```python
 def show_version():
-    """Print version from META DATA HEADER."""
+    """Print version from META header."""
     console.print("SEED v3.0.0")
 
 # In main():
@@ -274,7 +274,7 @@ This standard does not require immediate system-wide changes. Recommended rollou
 
 **Phase 1: Add `--version` to all branches**
 - Lowest effort, highest value
-- Just read the META DATA HEADER version string
+- Just read the META header version string
 - Can be done branch-by-branch
 
 **Phase 2: Add `--test` to core branches**

@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -33,6 +32,7 @@ ARCHITECTURE:
 
 import sys
 import importlib
+from pathlib import Path
 from typing import List
 
 # Prax logger
@@ -305,9 +305,10 @@ def print_help():
     # =============================================================================
     CONSOLE.print("[bold cyan]FULL DOCUMENTATION:[/bold cyan]")
     CONSOLE.print()
-    CONSOLE.print("  [yellow]Source code:[/yellow]        [dim]/home/aipass/aipass_core/cli/apps/[/dim]")
-    CONSOLE.print("  [yellow]Public API:[/yellow]         [dim]/home/aipass/aipass_core/cli/apps/modules/[/dim]")
-    CONSOLE.print("  [yellow]Implementation:[/yellow]     [dim]/home/aipass/aipass_core/cli/apps/handlers/[/dim]")
+    _cli_root = Path(__file__).resolve().parents[1]  # cli.py -> apps -> cli
+    CONSOLE.print(f"  [yellow]Source code:[/yellow]        [dim]{_cli_root / 'apps'}[/dim]")
+    CONSOLE.print(f"  [yellow]Public API:[/yellow]         [dim]{_cli_root / 'apps' / 'modules'}[/dim]")
+    CONSOLE.print(f"  [yellow]Implementation:[/yellow]     [dim]{_cli_root / 'apps' / 'handlers'}[/dim]")
     CONSOLE.print()
     CONSOLE.print("─" * 70)
     CONSOLE.print()

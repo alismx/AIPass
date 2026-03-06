@@ -71,7 +71,7 @@ def get_naming_standards() -> str:
         "  [yellow]⚠[/yellow]  Legacy code being migrated gradually",
         "",
         "[bold cyan]REFERENCE:[/bold cyan]",
-        "  [dim]/home/aipass/standards/CODE_STANDARDS/naming.md[/dim]",
+        "  [dim]See: seedgo standards pack (naming)[/dim]",
     ]
 
     return "\n".join(lines)

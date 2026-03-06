@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -110,8 +109,11 @@ def normalize_branch_arg(arg: str) -> str:
     DRONE now resolves @branch arguments to full paths before passing to modules.
     This function normalizes both formats to branch names.
 
+    The package structure is: .../src/aipass/{module}/apps/...
+    Find "aipass" in path parts, then the next part is the module name.
+
     Args:
-        arg: Branch name (e.g., "flow") or full path (e.g., "/home/aipass/aipass_core/flow")
+        arg: Branch name (e.g., "flow") or full path (e.g., ".../src/aipass/flow")
 
     Returns:
         Uppercase branch name (e.g., "FLOW")
@@ -119,17 +121,15 @@ def normalize_branch_arg(arg: str) -> str:
     Examples:
         >>> normalize_branch_arg("flow")
         "FLOW"
-        >>> normalize_branch_arg("/home/aipass/aipass_core/flow")
+        >>> normalize_branch_arg("/path/to/src/aipass/flow")
         "FLOW"
-        >>> normalize_branch_arg("/home/aipass/seed")
-        "SEED"
     """
     if arg.startswith('/'):
         from pathlib import Path
         parts = Path(arg).parts
-        # Check if path contains aipass_core - extract branch name after it
-        if 'aipass_core' in parts:
-            idx = parts.index('aipass_core')
+        # Check if path contains "aipass" - extract module name after it
+        if 'aipass' in parts:
+            idx = parts.index('aipass')
             if idx + 1 < len(parts):
                 return parts[idx + 1].upper()
         # Otherwise, use last part of path
@@ -158,7 +158,8 @@ def _refresh_pid_cache() -> None:
     _pid_cache_last_refresh = now
 
     try:
-        registry_path = Path.home() / "BRANCH_REGISTRY.json"
+        from aipass.prax.apps.handlers.config.load import _find_repo_root
+        registry_path = _find_repo_root() / "AIPASS_REGISTRY.json"
         if not registry_path.exists():
             return
         data = _json.loads(registry_path.read_text(encoding="utf-8"))
@@ -591,11 +592,12 @@ def _file_watcher_worker():
                 logger.error(f"[monitor] Error handling {action} event for {path_str}: {e}")
 
     # Create observer and start watching
-    # Watch entire /home/aipass directory (covers aipass_core, aipass_os, speakeasy, etc.)
+    # Watch from repo root (covers all modules)
+    from aipass.prax.apps.handlers.config.load import _find_repo_root
     observer = Observer()
     handler = MonitoringFileHandler()
-    home_dir = Path.home()
-    observer.schedule(handler, str(home_dir), recursive=True)
+    watch_dir = _find_repo_root()
+    observer.schedule(handler, str(watch_dir), recursive=True)
     observer.start()
 
     try:

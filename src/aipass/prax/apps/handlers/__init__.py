@@ -3,7 +3,7 @@
 import inspect
 from pathlib import Path
 
-MY_BRANCH = "prax"
+MY_BRANCH = "aipass.prax"
 
 
 def _find_real_caller():
@@ -45,7 +45,7 @@ def _extract_branch_name(filepath: str) -> str:
     """Extract branch name from a file path."""
     parts = filepath.split("/")
     for i, part in enumerate(parts):
-        if part in ("aipass_core", "MEMORY_BANK", "Nexus"):
+        if part == "aipass":
             if i + 1 < len(parts):
                 return parts[i + 1]
     return "unknown"
@@ -56,7 +56,7 @@ def _guard_branch_access():
     Block cross-branch handler imports.
 
     Only code from within the 'prax' branch can import these handlers.
-    External branches must use prax.apps.modules instead.
+    External branches must use aipass.prax.apps.modules instead.
     """
     caller_file, import_line = _find_real_caller()
 
@@ -99,7 +99,9 @@ def _guard_branch_access():
         return  # Allow if truly can't determine
 
     # Check if caller is from our branch
-    if f"/{MY_BRANCH}/" in caller_file:
+    # MY_BRANCH is "aipass.prax" (dotted), but filesystem uses "/aipass/prax/"
+    branch_path = "/" + MY_BRANCH.replace(".", "/") + "/"
+    if branch_path in caller_file:
         return  # Same branch, allowed
 
     # External caller - block access

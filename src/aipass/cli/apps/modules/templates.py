@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -107,7 +106,7 @@ def print_help():
     CONSOLE.print("  [dim]from aipass.cli.apps.modules.templates import operation_start, operation_complete[/dim]")
     CONSOLE.print()
     CONSOLE.print("  [dim]# Start operation[/dim]")
-    CONSOLE.print("  [dim]operation_start('Creating files', target='/home/aipass/my_branch')[/dim]")
+    CONSOLE.print("  [dim]operation_start('Creating files', target='/path/to/my_branch')[/dim]")
     CONSOLE.print()
     CONSOLE.print("  [dim]# ... do work ...[/dim]")
     CONSOLE.print()
@@ -116,7 +115,7 @@ def print_help():
     CONSOLE.print()
 
     CONSOLE.print("[bold cyan]Reference:[/bold cyan]")
-    CONSOLE.print("  [dim]/home/aipass/standards/CODE_STANDARDS/cli.md[/dim]")
+    CONSOLE.print("  [dim]See CODE_STANDARDS/cli.md[/dim]")
     CONSOLE.print()
 
     CONSOLE.print("[bold]Commands: templates, demo, --help[/bold]")
@@ -154,11 +153,11 @@ def run_demo():
     CONSOLE.print()
 
     # Demo operation start
-    operation_start("Creating new branch", target="/home/aipass/my_branch", type="module")
+    operation_start("Creating new branch", target="/path/to/my_branch", type="module")
 
     # Simulate some work
     CONSOLE.print("✅ [green]Directory created[/green]")
-    CONSOLE.print("   [dim]/home/aipass/my_branch[/dim]")
+    CONSOLE.print("   [dim]/path/to/my_branch[/dim]")
     CONSOLE.print()
 
     CONSOLE.print("✅ [green]Files copied[/green]")

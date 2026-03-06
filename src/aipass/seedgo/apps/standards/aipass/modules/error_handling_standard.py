@@ -20,8 +20,8 @@ from typing import List
 
 
 from aipass.prax import logger
-from handlers.json import json_handler
-from handlers.standards.error_handling_content import get_error_handling_standards
+from aipass.seedgo.apps.standards.aipass.handlers.json import json_handler
+from aipass.seedgo.apps.standards.aipass.handlers.standards.error_handling_content import get_error_handling_standards
 
 # Import CLI services (Rich console + display functions)
 from aipass.cli import console, header
@@ -83,7 +83,7 @@ def print_help():
     console.print()
 
     console.print("[yellow]REFERENCE:[/yellow]")
-    console.print("  /home/aipass/standards/CODE_STANDARDS/error_handling.md")
+    console.print("  See: seedgo standards pack (error_handling)")
     console.print()
 
 

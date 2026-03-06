@@ -1,0 +1,21 @@
+[
+  {
+    "timestamp": "2026-03-06T19:26:45.708820",
+    "operation": "plan_created",
+    "data": {
+      "command": "create",
+      "args": [
+        "/tmp",
+        "Test plan from devpulse"
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-03-06T20:20:39.984820",
+    "operation": "plan_created",
+    "data": {
+      "command": "create",
+      "args": []
+    }
+  }
+]

@@ -131,12 +131,6 @@ def route_to_pack(pack_name: str, command: str, args: List[str]) -> bool:
             return False
         pack_module = importlib.util.module_from_spec(spec)
 
-        # Add pack root to sys.path so pack modules can find their handlers
-        # The pack dir contains 'aipass_json/' etc but NOT an 'aipass/' dir that would shadow the package
-        pack_root_str = str(pack_path)
-        if pack_root_str not in sys.path:
-            sys.path.insert(0, pack_root_str)
-
         spec.loader.exec_module(pack_module)
 
         if hasattr(pack_module, "main"):

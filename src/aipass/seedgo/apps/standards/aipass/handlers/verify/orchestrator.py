@@ -25,11 +25,11 @@ from typing import Dict
 from aipass.cli import console, header
 
 # Check handlers
-from ..verify.stale_check import check_stale_patterns
-from ..verify.freshness_check import check_file_freshness
-from ..verify.help_check import check_help_consistency
-from ..verify.command_check import check_command_consistency
-from ..verify.checker_sync import check_checker_sync
+from aipass.seedgo.apps.standards.aipass.handlers.verify.stale_check import check_stale_patterns
+from aipass.seedgo.apps.standards.aipass.handlers.verify.freshness_check import check_file_freshness
+from aipass.seedgo.apps.standards.aipass.handlers.verify.help_check import check_help_consistency
+from aipass.seedgo.apps.standards.aipass.handlers.verify.command_check import check_command_consistency
+from aipass.seedgo.apps.standards.aipass.handlers.verify.checker_sync import check_checker_sync
 
 
 def run_verification() -> Dict:

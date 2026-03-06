@@ -20,8 +20,8 @@ from typing import List
 
 
 from aipass.prax import logger
-from handlers.json import json_handler
-from handlers.standards.imports_content import get_imports_standards
+from aipass.seedgo.apps.standards.aipass.handlers.json import json_handler
+from aipass.seedgo.apps.standards.aipass.handlers.standards.imports_content import get_imports_standards
 
 # Import CLI services (Rich console + display functions)
 from aipass.cli import console, header
@@ -79,7 +79,7 @@ def print_help():
     console.print()
 
     console.print("[yellow]REFERENCE:[/yellow]")
-    console.print("  /home/aipass/standards/CODE_STANDARDS/imports.md")
+    console.print("  See: seedgo standards pack (imports)")
     console.print()
 
 

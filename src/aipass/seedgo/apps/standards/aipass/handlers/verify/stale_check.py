@@ -19,12 +19,12 @@ import subprocess
 from pathlib import Path
 from typing import Dict
 
-from seed.apps.handlers.config import ignore_handler
+from aipass.seedgo.apps.standards.aipass.handlers.config import ignore_handler
 
 
 def check_stale_patterns() -> Dict:
     """
-    Check for deprecated patterns in /home/aipass/seed/
+    Check for deprecated patterns in the seedgo package
 
     Returns:
         Dict with check results

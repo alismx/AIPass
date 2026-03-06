@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -83,14 +82,16 @@ def get_calling_module_path() -> Optional[str]:
 def detect_branch_from_path(module_path: str) -> Optional[str]:
     """Detect branch name from module file path
 
+    The package structure is: .../src/aipass/{module}/apps/...
+    Find "aipass" in path parts, then the next part is the module name.
+
     Examples:
-        /home/aipass/aipass_core/flow/apps/module.py → "aipass_core/flow"
-        /home/aipass/aipass_core/cortex/apps/module.py → "aipass_core/cortex"
-        /home/aipass/aipass_core/prax/apps/module.py → "aipass_core/prax"
-        /home/aipass/other_dir/module.py → "other_dir"
+        .../src/aipass/flow/apps/module.py → "flow"
+        .../src/aipass/prax/apps/module.py → "prax"
+        .../src/aipass/drone/apps/branch.py → "drone"
 
     Returns:
-        Branch path (e.g., "aipass_core/flow") or None
+        Module/branch name (e.g., "flow") or None
     """
     if not module_path:
         return None
@@ -98,27 +99,15 @@ def detect_branch_from_path(module_path: str) -> Optional[str]:
     path = Path(module_path)
     parts = path.parts
 
-    # Find /home/aipass in path
+    # Find "aipass" in path parts and return the next part (the module name)
+    # Package structure: .../src/aipass/{module}/apps/...
     try:
         aipass_idx = parts.index('aipass')
-
-        # Check if this is aipass_core structure
-        if aipass_idx + 1 < len(parts) and parts[aipass_idx + 1] == 'aipass_core':
-            # For aipass_core, we want aipass_core/module_name format
-            # e.g., /home/aipass/aipass_core/flow/apps/module.py → "aipass_core/flow"
+        if aipass_idx + 1 < len(parts):
+            module_name = parts[aipass_idx + 1]
+            # Ensure there's more after it (not just a file in the aipass dir)
             if aipass_idx + 2 < len(parts):
-                module_folder = parts[aipass_idx + 2]
-                # Make sure it's not just a file in aipass_core root
-                if aipass_idx + 3 < len(parts):
-                    return f"aipass_core/{module_folder}"
-        else:
-            # For other structures, return the folder after aipass
-            # e.g., /home/aipass/some_project/module.py → "some_project"
-            if aipass_idx + 1 < len(parts):
-                potential_branch = parts[aipass_idx + 1]
-                # Skip if it's a file directly in /home/aipass
-                if aipass_idx + 2 < len(parts):
-                    return potential_branch
+                return module_name
     except ValueError:
         pass
 

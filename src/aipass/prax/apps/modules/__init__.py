@@ -13,5 +13,5 @@ Available modules:
     system_logger.warning("Warning message")
     system_logger.error("Error message")
 
-  Logs auto-route to: /home/aipass/system_logs/<your_module>.log
+  Logs auto-route to: {repo_root}/system_logs/<your_module>.log
 """

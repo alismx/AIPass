@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -36,6 +35,7 @@ from pathlib import Path
 # Standard library
 import fcntl
 import json
+import os
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -46,7 +46,14 @@ from aipass.prax.apps.modules.logger import system_logger as logger
 # CONSTANTS
 # =============================================
 
-REGISTRY_DIR = Path.home() / ".aipass" / "telegram_bots"
+def _aipass_data_dir() -> Path:
+    """User data directory for AIPass runtime files."""
+    env = os.environ.get("AIPASS_DATA_DIR")
+    if env:
+        return Path(env)
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "aipass"
+
+REGISTRY_DIR = _aipass_data_dir() / "telegram_bots"
 REGISTRY_FILE = REGISTRY_DIR / "_registry.json"
 
 # =============================================

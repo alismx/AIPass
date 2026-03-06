@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -46,7 +45,7 @@ Usage:
     bot = BaseBot(
         bot_id="dev_central",
         bot_token="123:ABC",
-        work_dir=Path("/home/aipass/aipass_os/dev_central"),
+        work_dir=Path.cwd(),
         bot_name="AIPass Dev Central Bot",
         allowed_user_ids=[7235222625],
     )
@@ -65,6 +64,7 @@ import argparse
 import atexit
 import json
 import os
+import shutil
 import signal
 import subprocess
 import threading
@@ -115,7 +115,16 @@ from aipass.api.apps.handlers.telegram.log_streamer import LogStreamer
 # MODULE-LEVEL CONSTANTS
 # =============================================
 
-PENDING_DIR = Path.home() / ".aipass" / "telegram_pending"
+def _aipass_data_dir() -> Path:
+    """User data directory for AIPass runtime files (config, state, pending)."""
+    env = os.environ.get("AIPASS_DATA_DIR")
+    if env:
+        return Path(env)
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "aipass"
+
+_DATA_DIR = _aipass_data_dir()
+
+PENDING_DIR = _DATA_DIR / "telegram_pending"
 PENDING_TTL = 3600  # 1 hour
 TELEGRAM_CHAR_LIMIT = 4096
 RATE_LIMIT_MESSAGES = 5
@@ -123,7 +132,7 @@ RATE_LIMIT_WINDOW = 60
 POLL_TIMEOUT = 30
 SEND_KEYS_DELAY = 0.5
 HEARTBEAT_INTERVAL = 30  # seconds
-CLAUDE_BIN = str(Path.home() / ".local" / "bin" / "claude")
+CLAUDE_BIN = shutil.which("claude") or "claude"
 TEMP_DIR = Path("/tmp/telegram_uploads")
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
 
@@ -216,10 +225,10 @@ class BaseBot:
         self.logger = get_direct_logger()
 
         # Lock file
-        self._lock_file = Path.home() / ".aipass" / "telegram_bots" / f".{bot_id}.lock"
+        self._lock_file = _DATA_DIR / "telegram_bots" / f".{bot_id}.lock"
 
         # Offset file
-        self._offset_file = Path.home() / ".aipass" / "telegram_bots" / f"{bot_id}_offset.json"
+        self._offset_file = _DATA_DIR / "telegram_bots" / f"{bot_id}_offset.json"
 
     # =============================================
     # MAIN ENTRY POINT
@@ -1475,7 +1484,9 @@ class BaseBot:
         """
         slug = str(self.work_dir).replace("/", "-")
         # Look for transcript files matching the session pattern
-        projects_dir = Path.home() / ".claude" / "projects" / slug
+        # Claude Code stores transcripts under ~/.claude/projects/
+        claude_home = Path(os.environ.get("CLAUDE_HOME", Path.home() / ".claude"))
+        projects_dir = claude_home / "projects" / slug
         if not projects_dir.exists():
             return 0
 
@@ -1758,11 +1769,11 @@ if __name__ == "__main__":
     parser.add_argument("--config", help="Path to bot config JSON")
     args = parser.parse_args()
 
-    # Load config from ~/.aipass/telegram_bots/{bot_id}.json or --config path
+    # Load config from data dir telegram_bots/{bot_id}.json or --config path
     config_path = (
         Path(args.config)
         if args.config
-        else Path.home() / ".aipass" / "telegram_bots" / f"{args.bot_id}.json"
+        else _DATA_DIR / "telegram_bots" / f"{args.bot_id}.json"
     )
 
     with open(config_path, "r", encoding="utf-8") as f:
@@ -1771,7 +1782,7 @@ if __name__ == "__main__":
     bot = BaseBot(
         bot_id=args.bot_id,
         bot_token=config["bot_token"],
-        work_dir=Path(config.get("work_dir", str(Path.home()))),
+        work_dir=Path(config.get("work_dir", str(Path.cwd()))),
         bot_name=config.get("bot_name", "AIPass Bot"),
         allowed_user_ids=config.get("allowed_user_ids", []),
         branch_name=config.get("branch_name"),

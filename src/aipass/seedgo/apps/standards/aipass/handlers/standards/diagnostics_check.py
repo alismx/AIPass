@@ -25,7 +25,7 @@ from rich.console import Console
 console = Console()
 
 # Import ignore patterns from config handler (same branch)
-from ..config.ignore_handler import get_audit_ignore_patterns
+from aipass.seedgo.apps.standards.aipass.handlers.config.ignore_handler import get_audit_ignore_patterns
 
 
 def should_ignore_file(file_path: str, ignore_patterns: List[str]) -> bool:
@@ -257,7 +257,7 @@ def check_branch(branch_path: str) -> Dict:
     Run diagnostics on a branch's apps/ directory
 
     Args:
-        branch_path: Path to branch root (e.g., /home/aipass/seed)
+        branch_path: Path to branch root (e.g., src/aipass/seedgo)
 
     Returns:
         Same format as check_directory

@@ -24,27 +24,28 @@ from typing import Dict
 # IMPORTS
 # =============================================================================
 
-from ..standards import imports_check
-from ..standards import architecture_check
-from ..standards import naming_check
-from ..standards import cli_check
-from ..standards import handlers_check
-from ..standards import modules_check
-from ..standards import documentation_check
-from ..standards import json_structure_check
-from ..standards import testing_check
-from ..standards import error_handling_check
-from ..standards import encapsulation_check
-from ..standards import trigger_check
-from ..standards import log_level_check
-from ..standards import cli_flags_check
-from ..standards import log_handler_check
-from ..standards import log_visibility_check
-from ..standards import permission_flags_check
-from ..standards import readme_check
-from ..standards import diagnostics_check
-from ..standards import meta_check
-from ..config import ignore_handler
+from aipass.seedgo.apps.standards.aipass.handlers.standards import imports_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import architecture_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import naming_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import cli_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import handlers_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import modules_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import documentation_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import json_structure_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import testing_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import error_handling_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import encapsulation_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import trigger_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import log_level_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import cli_flags_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import log_handler_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import log_visibility_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import permission_flags_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import readme_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import diagnostics_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import meta_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import shebang_check
+from aipass.seedgo.apps.standards.aipass.handlers.config import ignore_handler
 
 
 # =============================================================================
@@ -106,7 +107,8 @@ def audit_branch(branch: Dict[str, str], bypass_rules: list) -> Dict:
         'log_visibility': log_visibility_check,
         'permission_flags': permission_flags_check,
         'readme': readme_check,
-        'meta': meta_check
+        'meta': meta_check,
+        'shebang': shebang_check
     }
 
     results = {}
@@ -414,6 +416,33 @@ def audit_branch(branch: Dict[str, str], bypass_rules: list) -> Dict:
         scores['permission_flags'] = int(sum(permission_flags_scores) / len(permission_flags_scores))
         avg_score = int(sum(scores.values()) / len(scores)) if scores else 0
 
+    # Check SHEBANG on ALL files (no #!/... in pip packages)
+    shebang_violations = []
+    shebang_scores = []
+    if all_file_results:
+        for file_info in all_file_results:
+            try:
+                sb_result = shebang_check.check_module(file_info['file'], bypass_rules=bypass_rules)
+                sb_score = sb_result.get('score', 0)
+                if sb_result.get('checks', []):
+                    shebang_scores.append(sb_score)
+                if not sb_result.get('passed', True):
+                    failed_checks = [c for c in sb_result.get('checks', []) if not c.get('passed', False)]
+                    if failed_checks:
+                        shebang_violations.append({
+                            'file': file_info['name'],
+                            'path': file_info['file'],
+                            'score': sb_score,
+                            'issues': [c.get('message', 'Unknown') for c in failed_checks]
+                        })
+            except Exception:
+                pass
+
+    # Update shebang score to reflect ALL files
+    if shebang_scores:
+        scores['shebang'] = int(sum(shebang_scores) / len(shebang_scores))
+        avg_score = int(sum(scores.values()) / len(scores)) if scores else 0
+
     # Run TYPE ERROR diagnostics on the branch (pyright)
     diagnostics_result = diagnostics_check.check_branch(str(branch_path))
     type_errors = diagnostics_result.get('total_errors', 0)
@@ -451,6 +480,7 @@ def audit_branch(branch: Dict[str, str], bypass_rules: list) -> Dict:
         'permission_flags_violations': permission_flags_violations,
         'cli_flags_violations': [],
         'json_structure_violations': json_structure_violations,
+        'shebang_violations': shebang_violations,
         'deprecated_patterns': deprecated_patterns,
         'files_checked': len(all_file_results),
         'type_errors': type_errors,

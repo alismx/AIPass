@@ -149,7 +149,7 @@ def check_handler_independence(content: str, lines: List[str], module_path: str)
     forbidden_imports = []
 
     # Detect handler's own package
-    # e.g., /home/aipass/seed/apps/handlers/standards/cli_check.py -> package is 'standards'
+    # e.g., src/aipass/seedgo/apps/handlers/standards/cli_check.py -> package is 'standards'
     path_parts = Path(module_path).parts
     own_package = None
     for i, part in enumerate(path_parts):

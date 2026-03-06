@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -19,7 +18,7 @@
 """
 System Log Size Watchdog
 
-Scans /home/aipass/system_logs/ for oversized log files and enforces size limits.
+Scans the system_logs/ directory for oversized log files and enforces size limits.
 Catches ALL log files regardless of how they were created — even those bypassing
 PRAX's RotatingFileHandler (e.g., telegram bots using plain FileHandler).
 
@@ -41,7 +40,22 @@ from typing import Any, Dict, List, Tuple
 # CONSTANTS
 # =============================================================================
 
-SYSTEM_LOGS_DIR = Path.home() / "system_logs"
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+_system_logs_dir_cache: Path | None = None
+
+def _get_system_logs_dir() -> Path:
+    """Lazily resolve system_logs directory (package-relative)."""
+    global _system_logs_dir_cache
+    if _system_logs_dir_cache is None:
+        _system_logs_dir_cache = _find_repo_root() / "system_logs"
+    return _system_logs_dir_cache
 
 # Thresholds
 WARN_THRESHOLD_LINES = 5000    # Fire warning at this line count
@@ -96,10 +110,10 @@ def scan_log_files() -> List[Dict[str, Any]]:
     """
     results: List[Dict[str, Any]] = []
 
-    if not SYSTEM_LOGS_DIR.exists():
+    if not _get_system_logs_dir().exists():
         return results
 
-    for log_file in sorted(SYSTEM_LOGS_DIR.glob("*.log")):
+    for log_file in sorted(_get_system_logs_dir().glob("*.log")):
         lines = _count_lines(log_file)
         size_kb = _get_file_size_kb(log_file)
 

@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -45,7 +44,7 @@ def start() -> bool:
     """
     Start the centralized log watcher.
 
-    Watches /home/aipass/system_logs for log file changes.
+    Watches system_logs/ for log file changes.
     Fires error_logged and warning_logged events.
 
     Returns:

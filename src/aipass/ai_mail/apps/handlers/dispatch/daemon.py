@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -49,19 +48,29 @@ from urllib.error import URLError
 
 from aipass.prax.apps.modules.logger import system_logger as logger
 
+
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
 # Infrastructure paths
-AIPASS_ROOT = Path.home() / "aipass_core"
-AIPASS_HOME = Path.home()
+_REPO_ROOT = _find_repo_root()
+_AI_MAIL_DIR = Path(__file__).resolve().parents[3]  # ai_mail/
 
 # Paths
-CONFIG_FILE = AIPASS_ROOT / "ai_mail" / "safety_config.json"
-DAEMON_STATE_FILE = AIPASS_ROOT / "ai_mail" / "ai_mail.local" / "daemon_state.json"
-DAEMON_LOG_FILE = AIPASS_ROOT / "ai_mail" / "ai_mail.local" / "dispatch_daemon.log"
-DAEMON_PID_FILE = AIPASS_ROOT / "ai_mail" / "ai_mail.local" / "daemon.pid"
-BRANCH_REGISTRY = AIPASS_HOME / "BRANCH_REGISTRY.json"
+CONFIG_FILE = _AI_MAIL_DIR / "safety_config.json"
+DAEMON_STATE_FILE = _AI_MAIL_DIR / "ai_mail.local" / "daemon_state.json"
+DAEMON_LOG_FILE = _AI_MAIL_DIR / "ai_mail.local" / "dispatch_daemon.log"
+DAEMON_PID_FILE = _AI_MAIL_DIR / "ai_mail.local" / "daemon.pid"
+BRANCH_REGISTRY = _REPO_ROOT / "AIPASS_REGISTRY.json"
 
 # Telegram notifications (scheduler bot)
-SCHEDULER_CONFIG = AIPASS_HOME / ".aipass" / "scheduler_config.json"
+SCHEDULER_CONFIG = _REPO_ROOT / ".aipass" / "scheduler_config.json"
 
 # Graceful shutdown
 SHUTDOWN = False
@@ -132,7 +141,7 @@ def _set_session_name(branch_path: Path, name: str) -> bool:
     Writing a custom-title entry makes the session identifiable in /resume picker.
     """
     encoded_cwd = str(branch_path).replace("/", "-")
-    projects_dir = Path.home() / ".claude" / "projects" / encoded_cwd
+    projects_dir = Path("~/.claude/projects").expanduser() / encoded_cwd
     if not projects_dir.exists():
         return False
     jsonl_files = sorted(
@@ -226,7 +235,7 @@ def _acquire_lock(branch_path: Path, pid: int) -> tuple[bool, str]:
 def load_config() -> Dict[str, Any]:
     """Load safety config from JSON file."""
     DEFAULTS = {
-        "kill_switch_path": str(AIPASS_HOME / ".aipass" / "autonomous_pause"),
+        "kill_switch_path": str(_REPO_ROOT / ".aipass" / "autonomous_pause"),
         "poll_interval_seconds": 300,
         "max_depth": 3,
         "max_turns_per_wake": 50,
@@ -271,7 +280,7 @@ def save_daemon_state(state: Dict[str, Any]) -> None:
 
 def is_kill_switch_active(config: Dict[str, Any]) -> bool:
     """Check if the system-wide kill switch is engaged."""
-    kill_path = Path(config.get("kill_switch_path", str(AIPASS_HOME / ".aipass" / "autonomous_pause")))
+    kill_path = Path(config.get("kill_switch_path", str(_REPO_ROOT / ".aipass" / "autonomous_pause")))
     return kill_path.exists()
 
 
@@ -416,7 +425,7 @@ def spawn_agent(
     ]
 
     # Build monitor command (dispatch_monitor wraps claude, handles bounce + lock cleanup)
-    MONITOR_SCRIPT = AIPASS_ROOT / "ai_mail" / "apps" / "handlers" / "dispatch" / "dispatch_monitor.py"
+    MONITOR_SCRIPT = Path(__file__).resolve().parent / "dispatch_monitor.py"
     LOG_DIR = branch_path / "ai_mail.local"
     LOG_DIR.mkdir(parents=True, exist_ok=True)
     STDERR_LOG = str(LOG_DIR / "agent_stderr.log")

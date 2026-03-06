@@ -56,14 +56,14 @@ def get_json_structure_standards() -> str:
         "  [dim]][/dim]",
         "",
         "[bold cyan]LOCATIONS:[/bold cyan]",
-        "  • Seed: [dim]/home/aipass/seed/seed_json/[/dim]",
-        "  • Branches: [dim]/home/aipass/aipass_core/{branch}/{branch}_json/[/dim]",
+        "  • Package JSON: [dim]src/aipass/{module}/aipass_json/[/dim]",
+        "  • Per-module: [dim]src/aipass/{module}/{module}_json/[/dim]",
         "",
         "[bold red]SETUP json_handler.py (MANDATORY):[/bold red]",
         "  [red]✗ DO NOT copy SEED's handler without changing paths![/red]",
         "",
         "  [green]✓ Update BRANCH_ROOT:[/green]",
-        "    [dim]{BRANCH}_ROOT = Path.home() / \"aipass_core\" / \"{branch}\"[/dim]",
+        "    [dim]{BRANCH}_ROOT = Path(__file__).resolve().parents[N][/dim]",
         "",
         "  [green]✓ Update JSON_DIR:[/green]",
         "    [dim]{BRANCH}_JSON_DIR = {BRANCH}_ROOT / \"{branch}_json\"[/dim]",
@@ -80,8 +80,8 @@ def get_json_structure_standards() -> str:
         "  • [dim]Not part of three-JSON pattern[/dim]",
         "",
         "[bold cyan]REFERENCE:[/bold cyan]",
-        "  [dim]/home/aipass/standards/CODE_STANDARDS/json_structure.md[/dim]",
-        "  [dim]/home/aipass/seed/apps/handlers/json/json_handler.py[/dim]",
+        "  [dim]See: seedgo standards pack (json_structure)[/dim]",
+        "  [dim]See: src/aipass/seedgo/apps/standards/aipass/handlers/json/json_handler.py[/dim]",
     ]
 
     return "\n".join(lines)

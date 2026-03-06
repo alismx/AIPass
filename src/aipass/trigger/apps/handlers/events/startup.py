@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -38,9 +37,7 @@ from datetime import datetime, timedelta
 from typing import Any, Callable, Dict, List, Optional, Set
 from aipass.trigger.apps.config import TRIGGER_ROOT
 
-AIPASS_HOME = Path.home()
-
-SYSTEM_LOGS_DIR = AIPASS_HOME / "system_logs"
+SYSTEM_LOGS_DIR = TRIGGER_ROOT.parent / "system_logs"
 TRIGGER_DATA_FILE = TRIGGER_ROOT / "trigger_json" / "trigger_data.json"
 SUPPRESSED_LOG = TRIGGER_ROOT / "logs" / "medic_suppressed.log"
 

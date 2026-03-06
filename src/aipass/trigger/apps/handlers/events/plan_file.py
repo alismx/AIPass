@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -39,7 +38,15 @@ from pathlib import Path
 from typing import Optional
 from aipass.trigger.apps.config import TRIGGER_ROOT, AIPASS_PKG_ROOT
 
-ECOSYSTEM_ROOT = Path("/home/aipass")
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+REPO_ROOT = _find_repo_root()
 
 # Registry JSON file path (direct file access, no handler imports)
 FLOW_JSON_DIR = AIPASS_PKG_ROOT / "flow" / "flow_json"
@@ -108,7 +115,7 @@ def handle_plan_file_created(path: str, **kwargs):
             # If plan is closed, preserve closed status and just update location
             if existing_plan.get("status") == "closed":
                 existing_plan["location"] = str(file_path.parent)
-                existing_plan["relative_path"] = str(file_path.parent.relative_to(ECOSYSTEM_ROOT))
+                existing_plan["relative_path"] = str(file_path.parent.relative_to(REPO_ROOT))
                 existing_plan["file_path"] = str(file_path)
                 existing_plan["last_updated"] = datetime.now(timezone.utc).isoformat()
                 _save_registry(registry)
@@ -117,7 +124,7 @@ def handle_plan_file_created(path: str, **kwargs):
                 return
 
         # Add to registry
-        relative_path = str(file_path.parent.relative_to(ECOSYSTEM_ROOT))
+        relative_path = str(file_path.parent.relative_to(REPO_ROOT))
         registry.setdefault("plans", {})[plan_number] = {
             "location": str(file_path.parent),
             "relative_path": relative_path,
@@ -195,7 +202,7 @@ def handle_plan_file_moved(src_path: str, dest_path: str, **kwargs):
         plans = registry.get("plans", {})
 
         if plan_number in plans:
-            relative_path = str(dest_file.parent.relative_to(ECOSYSTEM_ROOT))
+            relative_path = str(dest_file.parent.relative_to(REPO_ROOT))
 
             # CRITICAL: Only update location fields, preserve ALL other metadata
             # (status, closed, closed_reason, memory_created, memory_created_date, etc.)

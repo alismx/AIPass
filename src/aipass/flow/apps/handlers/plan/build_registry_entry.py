@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -63,10 +62,10 @@ def build_plan_registry_entry(
     Example:
         >>> entry = build_plan_registry_entry(
         ...     1,
-        ...     Path("/home/aipass/aipass_core/flow"),
+        ...     Path("/repo/src/aipass/flow"),
         ...     "flow",
         ...     "My task",
-        ...     Path("/home/aipass/aipass_core/flow/PLAN0001.md"),
+        ...     Path("/repo/src/aipass/flow/PLAN0001.md"),
         ...     "default"
         ... )
         >>> entry["status"]

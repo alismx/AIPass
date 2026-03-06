@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -65,11 +64,34 @@ logger = get_direct_logger()
 # CONSTANTS
 # =============================================
 
-AIPASS_HOME = Path.home()
-CONFIG_PATH = AIPASS_HOME / ".aipass" / "scheduler_config.json"
-DAEMON_LOG = AIPASS_HOME / "aipass_core" / "ai_mail" / "ai_mail.local" / "dispatch_daemon.log"
-VERA_NOTEPAD = AIPASS_HOME / "aipass_business" / "vera" / "NOTEPAD.md"
-MONITOR_PID_FILE = AIPASS_HOME / ".aipass" / "prax_monitor.pid"
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+_repo_root_cache: Path | None = None
+
+def _get_repo_root() -> Path:
+    """Lazily resolve repo root."""
+    global _repo_root_cache
+    if _repo_root_cache is None:
+        _repo_root_cache = _find_repo_root()
+    return _repo_root_cache
+
+def _get_config_path() -> Path:
+    return _get_repo_root() / ".aipass" / "scheduler_config.json"
+
+def _get_daemon_log() -> Path:
+    return _get_repo_root() / "src" / "aipass" / "ai_mail" / "ai_mail.local" / "dispatch_daemon.log"
+
+def _get_vera_notepad() -> Path:
+    return _get_repo_root() / "src" / "aipass" / "vera" / "NOTEPAD.md"
+
+def _get_monitor_pid_file() -> Path:
+    return _get_repo_root() / ".aipass" / "prax_monitor.pid"
 POLL_INTERVAL = 10  # seconds
 TELEGRAM_MAX_LENGTH = 4000
 PATRICK_CHAT_ID = "7235222625"
@@ -93,7 +115,7 @@ _last_log_pos = 0
 def _load_config():
     """Load scheduler bot config."""
     try:
-        with open(CONFIG_PATH, "r", encoding="utf-8") as f:
+        with open(_get_config_path(), "r", encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
         logger.warning("Config not found")
@@ -156,17 +178,17 @@ def _monitor_daemon_log():
     _send_message("🟢 <b>Prax Monitor ON</b>\nWatching daemon log for events.", config)
 
     try:
-        if DAEMON_LOG.exists():
-            _last_log_pos = DAEMON_LOG.stat().st_size
+        if _get_daemon_log().exists():
+            _last_log_pos = _get_daemon_log().stat().st_size
     except OSError:
         _last_log_pos = 0
 
     while _monitoring_active:
         try:
-            if DAEMON_LOG.exists():
-                current_size = DAEMON_LOG.stat().st_size
+            if _get_daemon_log().exists():
+                current_size = _get_daemon_log().stat().st_size
                 if current_size > _last_log_pos:
-                    with open(DAEMON_LOG, "r", encoding="utf-8") as f:
+                    with open(_get_daemon_log(), "r", encoding="utf-8") as f:
                         f.seek(_last_log_pos)
                         new_lines = f.readlines()
                     _last_log_pos = current_size
@@ -201,7 +223,7 @@ def _start_monitoring():
 
     # Write PID file
     try:
-        MONITOR_PID_FILE.write_text(str(os.getpid()))
+        _get_monitor_pid_file().write_text(str(os.getpid()))
     except OSError:
         pass
 
@@ -221,7 +243,7 @@ def _stop_monitoring():
 
     # Remove PID file
     try:
-        MONITOR_PID_FILE.unlink(missing_ok=True)
+        _get_monitor_pid_file().unlink(missing_ok=True)
     except OSError:
         pass
 
@@ -253,7 +275,7 @@ def _cmd_status():
 
     # VERA check - last NOTEPAD entry
     try:
-        with open(VERA_NOTEPAD, "r", encoding="utf-8") as f:
+        with open(_get_vera_notepad(), "r", encoding="utf-8") as f:
             content = f.read()
         # Find first "What Just Happened" line
         for line in content.split("\n"):
@@ -380,7 +402,7 @@ def main():
 
     # Cleanup
     _stop_monitoring()
-    MONITOR_PID_FILE.unlink(missing_ok=True)
+    _get_monitor_pid_file().unlink(missing_ok=True)
     logger.info("Prax Command Bot stopped.")
 
 

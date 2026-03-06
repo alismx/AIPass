@@ -24,18 +24,18 @@ from typing import List, Dict
 # IMPORTS
 # =============================================================================
 
-from ..standards import imports_check
-from ..standards import architecture_check
-from ..standards import naming_check
-from ..standards import cli_check
-from ..standards import handlers_check
-from ..standards import modules_check
-from ..standards import documentation_check
-from ..standards import json_structure_check
-from ..standards import testing_check
-from ..standards import error_handling_check
-from ..standards import encapsulation_check
-from ..standards import meta_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import imports_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import architecture_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import naming_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import cli_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import handlers_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import modules_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import documentation_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import json_structure_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import testing_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import error_handling_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import encapsulation_check
+from aipass.seedgo.apps.standards.aipass.handlers.standards import meta_check
 
 
 # =============================================================================

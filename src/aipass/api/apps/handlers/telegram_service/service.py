@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -18,12 +17,21 @@ Telegram Service Handler
 Low-level systemd operations for telegram-bridge service.
 """
 
+import os
 import subprocess
 from pathlib import Path
 from typing import Tuple
 
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
 SERVICE_NAME = "telegram-bridge"
-LOG_FILE = Path.home() / "system_logs" / "telegram_bridge.log"
+LOG_FILE = _find_repo_root() / "logs" / "telegram_bridge.log"
 
 
 def start_service() -> Tuple[bool, str]:

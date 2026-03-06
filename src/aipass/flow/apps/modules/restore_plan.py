@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -136,7 +135,7 @@ def recover_plan_from_backup(plan_key: str) -> tuple[bool, str]:
         with open(plan_file, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        # Parse location from header (e.g., "**Location**: /home/aipass")
+        # Parse location from header (e.g., "**Location**: /path/to/dir")
         original_location = None
         for line in content.split('\n')[:20]:  # Check first 20 lines
             if line.startswith("**Location**:"):
@@ -150,38 +149,27 @@ def recover_plan_from_backup(plan_key: str) -> tuple[bool, str]:
         # CRITICAL: Convert relative paths to absolute paths
         # If location is relative (like "flow"), resolve it
         if not original_location.startswith('/'):
-            # Relative path - resolve it
+            # Relative path - resolve against _PKG_ROOT
             if original_location == "flow":
                 original_location = str(FLOW_ROOT)
-            elif original_location == "aipass_core":
-                original_location = str(_PKG_ROOT)
-            elif original_location == "seed":
-                original_location = str(Path.home() / "seed")
             else:
                 # Try resolving relative to _PKG_ROOT
                 potential_path = _PKG_ROOT / original_location
                 if potential_path.exists():
                     original_location = str(potential_path)
                 else:
-                    # Try relative to home
-                    potential_path = Path.home() / original_location
-                    if potential_path.exists():
-                        original_location = str(potential_path)
-                    else:
-                        # Fallback to FLOW_ROOT
-                        original_location = str(FLOW_ROOT)
+                    # Fallback to FLOW_ROOT
+                    original_location = str(FLOW_ROOT)
 
         # Determine relative path
         original_path = Path(original_location)
         if original_path == FLOW_ROOT:
             relative_path = "flow"
         elif original_path == _PKG_ROOT:
-            relative_path = "aipass_core"
-        elif original_path == Path.home():
-            relative_path = str(Path.home())
+            relative_path = "root"
         else:
             try:
-                relative_path = str(original_path.relative_to(Path.home()))
+                relative_path = str(original_path.relative_to(_PKG_ROOT))
             except ValueError:
                 relative_path = str(original_path)
 

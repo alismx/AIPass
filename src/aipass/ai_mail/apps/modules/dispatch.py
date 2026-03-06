@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -57,7 +56,7 @@ DAEMON:
   Run as: ai_mail dispatch daemon
   Or standalone: python3 apps/handlers/dispatch/daemon.py
 
-  Kill switch: touch /home/aipass/.aipass/autonomous_pause
+  Kill switch: touch <repo_root>/.aipass/autonomous_pause
   Config: safety_config.json
 
 EXAMPLE:

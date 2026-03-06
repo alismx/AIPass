@@ -1,5 +1,3 @@
-#!/home/aipass/.venv/bin/python3
-
 # ===================AIPASS====================
 # META DATA HEADER
 # Name: tests/conftest.py

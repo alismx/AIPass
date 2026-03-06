@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -57,7 +56,17 @@ from urllib.error import URLError
 # CONSTANTS
 # =============================================
 
-PRAX_MONITOR_CONFIG = Path.home() / ".aipass" / "prax_monitor_config.json"
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+def _get_prax_monitor_config() -> Path:
+    """Lazily resolve prax monitor config path."""
+    return _find_repo_root() / ".aipass" / "prax_monitor_config.json"
 BATCH_INTERVAL = 5.0  # Seconds between flushes
 TELEGRAM_MAX_LENGTH = 4000  # Leave margin under 4096 limit
 
@@ -173,7 +182,7 @@ def _flush():
 def _send_telegram(message):
     """Send a message to Telegram via the Prax Monitor bot. Silent failure."""
     try:
-        with open(PRAX_MONITOR_CONFIG, "r", encoding="utf-8") as f:
+        with open(_get_prax_monitor_config(), "r", encoding="utf-8") as f:
             config = json.load(f)
         bot_token = config["telegram_bot_token"]
         chat_id = config["telegram_chat_id"]

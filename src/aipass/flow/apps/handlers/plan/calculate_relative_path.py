@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -46,20 +45,20 @@ def calculate_relative_location(
 
     Examples:
         >>> calculate_relative_location(
-        ...     Path("/home/aipass/aipass_core/flow"),
-        ...     Path("/home/aipass/aipass_core")
+        ...     Path("/repo/src/aipass/flow"),
+        ...     Path("/repo/src/aipass")
         ... )
         "flow"
 
         >>> calculate_relative_location(
-        ...     Path("/home/aipass/aipass_core"),
-        ...     Path("/home/aipass/aipass_core")
+        ...     Path("/repo/src/aipass"),
+        ...     Path("/repo/src/aipass")
         ... )
         "root"
 
         >>> calculate_relative_location(
         ...     Path("/tmp/somewhere"),
-        ...     Path("/home/aipass/aipass_core")
+        ...     Path("/repo/src/aipass")
         ... )
         "/tmp/somewhere"
     """

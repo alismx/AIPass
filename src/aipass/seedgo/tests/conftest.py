@@ -1,24 +1,8 @@
-#!/home/aipass/.venv/bin/python3
-
-# ===================AIPASS====================
-# META DATA HEADER
-# Name: tests/conftest.py
-# Date: 2025-11-08
-# Version: 1.0.0
-# Category: cortex/tests
-#
-# CHANGELOG (Max 5 entries):
-#   - v1.0.0 (2025-11-08): Initial implementation - Shared pytest fixtures
-#
-# CODE STANDARDS:
-#   - Error handling: Use error handler system (apps/handlers/error/)
-# =============================================
-
-"""Shared pytest fixtures for cortex tests"""
+"""Shared pytest fixtures for seedgo tests"""
 
 # =================== META ====================
 # Name: conftest.py
-# Description: Shared pytest fixtures for cortex tests
+# Description: Shared pytest fixtures for seedgo tests
 # Version: 1.0.0
 # Created: 2026-03-05
 # Modified: 2026-03-05

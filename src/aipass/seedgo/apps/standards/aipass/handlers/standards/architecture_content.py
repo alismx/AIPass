@@ -103,9 +103,9 @@ def get_architecture_standards() -> str:
         "[bold]Exception:[/bold] Service imports OK (e.g., [dim]prax.apps.modules.logger[/dim] system-wide)",
         "",
         "[bold cyan]REFERENCE:[/bold cyan]",
-        "  [dim]/home/aipass/standards/CODE_STANDARDS/architecture.md[/dim]",
-        "  [dim]/home/aipass/seed/apps/[/dim] (showroom)",
-        "  [dim]/home/aipass/aipass_core/cortex/apps/[/dim] (production example)",
+        "  [dim]See: seedgo standards pack (architecture)[/dim]",
+        "  [dim]See: src/aipass/seedgo/apps/ (showroom)[/dim]",
+        "  [dim]See: src/aipass/*/apps/ (production examples)[/dim]",
     ]
 
     return "\n".join(lines)

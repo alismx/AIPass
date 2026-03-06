@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -67,7 +66,7 @@ def _extract_branch_name(filepath: str) -> str:
     """Extract branch name from a file path."""
     parts = filepath.split("/")
     for i, part in enumerate(parts):
-        if part in ("aipass_core", "MEMORY_BANK", "Nexus"):
+        if part == "aipass":
             if i + 1 < len(parts):
                 return parts[i + 1]
     return "unknown"

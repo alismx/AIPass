@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -41,12 +40,22 @@ from typing import Optional, Tuple, List
 
 from aipass.prax.apps.modules.logger import system_logger as logger
 
+
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
 # Infrastructure paths
-AIPASS_ROOT = Path.home() / "aipass_core"
-AIPASS_HOME = Path.home()
-CONFIG_FILE = AIPASS_ROOT / "ai_mail" / "safety_config.json"
-BRANCH_REGISTRY = AIPASS_HOME / "BRANCH_REGISTRY.json"
-PAUSE_FILE = AIPASS_HOME / ".aipass" / "autonomous_pause"
+_REPO_ROOT = _find_repo_root()
+_AI_MAIL_DIR = Path(__file__).resolve().parents[3]  # ai_mail/
+CONFIG_FILE = _AI_MAIL_DIR / "safety_config.json"
+BRANCH_REGISTRY = _REPO_ROOT / "AIPASS_REGISTRY.json"
+PAUSE_FILE = _REPO_ROOT / ".aipass" / "autonomous_pause"
 MONITOR_SCRIPT = Path(__file__).parent / "dispatch_monitor.py"
 
 # Default prompt when no custom message provided
@@ -182,7 +191,7 @@ def _load_config() -> dict:
 def _set_session_name(branch_path: Path, name: str) -> bool:
     """Write custom-title to the most recent Claude session JSONL for a branch."""
     encoded_cwd = str(branch_path).replace("/", "-")
-    projects_dir = Path.home() / ".claude" / "projects" / encoded_cwd
+    projects_dir = Path("~/.claude/projects").expanduser() / encoded_cwd
     if not projects_dir.exists():
         return False
     jsonl_files = sorted(

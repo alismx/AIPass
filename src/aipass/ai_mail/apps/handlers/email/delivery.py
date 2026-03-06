@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -36,6 +35,18 @@ from typing import Dict, Tuple, List, Optional, Callable
 
 from aipass.ai_mail.apps.handlers.json_utils.json_handler import load_json, save_json
 
+
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+_REPO_ROOT = _find_repo_root()
+
 # Lazy imports to avoid circular dependencies
 _CONSOLE = None
 _INBOX_LOCK = None
@@ -62,13 +73,13 @@ def _get_console():
 def get_all_branches() -> List[Dict]:
     """
     Get list of all branches for email routing.
-    Reads from AIPass branch registry at /home/aipass/BRANCH_REGISTRY.json
+    Reads from AIPass branch registry (AIPASS_REGISTRY.json at repo root).
 
     Returns:
         List of dicts with branch info:
         [{"name": "AIPASS.admin", "path": "/", "email": "@admin"}, ...]
     """
-    registry_file = Path("/home/aipass/BRANCH_REGISTRY.json")
+    registry_file = _REPO_ROOT / "AIPASS_REGISTRY.json"
     branches = []
 
     if not registry_file.exists():
@@ -198,7 +209,7 @@ def _is_private_branch_email(email: str) -> bool:
     Returns:
         True if email belongs to a private branch, False otherwise
     """
-    registry_path = Path.home() / "PRIVATE_BRANCH_REGISTRY.json"
+    registry_path = _REPO_ROOT / "PRIVATE_BRANCH_REGISTRY.json"
     if not registry_path.exists():
         return False
     try:
@@ -273,8 +284,8 @@ def deliver_email_to_branch(
     branch_path = Path(branches[to_branch])
 
     # Find the branch's ai_mail.local/inbox.json file
-    if branch_path == Path("/") or branch_path == Path.home():
-        inbox_file = Path.home() / "ai_mail.local" / "inbox.json"
+    if branch_path == Path("/") or branch_path == _REPO_ROOT:
+        inbox_file = _REPO_ROOT / "ai_mail.local" / "inbox.json"
     else:
         inbox_file = branch_path / "ai_mail.local" / "inbox.json"
 
@@ -364,7 +375,7 @@ def _get_summary_file_path(branch_path: Path) -> Path:
     Get the summary file path for a branch.
 
     Pattern: [BRANCH_NAME].ai_mail.json
-    Example: /home/aipass/aipass_core/drone/DRONE.ai_mail.json
+    Example: src/aipass/drone/DRONE.ai_mail.json
 
     Args:
         branch_path: Path to branch directory
@@ -374,7 +385,7 @@ def _get_summary_file_path(branch_path: Path) -> Path:
     """
     branch_name = branch_path.name.upper()
 
-    if branch_path == Path("/") or branch_path == Path.home():
+    if branch_path == Path("/") or branch_path == _REPO_ROOT:
         branch_name = "AIPASS"
 
     summary_file = branch_path / f"{branch_name}.ai_mail.json"

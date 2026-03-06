@@ -29,7 +29,7 @@ def get_cli_flags_standards() -> str:
     Already universal - keep it that way.
 
   [bold cyan]--version[/bold cyan] / [bold cyan]-V[/bold cyan]
-    Print "[dim]BRANCH vX.Y.Z[/dim]" from META DATA HEADER and exit.
+    Print "[dim]BRANCH vX.Y.Z[/dim]" from the META header and exit.
     Example: [dim]flow v2.4.0[/dim]
 
 [yellow]TIER 2 - RECOMMENDED FLAGS:[/yellow]

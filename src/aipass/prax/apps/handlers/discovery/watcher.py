@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -33,7 +32,7 @@ from watchdog.events import FileSystemEventHandler
 # Import from prax config
 from aipass.prax.apps.handlers.config.load import (
     ECOSYSTEM_ROOT,
-    SYSTEM_LOGS_DIR
+    get_system_logs_dir
 )
 
 # Import from prax registry handlers
@@ -76,7 +75,7 @@ class PythonFileWatcher(FileSystemEventHandler):
             modules[module_name] = {
                 "file_path": str(py_file),
                 "relative_path": str(relative_path),
-                "log_file": str(SYSTEM_LOGS_DIR / f"prax_{module_name}.log"),
+                "log_file": str(get_system_logs_dir() / f"prax_{module_name}.log"),
                 "discovered_time": datetime.now(timezone.utc).isoformat(),
                 "size": py_file.stat().st_size,
                 "modified_time": datetime.fromtimestamp(py_file.stat().st_mtime).isoformat(),

@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -34,7 +33,8 @@ Event data expected:
 from pathlib import Path
 from typing import Any
 
-AIPASS_HOME = Path.home()
+
+# Path resolution not needed - this handler delegates to Memory Bank's pusher
 
 
 def handle_memory_template_updated(**kwargs: Any) -> None:

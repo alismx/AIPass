@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 # =============================================
 # META DATA HEADER
@@ -34,7 +33,16 @@ from typing import Dict
 # =============================================
 # CONSTANTS
 # =============================================
-BRANCH_REGISTRY_PATH = Path.home() / "BRANCH_REGISTRY.json"
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+BRANCH_REGISTRY_PATH = _find_repo_root() / "AIPASS_REGISTRY.json"
 
 # =============================================
 # BRANCH DETECTION FUNCTIONS
@@ -51,7 +59,7 @@ def detect_branch_from_pwd() -> Dict | None:
         Dict with branch info if detected:
         {
             "name": "SEED",
-            "path": "/home/aipass/seed",
+            "path": "src/aipass/seedgo",
             "email": "@seed",
             "display_name": "Seed (Standards Branch)",
             ...
@@ -83,7 +91,7 @@ def find_branch_root(start_path: Path) -> Path | None:
     Walk up directory tree to find branch root.
 
     Branch root = directory containing a [BRANCH_NAME].id.json file.
-    Example: /home/aipass/seed/ contains SEED.id.json
+    Example: src/aipass/seedgo/ contains SEED.id.json
 
     Args:
         start_path: Directory to start searching from (usually PWD)

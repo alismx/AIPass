@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -20,7 +19,7 @@ Business logic for tracking API usage from OpenRouter:
 - Store generation tracking data with newest-first ordering
 - Handle HTTP requests with proper error handling
 
-Extracted from: /home/aipass/aipass_core/api/apps/archive.temp/api_usage.py
+Extracted from legacy archive (api_usage.py).
 Functions: track_usage(), _get_generation_metrics(), _store_usage_data()
 """
 

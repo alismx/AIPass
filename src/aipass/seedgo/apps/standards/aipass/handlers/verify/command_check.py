@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 from typing import Dict
 
-from ..file import file_handler
+from aipass.seedgo.apps.standards.aipass.handlers.file import file_handler
 
 
 def check_command_consistency() -> Dict:

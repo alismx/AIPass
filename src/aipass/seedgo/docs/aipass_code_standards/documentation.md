@@ -1,6 +1,6 @@
 # Documentation Standards
-**Status:** v1.0 - Verified against actual codebase
-**Date:** 2025-11-13
+**Status:** v2.0 - Aligned with meta_check.py (source of truth)
+**Date:** 2026-03-06
 
 ---
 
@@ -9,20 +9,12 @@
 Every Python file follows this header pattern:
 
 ```python
-#!/home/aipass/.venv/bin/python3
-
-# ===================AIPASS====================
-# META DATA HEADER
-# Name: filename.py - Brief Description
-# Date: YYYY-MM-DD
-# Version: X.Y.Z
-# Category: branch_name or branch_name/handlers
-#
-# CHANGELOG (Max 5 entries):
-#   - vX.Y.Z (YYYY-MM-DD): Change description
-#
-# CODE STANDARDS:
-#   - Error handling: Use error handler system
+# =================== META ====================
+# Name: filename.py
+# Description: Brief description of the file
+# Version: 1.0.0
+# Created: 2026-03-06
+# Modified: 2026-03-06
 # =============================================
 
 """
@@ -36,103 +28,49 @@ Key functionality:
 """
 ```
 
-**NOTE:** Some files also include `# -*- coding: utf-8 -*-` after the shebang line (seen in cortex files). This is optional but valid.
-
 ---
 
-## Shebang Line
+## No Shebangs Required
 
-```python
-#!/home/aipass/.venv/bin/python3
-# -*- coding: utf-8 -*-  # Optional - seen in some cortex files
-```
-
-**WHY:** Points to AIPass venv, ensuring correct Python environment and dependencies.
-
-**EXCEPTION - MEMORY_BANK:**
-```python
-#!/home/aipass/MEMORY_BANK/.venv/bin/python3
-```
-MEMORY_BANK uses its own isolated virtual environment at `/home/aipass/MEMORY_BANK/.venv`.
-
-**IMPORTANT - EXECUTE PERMISSIONS:**
-
-After creating a Python file, make it executable:
-```bash
-chmod +x /path/to/file.py
-```
-
-**WHY:** The shebang line only works if the file has execute permissions. Without `chmod +x`, you'll get "Permission denied" errors when trying to run the file directly.
-
-**When to set:**
-- Immediately after creating any new Python module
-- After using Write tool to create files
-- Verify with: `ls -la file.py` (should show `-rwxr-xr-x`)
-
-**Fix all modules at once:**
-```bash
-# Make all Python files in a directory executable
-chmod +x /path/to/modules/*.py
-```
-
-**VERIFIED IN:**
-- `/home/aipass/aipass_core/cortex/apps/modules/create_branch.py`
-- `/home/aipass/aipass_core/cortex/apps/handlers/branch/file_ops.py`
-- `/home/aipass/seed/apps/handlers/domain1/ops.py`
+AIPass is a pip package. All execution goes through entry points defined in `pyproject.toml` or `python3 -m`. Shebangs are not needed and should not be added.
 
 ---
 
 ## META Block
 
-**Standard format:**
+**Standard format (enforced by `meta_check.py`):**
 ```python
-# ===================AIPASS====================
-# META DATA HEADER
-# Name: create_branch.py - Create New AIPass Branch
-# Date: 2025-11-10
-# Version: 2.1.0
-# Category: cortex
-#
-# CHANGELOG (Max 5 entries):
-#   - v2.1.0 (2025-11-10): Added template placeholder system
-#   - v2.0.0 (2025-11-08): Complete rewrite with handler architecture
-#
-# CODE STANDARDS:
-#   - Error handling: Use error handler system (apps/handlers/error/)
+# =================== META ====================
+# Name: example_module.py
+# Description: Example module for demonstration
+# Version: 1.0.0
+# Created: 2026-03-06
+# Modified: 2026-03-06
 # =============================================
 ```
 
-**Fields:**
-- **Name:** Filename + dash-separated description
-- **Date:** Creation date (YYYY-MM-DD)
-- **Version:** Semantic versioning (major.minor.patch)
-- **Category:** Branch name (e.g., `cortex`) or `cortex/handlers` for handlers
-- **CHANGELOG:** Max 5 entries - version, date, what changed
-- **CODE STANDARDS:** Reference to error handler (standard across all files)
+**Required fields:**
+- **Name:** Must match the actual filename (e.g., `example_module.py`)
+- **Description:** Brief description of what the file does
+- **Version:** Semantic versioning (X.Y.Z)
+- **Created:** Date the file was created (YYYY-MM-DD)
+- **Modified:** Date the file was last modified (YYYY-MM-DD)
+
+**Markers:**
+- Header: `# =================== META ====================`
+- Footer: `# =============================================`
+
+**Rules:**
+- `__init__.py` files are exempt (skipped by checker)
+- Name field is validated against the actual filename
+- All five fields are required
+- Pass threshold: 75% of checks
 
 **WHY META blocks:**
 - **AI scannable:** Agents can extract metadata without parsing code
 - **Version tracking:** Know what version you're looking at immediately
-- **History at a glance:** Recent changes visible without git log
+- **Traceability:** Created/Modified dates show file history at a glance
 - **Standardization:** Every file has same metadata structure
-
-**Handler example:**
-```python
-# Category: cortex/handlers
-# Category: seed/handlers/domain1
-```
-
-**Module example:**
-```python
-# Category: cortex
-# Category: seed/test
-```
-
-**VERIFIED IN:**
-- `/home/aipass/aipass_core/cortex/apps/modules/create_branch.py` (Category: cortex)
-- `/home/aipass/aipass_core/cortex/apps/handlers/branch/file_ops.py` (Category: cortex/handlers)
-- `/home/aipass/seed/apps/modules/test_cli_errors.py` (Category: seed/test)
-- `/home/aipass/seed/apps/handlers/domain1/ops.py` (Category: seed/handlers/domain1)
 
 ---
 
@@ -182,23 +120,19 @@ Functions for file and directory operations:
 """
 ```
 
-**With usage example (verified from actual code):**
+**With usage example:**
 ```python
 """
-Error Handler Decorators
+Standards Checker
 
-Decorators for automatic error handling, logging, and result formatting.
+Validates code against AIPass standards.
 
 Usage:
-    from cortex.apps.handlers.error_handler import track_operation
+    from aipass.seedgo.apps.modules.checker import run_checks
 
-    @track_operation
-    def my_function(arg):
-        # Just write business logic
-        return result
+    results = run_checks(module_path)
 """
 ```
-*From: `/home/aipass/aipass_core/cortex/apps/handlers/error/decorators.py`*
 
 **WHY:** First thing you see after metadata. Tells you what the file does and key features. No need to read code to understand purpose.
 
@@ -228,40 +162,35 @@ def function_name(arg1: Type, arg2: Type) -> ReturnType:
     """
 ```
 
-**Real examples (verified from actual code):**
+**Examples:**
 
 ```python
-def find_existing_memory_files(target_dir: Path, branch_name: str) -> Dict[str, Path]:
+def find_files(target_dir: Path, branch_name: str) -> Dict[str, Path]:
     """
-    Find existing memory files with any naming convention (hyphens, underscores, etc.)
+    Find files matching branch naming convention.
 
     Args:
         target_dir: Path to branch directory
         branch_name: Branch name to match against
 
     Returns:
-        Dict mapping file types (main, local, observations, ai_mail, id) to Path objects
+        Dict mapping file types to Path objects
     """
 ```
-*From: `/home/aipass/aipass_core/cortex/apps/handlers/branch/file_ops.py`*
 
 ```python
-def create_operation(name: str, data: Dict[str, Any]) -> Dict[str, Any]:
+def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     """
-    Demonstrate domain-specific business logic
-
-    [SHOWROOM] This would contain actual implementation.
-    Shows structure, typing, documentation patterns.
+    Check if module has a valid library-profile META block.
 
     Args:
-        name: Thing name
-        data: Thing configuration
+        module_path: Path to Python module to check
+        bypass_rules: Optional bypass rules
 
     Returns:
-        Operation result dict with success/error/details
+        dict with passed, checks, score, standard keys
     """
 ```
-*From: `/home/aipass/seed/apps/handlers/domain1/ops.py`*
 
 **WHY Google-style:**
 - **Readable:** Args/Returns sections visually separate
@@ -334,34 +263,24 @@ def copy_template_contents(
 - `METADATA EXTRACTION`
 - `STANDALONE EXECUTION`
 
-**Example (verified from create_branch.py):**
+**Example:**
 ```python
 # =============================================================================
 # CONSTANTS
 # =============================================================================
 
-# Get template directory
-AIPASS_ROOT = Path.home() / "aipass_core"
-TEMPLATE_DIR = AIPASS_ROOT / "cortex" / "templates" / "branch_template"
-
-# Files to exclude from template copy
-EXCLUDE_PATTERNS = [
-    "setup_instructions",
-    "new_branch_setup.py",
-    "upgrade_branch.py",
-    ".git",
-    "__pycache__",
-]
+MODULE_DIR = Path(__file__).parent
+EXCLUDE_PATTERNS = [".git", "__pycache__"]
 ```
 
-**Example (verified from file_ops.py):**
+**Example:**
 ```python
 # =============================================================================
 # FILE DISCOVERY AND MATCHING
 # =============================================================================
 
-def find_existing_memory_files(target_dir: Path, branch_name: str) -> Dict[str, Path]:
-    """Find existing memory files with any naming convention"""
+def find_files(target_dir: Path, branch_name: str) -> Dict[str, Path]:
+    """Find files matching branch naming convention"""
 ```
 
 **WHY:**
@@ -396,18 +315,15 @@ backup()
 remove()
 ```
 
-**Examples from actual codebase:**
+**Examples:**
 
 ```python
 # Memory file suffixes to check (JSON format)
-memory_suffixes = [".json", ".local.json", ".observations.json", ".ai_mail.json", ".id.json"]
+memory_suffixes = [".json", ".local.json", ".observations.json"]
 
 # Normalize to check if it matches branch name
 prefix_normalized = prefix.replace("-", "_").upper()
 ```
-*From: `/home/aipass/aipass_core/cortex/apps/handlers/branch/file_ops.py`*
-
-Note: The PROTECTION RULE example is a pattern that may exist in other files but was not verified in the sample files examined.
 
 **When NOT to use:**
 - Obvious code (don't narrate what's already clear)
@@ -423,53 +339,34 @@ Note: The PROTECTION RULE example is a pattern that may exist in other files but
 
 ## Import Organization
 
-**Standard pattern (verified from actual code):**
+**Standard pattern:**
 
 ```python
-#!/home/aipass/.venv/bin/python3
-# -*- coding: utf-8 -*-
-
 # [META BLOCK]
 
 """Module docstring"""
 
-# Infrastructure setup (if needed)
-import sys
-from pathlib import Path
-AIPASS_ROOT = Path.home() / "aipass_core"
-sys.path.insert(0, str(AIPASS_ROOT))
-
 # Standard library imports
 import json
-from datetime import datetime
-from typing import Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import Dict, List, Optional
 
-# Prax logger
-from prax.apps.modules.logger import system_logger as logger
+# Third-party imports (if any)
 
-# Internal handler imports
-from cortex.apps.handlers.json import json_handler
-from cortex.apps.handlers.branch import file_ops
+# Internal imports (always use pip namespace)
+from aipass.module.apps.modules import something
 ```
 
-**VERIFIED IN:**
-- `/home/aipass/aipass_core/cortex/apps/modules/create_branch.py`
-- `/home/aipass/aipass_core/cortex/apps/handlers/branch/file_ops.py`
-- `/home/aipass/seed/apps/modules/test_cli_errors.py`
-
 **Import sections (in order):**
-1. Infrastructure setup (AIPASS_ROOT, sys.path) - if needed
-2. Standard library imports
-3. Prax logger (always from prax.apps.modules.logger)
-4. Internal/local handler imports
+1. Standard library imports
+2. Third-party imports
+3. Internal imports (always `from aipass.{module}...`)
 
 **WHY this order:**
-- **Infrastructure first:** Must run before other imports can work
 - **Standard library grouped:** Easy to see external dependencies
-- **Prax consistent:** Always `from prax.apps.modules.logger import system_logger as logger`
+- **Third-party separate:** Clear boundary between stdlib and packages
 - **Internal last:** After all external dependencies resolved
-
-**NOTE:** Some modules use try/except blocks to gracefully handle missing handlers (see create_branch.py for example).
+- **Namespace required:** Always `from aipass.{module}...`, never bare imports
 
 ---
 
@@ -482,19 +379,16 @@ from cortex.apps.handlers.branch import file_ops
 # CONSTANTS
 # =============================================================================
 
-# Get template directory
-AIPASS_ROOT = Path.home() / "aipass_core"
-TEMPLATE_DIR = AIPASS_ROOT / "cortex" / "templates" / "branch_template"
+# Paths resolved relative to module location
+MODULE_DIR = Path(__file__).parent
 
 # Files to exclude from template copy
 EXCLUDE_PATTERNS = [
-    "setup_instructions",
-    "new_branch_setup.py",
     ".git",
     "__pycache__",
 ]
 
-# Files to rename after copying
+# Configuration mappings
 FILE_RENAMES = {
     "LOCAL.json": "{BRANCHNAME}.local.json",
     "OBSERVATIONS.json": "{BRANCHNAME}.observations.json",
@@ -505,18 +399,18 @@ FILE_RENAMES = {
 - **ALL_CAPS signals:** This is configuration, not a variable
 - **Comments explain purpose:** Not just WHAT, but WHY we need it
 - **Grouped together:** All config in one place, easy to modify
+- **No hardcoded paths:** Use `Path(__file__)` or registry lookups
 
 ---
 
 ## Summary: Documentation Hierarchy
 
 **File level (top to bottom):**
-1. Shebang 
+1. Module docstring (optional, before META)
 2. META block (metadata)
-3. Module docstring (purpose)
-4. Imports (organized)
-5. Constants (configuration)
-6. Section separators + functions (implementation)
+3. Imports (organized)
+4. Constants (configuration)
+5. Section separators + functions (implementation)
 
 **Function level:**
 - Type hints (signature)
@@ -534,34 +428,20 @@ FILE_RENAMES = {
 
 | Element | Pattern | Required? |
 |---------|---------|-----------|
-| Shebang | `#!/home/aipass/.venv/bin/python3` | Yes |
-| META Block | AIPASS format | **Yes** |
+| META Block | Library META format (5 fields) | **Yes** |
 | Module Docstring | Triple-quoted | **Yes** |
 | Function Docstring | Google-style | **Yes** |
 | Type Hints | Full typing | **Yes** |
 | Section Separators | `# ===...===` | Recommended |
 | Inline Comments | Clarification only | As needed |
-| Import Organization | Infrastructure → Standard → Prax → Internal | Yes |
+| Import Organization | Standard → Third-party → Internal | Yes |
 
-**The standard:** If Cortex or Seed does it, that's the pattern. These aren't theoretical - verified against actual production code in:
-- `/home/aipass/aipass_core/cortex/apps/`
-- `/home/aipass/seed/apps/`
+**Source of truth:** `meta_check.py` defines and enforces the META block format.
 
 ---
 
 ## Verification Notes
 
-**Files examined for truth-checking (2025-11-13):**
-- `/home/aipass/aipass_core/cortex/apps/modules/create_branch.py`
-- `/home/aipass/aipass_core/cortex/apps/handlers/branch/file_ops.py`
-- `/home/aipass/aipass_core/cortex/apps/handlers/error/decorators.py`
-- `/home/aipass/seed/apps/modules/test_cli_errors.py`
-- `/home/aipass/seed/apps/handlers/domain1/ops.py`
+**Source of truth for META format:** `seedgo/apps/standards/aipass/handlers/standards/meta_check.py`
 
-All patterns, examples, and file paths verified against actual code.
-
-## Comments
-
-#@comments:2025-11-13:claude: All examples now include source file references for verification
-#@comments:2025-11-13:claude: Updated encoding line as optional (present in cortex, optional in seed)
-#@comments:2025-11-13:claude: Corrected memory_suffixes list to include .ai_mail.json and .id.json
+META block format aligned with checker enforcement on 2026-03-06.

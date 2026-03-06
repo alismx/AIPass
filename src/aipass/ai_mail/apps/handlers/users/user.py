@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 # =============================================
 # META DATA HEADER
@@ -106,7 +105,8 @@ def get_user_by_email(email: str) -> Dict | None:
     from .branch_detection import get_branch_info_from_registry
 
     # Use registry lookup
-    registry_path = Path.home() / "BRANCH_REGISTRY.json"
+    from .branch_detection import BRANCH_REGISTRY_PATH
+    registry_path = BRANCH_REGISTRY_PATH
     if not registry_path.exists():
         return None
 
@@ -136,7 +136,8 @@ def get_all_users() -> Dict[str, Dict]:
     Returns:
         Dict mapping branch emails to user info dicts
     """
-    registry_path = Path.home() / "BRANCH_REGISTRY.json"
+    from .branch_detection import BRANCH_REGISTRY_PATH
+    registry_path = BRANCH_REGISTRY_PATH
     if not registry_path.exists():
         return {}
 

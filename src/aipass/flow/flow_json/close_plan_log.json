@@ -1,0 +1,23 @@
+[
+  {
+    "timestamp": "2026-03-06T19:26:52.582808",
+    "operation": "plan_closed",
+    "data": {
+      "command": "close",
+      "args": [
+        "FPLAN-0001",
+        "--yes"
+      ]
+    }
+  },
+  {
+    "timestamp": "2026-03-06T20:21:02.790344",
+    "operation": "plan_closed",
+    "data": {
+      "command": "close",
+      "args": [
+        "0002"
+      ]
+    }
+  }
+]

@@ -1,0 +1,9 @@
+[
+  {
+    "timestamp": "2026-03-06T19:26:41.965942",
+    "operation": "usage_stats",
+    "data": {
+      "command": "stats"
+    }
+  }
+]

@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -67,7 +66,7 @@ def format_change(branch_name: str, action: str, file_path: str) -> str:
         path_obj = Path(file_path)
         relative_path = file_path
         for part in path_obj.parts:
-            if part in ['aipass_core', 'aipass']:
+            if part == 'aipass':
                 idx = path_obj.parts.index(part)
                 if idx + 1 < len(path_obj.parts):
                     relative_path = str(Path(*path_obj.parts[idx+1:]))

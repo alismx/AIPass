@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # META DATA HEADER
 # Name: interactive_filter.py - Command Parser and Filter State

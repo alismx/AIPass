@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -28,9 +27,9 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
-# Dispatch log location
-AIPASS_ROOT = Path.home() / "aipass_core"
-DISPATCH_LOG_FILE = AIPASS_ROOT / "ai_mail" / "ai_mail.local" / "dispatch_log.json"
+# Dispatch log location (package-relative)
+_AI_MAIL_DIR = Path(__file__).resolve().parents[3]  # ai_mail/
+DISPATCH_LOG_FILE = _AI_MAIL_DIR / "ai_mail.local" / "dispatch_log.json"
 
 
 def load_dispatch_log() -> List[Dict[str, Any]]:

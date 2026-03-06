@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -80,7 +79,19 @@ from aipass.flow.apps.handlers.registry.save_registry import save_registry
 # =============================================
 
 MODULE_NAME = "registry_monitor"
-ECOSYSTEM_ROOT = Path("/home/aipass")  # Start from /home/aipass, not root /
+
+
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+REPO_ROOT = _find_repo_root()
+ECOSYSTEM_ROOT = REPO_ROOT  # Scan from repo root
 FLOW_JSON_DIR = FLOW_ROOT / "flow_json"
 
 # PLAN file pattern
@@ -644,7 +655,7 @@ def print_help():
     console.print("  - Preserve metadata on file moves (status, closed date, etc.)")
     console.print("  - Detect and fix orphaned registry entries")
     console.print("  - Auto-renumber duplicate plan numbers")
-    console.print("  - System-wide scanning from /home/aipass")
+    console.print("  - System-wide scanning from repo root")
     console.print("  - Ignore common directories (.git, backups, etc.)")
     console.print()
 

@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -31,7 +30,22 @@ from typing import List, Dict, Any
 # CONSTANTS
 # =============================================================================
 
-BRANCH_REGISTRY_PATH = Path.home() / "BRANCH_REGISTRY.json"
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+_branch_registry_path_cache: Path | None = None
+
+def _get_branch_registry_path() -> Path:
+    """Lazily resolve AIPASS_REGISTRY.json path."""
+    global _branch_registry_path_cache
+    if _branch_registry_path_cache is None:
+        _branch_registry_path_cache = _find_repo_root() / "AIPASS_REGISTRY.json"
+    return _branch_registry_path_cache
 
 # =============================================================================
 # CORE FUNCTIONS
@@ -45,10 +59,10 @@ def read_registry() -> List[Dict[str, Any]] | None:
         List of branch dictionaries, or None on error
     """
     try:
-        if not BRANCH_REGISTRY_PATH.exists():
+        if not _get_branch_registry_path().exists():
             return None
 
-        with open(BRANCH_REGISTRY_PATH, 'r', encoding='utf-8') as f:
+        with open(_get_branch_registry_path(), 'r', encoding='utf-8') as f:
             data = json.load(f)
 
         branches = data.get('branches', [])

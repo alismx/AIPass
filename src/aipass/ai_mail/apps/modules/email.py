@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -39,14 +38,22 @@ import argparse
 from pathlib import Path
 from typing import List
 
-# Infrastructure
-AIPASS_ROOT = Path.home() / "aipass_core"
+# Infrastructure (package-relative)
+_AI_MAIL_DIR = Path(__file__).resolve().parents[2]  # ai_mail/
 
 from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.cli.apps.modules import console
-from aipass.ai_mail.apps.handlers.central_writer import update_central
-from aipass.dev_central.devpulse.apps.modules.dashboard import update_section as _update_dashboard_section
 from aipass.ai_mail.apps.handlers.email.dashboard_sync import push_dashboard_update
+
+try:
+    from aipass.ai_mail.apps.handlers.central_writer import update_central
+except ImportError:
+    update_central = None
+
+try:
+    from aipass.devpulse.apps.modules.dashboard import update_section as _update_dashboard_section
+except ImportError:
+    _update_dashboard_section = None
 
 # Import handlers (business logic providers)
 from aipass.ai_mail.apps.handlers.email.delivery import deliver_email_to_branch
@@ -300,7 +307,7 @@ def handle_send(args: List[str]) -> bool:
         if a.startswith('@') and not rest:
             recipients.append(a)
         elif a.startswith('/') and not rest:
-            # Path-based recipient (e.g., /home/aipass/...)
+            # Path-based recipient (e.g., /path/to/branch)
             recipients.append(a)
         else:
             rest.append(a)
@@ -459,7 +466,7 @@ def send_email_direct(to_branch: str, subject: str, message: str, auto_execute: 
                 user_info = {
                     "email_address": email_addr,
                     "display_name": branch_name,
-                    "mailbox_path": str(AIPASS_ROOT / from_branch.lstrip('@').lower() / "ai_mail.local"),
+                    "mailbox_path": str(_AI_MAIL_DIR.parent / from_branch.lstrip('@').lower() / "ai_mail.local"),
                     "timestamp_format": "%Y-%m-%d %H:%M:%S"
                 }
         else:

@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -25,8 +24,9 @@ import inspect
 
 # Infrastructure
 
-# Constants
-API_ROOT = Path.home() / "aipass_core" / "api"
+# Constants — package-relative paths
+# Navigate: json_handler.py -> json/ -> handlers/ -> apps/ -> api/
+API_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 API_JSON_DIR = API_ROOT / "api_json"
 JSON_TEMPLATES_DIR = API_ROOT / "apps" / "json_templates"
 
@@ -275,7 +275,7 @@ if __name__ == "__main__":
     update_data_metrics("api", test_metric="working")
 
     console.print()
-    console.print("[green]Check /home/aipass/aipass_core/api/api_json/ for created files:[/green]")
+    console.print(f"[green]Check {API_JSON_DIR}/ for created files:[/green]")
     console.print("  [dim]•[/dim] api_config.json")
     console.print("  [dim]•[/dim] api_data.json")
     console.print("  [dim]•[/dim] api_log.json")

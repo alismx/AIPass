@@ -1,0 +1,77 @@
+2026-03-06 19:25:13 - captured_flow - INFO - [FLOW] Skipped post_close_runner - no handle_command()
+2026-03-06 19:25:13 - captured_flow - INFO - [FLOW] Loaded module: aggregate_central
+2026-03-06 19:25:13 - captured_flow - INFO - [FLOW] Loaded module: registry_monitor
+2026-03-06 19:25:13 - captured_flow - INFO - [FLOW] Loaded module: restore_plan
+2026-03-06 19:25:13 - captured_flow - INFO - [FLOW] Loaded module: list_plans
+2026-03-06 19:25:13 - captured_flow - INFO - [FLOW] Loaded module: close_plan
+2026-03-06 19:25:13 - captured_flow - INFO - [FLOW] Loaded module: create_plan
+2026-03-06 19:25:53 - captured_flow - INFO - [FLOW] Skipped post_close_runner - no handle_command()
+2026-03-06 19:25:53 - captured_flow - INFO - [FLOW] Loaded module: aggregate_central
+2026-03-06 19:25:53 - captured_flow - INFO - [FLOW] Loaded module: registry_monitor
+2026-03-06 19:25:53 - captured_flow - INFO - [FLOW] Loaded module: restore_plan
+2026-03-06 19:25:53 - captured_flow - INFO - [FLOW] Loaded module: list_plans
+2026-03-06 19:25:53 - captured_flow - INFO - [FLOW] Loaded module: close_plan
+2026-03-06 19:25:53 - captured_flow - INFO - [FLOW] Loaded module: create_plan
+2026-03-06 19:26:45 - captured_flow - INFO - [FLOW] Skipped post_close_runner - no handle_command()
+2026-03-06 19:26:45 - captured_flow - INFO - [FLOW] Loaded module: aggregate_central
+2026-03-06 19:26:45 - captured_flow - INFO - [FLOW] Loaded module: registry_monitor
+2026-03-06 19:26:45 - captured_flow - INFO - [FLOW] Loaded module: restore_plan
+2026-03-06 19:26:45 - captured_flow - INFO - [FLOW] Loaded module: list_plans
+2026-03-06 19:26:45 - captured_flow - INFO - [FLOW] Loaded module: close_plan
+2026-03-06 19:26:45 - captured_flow - INFO - [FLOW] Loaded module: create_plan
+2026-03-06 19:26:49 - captured_flow - INFO - [FLOW] Skipped post_close_runner - no handle_command()
+2026-03-06 19:26:49 - captured_flow - INFO - [FLOW] Loaded module: aggregate_central
+2026-03-06 19:26:49 - captured_flow - INFO - [FLOW] Loaded module: registry_monitor
+2026-03-06 19:26:49 - captured_flow - INFO - [FLOW] Loaded module: restore_plan
+2026-03-06 19:26:49 - captured_flow - INFO - [FLOW] Loaded module: list_plans
+2026-03-06 19:26:49 - captured_flow - INFO - [FLOW] Loaded module: close_plan
+2026-03-06 19:26:49 - captured_flow - INFO - [FLOW] Loaded module: create_plan
+2026-03-06 19:26:52 - captured_flow - INFO - [FLOW] Skipped post_close_runner - no handle_command()
+2026-03-06 19:26:52 - captured_flow - INFO - [FLOW] Loaded module: aggregate_central
+2026-03-06 19:26:52 - captured_flow - INFO - [FLOW] Loaded module: registry_monitor
+2026-03-06 19:26:52 - captured_flow - INFO - [FLOW] Loaded module: restore_plan
+2026-03-06 19:26:52 - captured_flow - INFO - [FLOW] Loaded module: list_plans
+2026-03-06 19:26:52 - captured_flow - INFO - [FLOW] Loaded module: close_plan
+2026-03-06 19:26:52 - captured_flow - INFO - [FLOW] Loaded module: create_plan
+2026-03-06 20:20:13 - captured_flow - INFO - [FLOW] Skipped post_close_runner - no handle_command()
+2026-03-06 20:20:13 - captured_flow - INFO - [FLOW] Loaded module: aggregate_central
+2026-03-06 20:20:13 - captured_flow - INFO - [FLOW] Loaded module: registry_monitor
+2026-03-06 20:20:13 - captured_flow - INFO - [FLOW] Loaded module: restore_plan
+2026-03-06 20:20:13 - captured_flow - INFO - [FLOW] Loaded module: list_plans
+2026-03-06 20:20:13 - captured_flow - INFO - [FLOW] Loaded module: close_plan
+2026-03-06 20:20:13 - captured_flow - INFO - [FLOW] Loaded module: create_plan
+2026-03-06 20:20:22 - captured_flow - INFO - [FLOW] Skipped post_close_runner - no handle_command()
+2026-03-06 20:20:22 - captured_flow - INFO - [FLOW] Loaded module: aggregate_central
+2026-03-06 20:20:22 - captured_flow - INFO - [FLOW] Loaded module: registry_monitor
+2026-03-06 20:20:22 - captured_flow - INFO - [FLOW] Loaded module: restore_plan
+2026-03-06 20:20:22 - captured_flow - INFO - [FLOW] Loaded module: list_plans
+2026-03-06 20:20:22 - captured_flow - INFO - [FLOW] Loaded module: close_plan
+2026-03-06 20:20:22 - captured_flow - INFO - [FLOW] Loaded module: create_plan
+2026-03-06 20:20:39 - captured_flow - INFO - [FLOW] Skipped post_close_runner - no handle_command()
+2026-03-06 20:20:39 - captured_flow - INFO - [FLOW] Loaded module: aggregate_central
+2026-03-06 20:20:39 - captured_flow - INFO - [FLOW] Loaded module: registry_monitor
+2026-03-06 20:20:39 - captured_flow - INFO - [FLOW] Loaded module: restore_plan
+2026-03-06 20:20:39 - captured_flow - INFO - [FLOW] Loaded module: list_plans
+2026-03-06 20:20:39 - captured_flow - INFO - [FLOW] Loaded module: close_plan
+2026-03-06 20:20:39 - captured_flow - INFO - [FLOW] Loaded module: create_plan
+2026-03-06 20:21:02 - captured_flow - INFO - [FLOW] Skipped post_close_runner - no handle_command()
+2026-03-06 20:21:02 - captured_flow - INFO - [FLOW] Loaded module: aggregate_central
+2026-03-06 20:21:02 - captured_flow - INFO - [FLOW] Loaded module: registry_monitor
+2026-03-06 20:21:02 - captured_flow - INFO - [FLOW] Loaded module: restore_plan
+2026-03-06 20:21:02 - captured_flow - INFO - [FLOW] Loaded module: list_plans
+2026-03-06 20:21:02 - captured_flow - INFO - [FLOW] Loaded module: close_plan
+2026-03-06 20:21:02 - captured_flow - INFO - [FLOW] Loaded module: create_plan
+2026-03-06 20:37:06 - captured_flow - INFO - [FLOW] Skipped post_close_runner - no handle_command()
+2026-03-06 20:37:06 - captured_flow - INFO - [FLOW] Loaded module: aggregate_central
+2026-03-06 20:37:06 - captured_flow - INFO - [FLOW] Loaded module: registry_monitor
+2026-03-06 20:37:06 - captured_flow - INFO - [FLOW] Loaded module: restore_plan
+2026-03-06 20:37:06 - captured_flow - INFO - [FLOW] Loaded module: list_plans
+2026-03-06 20:37:06 - captured_flow - INFO - [FLOW] Loaded module: close_plan
+2026-03-06 20:37:06 - captured_flow - INFO - [FLOW] Loaded module: create_plan
+2026-03-06 20:38:04 - captured_flow - INFO - [FLOW] Skipped post_close_runner - no handle_command()
+2026-03-06 20:38:04 - captured_flow - INFO - [FLOW] Loaded module: aggregate_central
+2026-03-06 20:38:04 - captured_flow - INFO - [FLOW] Loaded module: registry_monitor
+2026-03-06 20:38:04 - captured_flow - INFO - [FLOW] Loaded module: restore_plan
+2026-03-06 20:38:04 - captured_flow - INFO - [FLOW] Loaded module: list_plans
+2026-03-06 20:38:04 - captured_flow - INFO - [FLOW] Loaded module: close_plan
+2026-03-06 20:38:04 - captured_flow - INFO - [FLOW] Loaded module: create_plan

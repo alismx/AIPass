@@ -1,5 +1,3 @@
-#!/home/aipass/.venv/bin/python3
-# -*- coding: utf-8 -*-
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -19,7 +17,7 @@ List Templates Handler
 Lists all available PLAN templates from template directories.
 
 Features:
-- Scans /home/aipass/aipass_core/templates/flow/
+- Scans the package-relative templates/flow/ directory
 - Returns sorted list of template names
 - Multi-directory support
 - Reusable across Flow modules

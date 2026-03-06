@@ -1,11 +1,10 @@
-#!/home/aipass/.venv/bin/python3
 
 # META DATA HEADER
 # Name: branch_detector.py - Branch Attribution Handler
 # Version: 0.1.0
 # Purpose: Detect which branch owns a file/log/module
 # Created: 2025-11-23
-# Location: /home/aipass/aipass_core/prax/apps/handlers/monitoring/branch_detector.py
+# Location: src/aipass/prax/apps/handlers/monitoring/branch_detector.py
 
 """
 Branch Detection Handler
@@ -44,7 +43,20 @@ class BranchDetector:
         self.log_map: Dict[str, str] = {}     # log file -> branch
         self.module_map: Dict[str, str] = {}  # module -> branch
         self.known_branches: Set[str] = set()
+        self._repo_root: Optional[Path] = None
         self._load_registry()
+
+    def _find_repo_root(self) -> Path:
+        """Walk up from this file to find repo root (contains AIPASS_REGISTRY.json)."""
+        if self._repo_root is not None:
+            return self._repo_root
+        current = Path(__file__).resolve().parent
+        for parent in [current] + list(current.parents):
+            if (parent / "AIPASS_REGISTRY.json").exists():
+                self._repo_root = parent
+                return parent
+        self._repo_root = Path.cwd()
+        return self._repo_root
 
     def _load_registry(self):
         """
@@ -55,7 +67,7 @@ class BranchDetector:
         - known_branches: Set of all branch names for pattern matching
         """
         try:
-            registry_path = Path.home() / "BRANCH_REGISTRY.json"
+            registry_path = self._find_repo_root() / "AIPASS_REGISTRY.json"
 
             if not registry_path.exists():
                 logger.warning(f"Registry not found: {registry_path}")
@@ -148,11 +160,11 @@ class BranchDetector:
                 remaining = path_str[projects_idx:]
                 # Get the project folder name (first path segment after projects/)
                 project_folder = remaining.split('/')[0]
-                # Convert folder name back to path: -home-aipass-aipass-core-trigger -> /home/aipass/aipass_core/trigger
+                # Convert folder name back to path: -home-user-src-aipass-trigger -> /home/user/src/aipass/trigger
                 project_path = '/' + project_folder.replace('-', '/')
                 # Check against branch_map (registered branch paths)
                 for registered_path, branch_name in self.branch_map.items():
-                    # Normalize for comparison: aipass_core vs aipass-core
+                    # Normalize for comparison: underscores vs hyphens
                     registered_normalized = registered_path.replace('_', '/')
                     project_normalized = project_path.replace('_', '/')
                     if registered_normalized == project_normalized or registered_path == project_path:
@@ -174,7 +186,7 @@ class BranchDetector:
                         return last
 
             # Strategy 4: AI_CENTRAL files - {BRANCH}.central.json or {BRANCH}_central.json
-            # Path: /home/aipass/aipass_os/AI_CENTRAL/AI_MAIL.central.json -> AI_MAIL
+            # Path: .../AI_CENTRAL/AI_MAIL.central.json -> AI_MAIL
             if 'AI_CENTRAL' in path_str or 'ai_central' in path_str.lower():
                 name = path.name
                 # Extract branch from filename patterns
@@ -187,9 +199,9 @@ class BranchDetector:
                     self.log_map[path_str] = branch_candidate
                     return branch_candidate
 
-            # Strategy 5: Root-level system files
-            home = str(Path.home())
-            if path.parent == Path(home) or path.parent == Path(home) / '.claude':
+            # Strategy 5: Root-level system files (repo root or .claude under it)
+            repo_root = self._find_repo_root()
+            if path.parent == repo_root or path.parent == repo_root / '.claude':
                 self.log_map[path_str] = 'SYSTEM'
                 return 'SYSTEM'
 
@@ -201,7 +213,7 @@ class BranchDetector:
                     self.log_map[path_str] = branch_upper
                     return branch_upper
 
-            # Strategy 6: Check for compound names (aipass_core -> check for CORE patterns)
+            # Strategy 6: Check for compound names (e.g., ai_mail -> check for AI_MAIL patterns)
             for part in path_parts:
                 if '_' in part:
                     subparts = part.split('_')
@@ -281,7 +293,7 @@ class BranchDetector:
         Detect branch from Python module name.
 
         Supports patterns:
-        - prax.apps.handlers.monitoring -> PRAX
+        - aipass.prax.apps.handlers.monitoring -> PRAX
         - seed.core.validator -> SEED
 
         Args:
@@ -414,9 +426,9 @@ if __name__ == '__main__':
     print("=" * 50)
 
     test_paths = [
-        "/home/aipass/aipass_core/prax/apps/handlers/monitoring/branch_detector.py",
-        "/home/aipass/aipass_core/seed/core/validator.py",
-        "/home/aipass/aipass_os/dev_central/flow/planners/",
+        "src/aipass/prax/apps/handlers/monitoring/branch_detector.py",
+        "src/aipass/seedgo/core/validator.py",
+        "src/aipass/flow/apps/modules/planners.py",
     ]
 
     print("\nPath Detection:")
@@ -437,7 +449,7 @@ if __name__ == '__main__':
         print(f"  {log} -> {branch}")
 
     test_modules = [
-        "prax.apps.handlers.monitoring",
+        "aipass.prax.apps.handlers.monitoring",
         "seed.core.validator",
         "flow.planners.daily",
     ]

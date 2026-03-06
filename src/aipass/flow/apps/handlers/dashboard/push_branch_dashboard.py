@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -39,7 +38,7 @@ Section Structure:
 {
     "managed_by": "flow",
     "active_plans": [
-        {"id": "FPLAN-0373", "subject": "...", "created": "...", "location": "/home/aipass/..."}
+        {"id": "FPLAN-0373", "subject": "...", "created": "...", "location": "/path/to/branch"}
     ],
     "active_count": 2,
     "recently_closed": [
@@ -50,7 +49,7 @@ Section Structure:
 
 Usage:
     from aipass.flow.apps.handlers.dashboard.push_branch_dashboard import push_flow_to_branch_dashboard
-    success = push_flow_to_branch_dashboard(Path("/home/aipass/aipass_os/dev_central"))
+    success = push_flow_to_branch_dashboard(Path("/path/to/branch"))
 """
 
 import json
@@ -65,8 +64,8 @@ FLOW_ROOT = _PKG_ROOT / "flow"
 # Registry location
 REGISTRY_FILE = FLOW_ROOT / "flow_json" / "flow_registry.json"
 
-# Dashboard template path
-DASHBOARD_TEMPLATE_FILE = Path.home() / "aipass_os" / "dev_central" / "devpulse" / "templates" / "DASHBOARD.template.json"
+# Dashboard template path (package-relative)
+DASHBOARD_TEMPLATE_FILE = _PKG_ROOT / "devpulse" / "templates" / "DASHBOARD.template.json"
 
 
 # =============================================
@@ -328,7 +327,7 @@ def push_flow_to_branch_dashboard(branch_path: Path) -> bool:
 
     Args:
         branch_path: Absolute path to the branch directory
-            (e.g. Path("/home/aipass/aipass_os/dev_central"))
+            (e.g. Path("/repo/src/aipass/devpulse"))
 
     Returns:
         True if successfully written, False on any error

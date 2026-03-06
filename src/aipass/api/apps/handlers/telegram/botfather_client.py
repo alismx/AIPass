@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -44,6 +43,7 @@ from pathlib import Path
 # Standard library
 import asyncio
 import json
+import os
 import re
 import time
 from typing import Any, Optional
@@ -64,7 +64,14 @@ except ImportError:
 # CONSTANTS
 # =============================================
 
-BOT_CONFIG_DIR = Path.home() / ".aipass" / "telegram_bots"
+def _aipass_data_dir() -> Path:
+    """User data directory for AIPass runtime files."""
+    env = os.environ.get("AIPASS_DATA_DIR")
+    if env:
+        return Path(env)
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "aipass"
+
+BOT_CONFIG_DIR = _aipass_data_dir() / "telegram_bots"
 TELETHON_CONFIG_PATH = BOT_CONFIG_DIR / ".telethon_config.json"
 SESSION_PATH = BOT_CONFIG_DIR / ".telethon"  # Telethon appends .session automatically
 

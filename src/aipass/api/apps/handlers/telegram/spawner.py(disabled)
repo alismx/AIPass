@@ -1,4 +1,4 @@
-#!/home/aipass/.venv/bin/python3
+#!/usr/bin/env python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -28,7 +28,7 @@ Two modes of operation:
 2. Capture mode: Run Claude directly and capture stdout for response
 
 Supports branch targeting: messages starting with @branch_name spawn Claude
-in that branch's directory. Default: /home/aipass/aipass_os/dev_central.
+in that branch's directory.
 """
 
 import sys
@@ -42,20 +42,19 @@ import uuid
 from pathlib import Path
 from typing import Tuple, Optional, List
 
-# Infrastructure
-AIPASS_ROOT = Path.home() / "aipass_core"
-sys.path.insert(0, str(AIPASS_ROOT))
+# Infrastructure — disabled file, kept for reference only
 
 import logging
 logger = logging.getLogger("telegram_spawner")
 
-from api.apps.handlers.telegram.output_parser import OutputParser, ParsedResult
-from api.apps.handlers.telegram.session_store import get_session, save_session
+# NOTE: These imports reference old non-aipass namespace and won't work.
+# from api.apps.handlers.telegram.output_parser import OutputParser, ParsedResult
+# from api.apps.handlers.telegram.session_store import get_session, save_session
 
-# Constants
-DEFAULT_SESSION_PATH = Path.home() / "aipass_os" / "dev_central"
-BRANCH_REGISTRY_PATH = Path.home() / "BRANCH_REGISTRY.json"
-CLAUDE_BIN = str(Path.home() / ".local" / "bin" / "claude")
+# Constants — package-relative
+DEFAULT_SESSION_PATH = Path.cwd()
+BRANCH_REGISTRY_PATH = Path.cwd() / "AIPASS_REGISTRY.json"
+CLAUDE_BIN = shutil.which("claude") or "claude"
 TMUX_SESSION_NAME = "telegram-claude"
 TELEGRAM_CHAR_LIMIT = 4096
 DEFAULT_TIMEOUT = 120  # seconds

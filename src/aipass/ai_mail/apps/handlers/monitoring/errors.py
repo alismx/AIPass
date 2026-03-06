@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -36,6 +35,18 @@ from pathlib import Path
 from typing import Optional, Dict, Tuple
 
 from aipass.cli.apps.modules import console
+
+
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+
+_REPO_ROOT = _find_repo_root()
 
 # =============================================
 # CONSTANTS
@@ -108,18 +119,18 @@ def get_branch_from_log_path(log_file_path: str) -> Tuple[str, Path]:
     Extract branch name and root path from log file path
 
     Args:
-        log_file_path: Full path to log file (e.g., /home/aipass/api/logs/openrouter.log)
+        log_file_path: Full path to log file (e.g., .../api/logs/openrouter.log)
 
     Returns:
         Tuple of (branch_name, branch_root_path)
-        Example: ("API", Path("/home/aipass/api"))
+        Example: ("API", Path(".../api"))
 
     Special case: root directory returns ("AIPASS.admin", Path("/"))
     """
     log_path = Path(log_file_path)
 
     # Navigate up from log file to branch root
-    # /home/aipass/api/logs/openrouter.log -> /home/aipass/api
+    # .../api/logs/openrouter.log -> .../api
     branch_root = log_path.parent.parent
 
     # Special case: root directory
@@ -127,8 +138,8 @@ def get_branch_from_log_path(log_file_path: str) -> Tuple[str, Path]:
         return "AIPASS.admin", branch_root
 
     # Extract branch name from directory name
-    # /home/aipass/api -> "API"
-    # /home/aipass/backup-system -> "BACKUP_SYSTEM"
+    # .../api -> "API"
+    # .../backup-system -> "BACKUP_SYSTEM"
     branch_folder = branch_root.name.replace("-", "_")
     branch_name = branch_folder.upper()
 
@@ -186,7 +197,7 @@ def format_error_email(error_hash: str, error_info: Dict, branch_name: str) -> s
     Returns:
         Formatted email message
     """
-    branch_root = Path.home() / "aipass_core" / branch_name.lower()
+    branch_root = _REPO_ROOT / "src" / "aipass" / branch_name.lower()
     logs_dir = branch_root / "logs"
 
     message = f"""Error detected in {branch_name} logs

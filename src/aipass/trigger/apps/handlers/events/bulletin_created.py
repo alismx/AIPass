@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -37,11 +36,19 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List
 
-AIPASS_HOME = Path.home()
+def _find_repo_root() -> Path:
+    """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+_REPO_ROOT = _find_repo_root()
 
 # Paths
-BRANCH_REGISTRY = AIPASS_HOME / "BRANCH_REGISTRY.json"
-BULLETINS_PATH = AIPASS_HOME / "aipass_os" / "AI_CENTRAL" / "BULLETINS.central.json"
+BRANCH_REGISTRY = _REPO_ROOT / "BRANCH_REGISTRY.json"
+BULLETINS_PATH = _REPO_ROOT / "BULLETINS.central.json"
 
 
 def _load_branch_registry() -> List[Dict]:

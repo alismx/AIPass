@@ -1,5 +1,3 @@
-#!/home/aipass/.venv/bin/python3
-# -*- coding: utf-8 -*-
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -130,7 +128,7 @@ def get_key_from_config(provider: str) -> Optional[str]:
     """
     Retrieve API key from config JSON file.
 
-    Reads from: /home/aipass/aipass_core/api/api_json/api_connect_config.json
+    Reads from: <api_root>/api_json/api_connect_config.json
 
     Args:
         provider: Provider name (e.g., 'openrouter')

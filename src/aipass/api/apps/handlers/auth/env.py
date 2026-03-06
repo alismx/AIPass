@@ -1,5 +1,3 @@
-#!/home/aipass/.venv/bin/python3
-# -*- coding: utf-8 -*-
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -51,7 +49,7 @@ from aipass.cli.apps.modules import console
 API_ROOT = Path(__file__).resolve().parent.parent.parent.parent
 DEFAULT_ENV_PATHS = [
     API_ROOT / ".env",                    # <api_root>/.env
-    Path.home() / ".env",                 # ~/.env
+    Path.cwd() / ".env",                  # <cwd>/.env
 ]
 
 
@@ -64,9 +62,8 @@ def read_env_file(env_var: str, search_paths: Optional[List[Path]] = None) -> Op
     Read environment variable from .env files with multi-path search.
 
     Searches multiple .env file locations in order:
-    1. /home/aipass/aipass_core/api/.env
-    2. /home/aipass/aipass_core/.env
-    3. /home/aipass/.env
+    1. <api_root>/.env (package-relative)
+    2. <cwd>/.env (current working directory)
 
     Args:
         env_var: Environment variable name to read (e.g., 'OPENROUTER_API_KEY')
@@ -118,7 +115,7 @@ def read_env_file_dict(env_path: Path) -> Dict[str, str]:
         dict: Dictionary of key-value pairs from .env file
 
     Example:
-        >>> env_vars = read_env_file_dict(Path('/home/aipass/aipass_core/api/.env'))
+        >>> env_vars = read_env_file_dict(Path('api/.env'))
         >>> print(env_vars.get('OPENROUTER_API_KEY'))
     """
     env_dict = {}
@@ -167,7 +164,7 @@ def create_env_template(provider: str = "openrouter", target_path: Optional[Path
 
     Example:
         >>> if create_env_template('openrouter'):
-        ...     print("Template created at /home/aipass/aipass_core/api/.env")
+        ...     print("Template created at <api_root>/.env")
     """
     # Default to api/.env
     env_path = target_path or (API_ROOT / ".env")

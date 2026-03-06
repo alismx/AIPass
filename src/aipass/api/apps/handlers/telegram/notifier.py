@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -28,6 +27,7 @@ Reads bot token and chat_id from ~/.aipass/scheduler_config.json.
 """
 
 # Infrastructure
+import os
 import sys
 from pathlib import Path
 
@@ -40,7 +40,14 @@ from urllib.error import URLError
 # CONSTANTS
 # =============================================
 
-CONFIG_PATH = Path.home() / ".aipass" / "scheduler_config.json"
+def _aipass_data_dir() -> Path:
+    """User data directory for AIPass runtime files."""
+    env = os.environ.get("AIPASS_DATA_DIR")
+    if env:
+        return Path(env)
+    return Path(os.environ.get("XDG_DATA_HOME", Path.home() / ".local" / "share")) / "aipass"
+
+CONFIG_PATH = _aipass_data_dir() / "scheduler_config.json"
 
 # =============================================
 # PUBLIC API

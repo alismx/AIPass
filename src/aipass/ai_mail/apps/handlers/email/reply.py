@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -97,7 +96,7 @@ def send_reply(
 
     # Normalize dispatched_to to email format if it's a path
     # DRONE's preprocess_args converts @branch to paths, so we may receive
-    # "/home/aipass/aipass_core/trigger" instead of "@trigger"
+    # a filesystem path instead of "@trigger"
     if dispatched_to and not dispatched_to.startswith('@'):
         # It's a path - look up email in registry
         dispatch_info = get_branch_info_from_registry(Path(dispatched_to))

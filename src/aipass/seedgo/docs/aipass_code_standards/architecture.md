@@ -64,42 +64,14 @@ apps/handlers/ (Implementation Layer)
 
 **Regenerate template registry:** When template structure changes, run:
 ```bash
-python3 /home/aipass/aipass_core/cortex/apps/modules/regenerate_template_registry.py
+python3 -m aipass.spawn.apps.modules.regenerate_template_registry
 ```
 
 ---
 
-## File Permissions for Python Modules
+## No Shebangs or Execute Permissions Required
 
-**CRITICAL REQUIREMENT:** All Python files MUST have execute permissions set.
-
-```bash
-chmod +x /path/to/module.py
-```
-
-**WHY:** The shebang line (`#!/home/aipass/.venv/bin/python3`) only works if the file has execute permissions. Without this, attempting to run the file directly results in "Permission denied" errors.
-
-**When to apply:**
-- Immediately after creating any new Python file
-- After using Write/Edit tools to create files
-- Before committing changes to repository
-
-**Verification:**
-```bash
-ls -la module.py
-# Should show: -rwxr-xr-x (execute permissions for owner)
-```
-
-**Fix all at once:**
-```bash
-# Make all Python files in modules/ executable
-chmod +x apps/modules/*.py
-
-# Fix entire branch
-find apps/ -name "*.py" -exec chmod +x {} \;
-```
-
-**Common mistake:** Creating file with shebang but forgetting `chmod +x`, leading to confusion when direct execution fails but `python3 file.py` works.
+AIPass is a pip package. All execution goes through entry points defined in `pyproject.toml` or `python3 -m`. Shebangs and execute permissions are not needed.
 
 ---
 

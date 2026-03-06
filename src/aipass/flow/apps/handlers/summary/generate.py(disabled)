@@ -1,4 +1,4 @@
-#!/home/aipass/.venv/bin/python3
+#!/usr/bin/env python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -34,8 +34,7 @@ import time
 from datetime import datetime, timezone
 from typing import Dict, Any, Optional
 
-AIPASS_ROOT = Path.home() / 'aipass_core'
-sys.path.insert(0, str(AIPASS_ROOT))
+_PKG_ROOT = Path(__file__).resolve().parents[4]  # generate.py -> summary/ -> handlers/ -> apps/ -> flow/ -> aipass/
 
 # Import API provider for summarization (via module entry point - encapsulation)
 try:

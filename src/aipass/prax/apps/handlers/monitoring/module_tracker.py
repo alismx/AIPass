@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # META DATA HEADER
 # Name: module_tracker.py - Module Execution Tracker

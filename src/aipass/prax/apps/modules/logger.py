@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -66,7 +65,7 @@ from aipass.prax.apps.handlers.discovery.watcher import (
 )
 from aipass.prax.apps.handlers.registry.save import save_module_registry
 from aipass.prax.apps.handlers.registry.load import load_module_registry
-from aipass.prax.apps.handlers.config.load import SYSTEM_LOGS_DIR, PRAX_JSON_DIR
+from aipass.prax.apps.handlers.config.load import get_system_logs_dir, PRAX_JSON_DIR
 from aipass.prax.apps.handlers.logging.direct import (
     get_direct_logger,
     direct_log,
@@ -163,7 +162,7 @@ def initialize_logging_system():
 
     # Log system startup
     system_logger_instance.info("Prax logging system initialized")
-    system_logger_instance.info(f"System logs directory: {SYSTEM_LOGS_DIR}")
+    system_logger_instance.info(f"System logs directory: {get_system_logs_dir()}")
     system_logger_instance.info(f"Found {len(modules)} modules for logging setup")
 
     # Install logger override
@@ -253,7 +252,7 @@ def get_system_status() -> Dict[str, Any]:
     return {
         "total_modules": len(modules),
         "individual_loggers": get_captured_loggers_count(),
-        "system_logs_dir": str(SYSTEM_LOGS_DIR),
+        "system_logs_dir": str(get_system_logs_dir()),
         "registry_file": str(DATA_FILE),
         "file_watcher_active": is_file_watcher_active(),
         "logger_override_active": is_override_active()

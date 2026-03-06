@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -20,9 +19,7 @@ Business logic for querying and filtering OpenRouter models:
 - Parse model data and capabilities
 - Extract model metadata (context, pricing, capabilities)
 
-Extracted from:
-- /home/aipass/aipass_core/api/apps/archive.temp/openrouter.py
-- /home/aipass/aipass_core/api/.archive/find_free_models.py
+Extracted from legacy archive files (openrouter.py, find_free_models.py).
 """
 
 # AIPASS_ROOT import pattern

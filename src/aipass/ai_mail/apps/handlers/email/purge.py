@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -42,9 +41,19 @@ from aipass.prax.apps.modules.logger import system_logger as logger
 # Purge configuration
 MAX_EMAILS = 10
 
-# Memory Bank paths for subprocess vectorization
-MEMORY_BANK_PYTHON = Path.home() / "MEMORY_BANK" / ".venv" / "bin" / "python3"
-CHROMA_SUBPROCESS_SCRIPT = Path.home() / "MEMORY_BANK" / "apps" / "handlers" / "storage" / "chroma_subprocess.py"
+# Memory Bank paths for subprocess vectorization (optional external service)
+# These are resolved relative to repo root if available; vectorization is best-effort
+def _find_repo_root() -> Path:
+    """Walk up from this file to find AIPASS_REGISTRY.json (repo root)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+_REPO_ROOT = _find_repo_root()
+MEMORY_BANK_PYTHON = _REPO_ROOT / "MEMORY_BANK" / ".venv" / "bin" / "python3"
+CHROMA_SUBPROCESS_SCRIPT = _REPO_ROOT / "MEMORY_BANK" / "apps" / "handlers" / "storage" / "chroma_subprocess.py"
 
 
 def purge_sent_folder(mailbox_path: Path) -> Dict[str, Any]:

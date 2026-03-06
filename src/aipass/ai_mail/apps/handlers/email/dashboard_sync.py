@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -171,8 +170,8 @@ def push_dashboard_update(branch_path: Path) -> bool:
         branch_path = Path(branch_path)
 
         # Determine inbox path
-        if branch_path == Path("/") or branch_path == Path.home():
-            inbox_file = Path.home() / "ai_mail.local" / "inbox.json"
+        if branch_path == Path("/"):
+            inbox_file = Path.cwd() / "ai_mail.local" / "inbox.json"
         else:
             inbox_file = branch_path / "ai_mail.local" / "inbox.json"
 

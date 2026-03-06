@@ -20,7 +20,7 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from ..config.ignore_handler import get_template_ignore_patterns
+from aipass.seedgo.apps.standards.aipass.handlers.config.ignore_handler import get_template_ignore_patterns
 
 PACK_ROOT = Path(__file__).resolve().parent.parent.parent  # standards/ -> handlers/ -> aipass/
 
@@ -311,7 +311,7 @@ def check_domain_organization(module_path: str) -> Optional[Dict]:
     Bad: handlers/utils/, handlers/helpers/, handlers/operations/
     """
     # Extract handler domain from path
-    # e.g., /home/aipass/seed/apps/handlers/standards/file.py -> domain is 'standards'
+    # e.g., src/aipass/seedgo/apps/handlers/standards/file.py -> domain is 'standards'
     path_parts = Path(module_path).parts
 
     # Find 'handlers' in path and get next directory
@@ -398,7 +398,7 @@ def check_template_baseline(module_path: str, bypass_rules: list | None = None) 
     and checks if all template items exist in the branch.
 
     Args:
-        module_path: Path to entry point file (e.g., /home/aipass/aipass_core/api/apps/api.py)
+        module_path: Path to entry point file (e.g., src/aipass/api/apps/branch.py)
 
     Returns:
         List of check dictionaries for each template item

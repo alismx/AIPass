@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 """
 Drone CLI — command-line interface for aipass.drone.
 

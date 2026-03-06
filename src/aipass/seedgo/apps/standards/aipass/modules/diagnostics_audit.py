@@ -28,14 +28,14 @@ from aipass.cli import console
 from aipass.cli import header
 
 # JSON handler for logging
-from handlers.json import json_handler
+from aipass.seedgo.apps.standards.aipass.handlers.json import json_handler
 
 # Drone services for @ resolution
 from aipass.drone.apps.modules import normalize_branch_arg
 
 # Diagnostics handlers
-from handlers.diagnostics.discovery import discover_branches
-from handlers.diagnostics.runner import run_branch_diagnostics
+from aipass.seedgo.apps.standards.aipass.handlers.diagnostics.discovery import discover_branches
+from aipass.seedgo.apps.standards.aipass.handlers.diagnostics.runner import run_branch_diagnostics
 
 
 def print_branch_diagnostics(result: Dict):

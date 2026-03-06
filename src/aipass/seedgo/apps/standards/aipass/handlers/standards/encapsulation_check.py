@@ -94,7 +94,7 @@ def extract_branch_from_import(import_line: str) -> Optional[str]:
 
     Examples:
         'from flow.apps.handlers.plan.validator import X' -> 'flow'
-        'from aipass_core.api.apps.handlers.openrouter import X' -> 'api'
+        'from aipass.api.apps.handlers.openrouter import X' -> 'api'
         'from apps.handlers.json import X' -> None (local, no branch)
     """
     # Pattern 1: branch.apps.handlers...

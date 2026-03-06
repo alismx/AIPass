@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -82,7 +81,7 @@ def _extract_branch_name(raw: str) -> str:
     Extract branch name from raw argument.
 
     Handles both direct names (@speakeasy, speakeasy) and
-    drone-resolved paths (/home/aipass/aipass_core/speakeasy).
+    drone-resolved paths (e.g., src/aipass/speakeasy).
 
     Args:
         raw: Raw argument from command line

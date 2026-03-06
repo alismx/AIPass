@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -208,9 +207,11 @@ def print_help():
     CONSOLE.print("[bold cyan]REFERENCE:[/bold cyan]")
     CONSOLE.print()
     # RICH FORMATTING TIP: Use [yellow] for labels, [dim] for paths
-    CONSOLE.print("  [yellow]Module:[/yellow]      [dim]/home/aipass/aipass_core/cli/apps/modules/display.py[/dim]")
-    CONSOLE.print("  [yellow]Handlers:[/yellow]    [dim]/home/aipass/aipass_core/cli/apps/handlers/display/[/dim]")
-    CONSOLE.print("  [yellow]Standards:[/yellow]   [dim]/home/aipass/standards/CODE_STANDARDS/cli.md[/dim]")
+    _display_path = Path(__file__).resolve()
+    _cli_root = _display_path.parents[2]  # display.py -> modules -> apps -> cli
+    CONSOLE.print(f"  [yellow]Module:[/yellow]      [dim]{_display_path}[/dim]")
+    CONSOLE.print(f"  [yellow]Handlers:[/yellow]    [dim]{_cli_root / 'apps' / 'handlers' / 'display'}[/dim]")
+    CONSOLE.print(f"  [yellow]Standards:[/yellow]   [dim]See CODE_STANDARDS/cli.md[/dim]")
     CONSOLE.print()
     CONSOLE.print("─" * 70)
     CONSOLE.print()

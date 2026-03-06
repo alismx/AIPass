@@ -1,4 +1,3 @@
-#!/home/aipass/.venv/bin/python3
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -46,7 +45,7 @@ def _get_caller() -> str:
             # Try to get branch/module name
             parts = path.parts
             for i, part in enumerate(parts):
-                if part in ('aipass_core', 'MEMORY_BANK'):
+                if part == 'aipass':
                     if i + 1 < len(parts):
                         return parts[i + 1]  # Return branch name
             return path.stem  # Fallback to filename

@@ -1,5 +1,3 @@
-#!/home/aipass/.venv/bin/python3
-# -*- coding: utf-8 -*-
 
 # ===================AIPASS====================
 # META DATA HEADER
@@ -21,7 +19,7 @@ Get Template Handler
 Loads and formats PLAN templates from template directories.
 
 Features:
-- Loads templates from /home/aipass/aipass_core/templates/flow/
+- Loads templates from the flow/templates/ directory (package-relative)
 - Supports placeholder replacement ({number}, {subject}, {location}, {today})
 - Automatic fallback to default template
 - Multi-directory search support
