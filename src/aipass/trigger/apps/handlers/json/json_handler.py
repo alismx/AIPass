@@ -25,7 +25,7 @@ import inspect
 # Infrastructure
 
 # Constants
-TRIGGER_ROOT = Path.home() / "aipass_core" / "trigger"
+TRIGGER_ROOT = Path(__file__).resolve().parents[3]
 TRIGGER_JSON_DIR = TRIGGER_ROOT / "trigger_json"
 JSON_TEMPLATES_DIR = TRIGGER_ROOT / "apps" / "json_templates"
 
