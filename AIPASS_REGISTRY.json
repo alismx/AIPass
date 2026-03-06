@@ -1,8 +1,8 @@
 {
   "metadata": {
     "version": "1.0.0",
-    "last_updated": "2026-03-05",
-    "total_branches": 9
+    "last_updated": "2026-03-06",
+    "total_branches": 10
   },
   "branches": [
     {
@@ -34,6 +34,16 @@
       "status": "active",
       "created": "2026-03-05",
       "last_active": "2026-03-05"
+    },
+    {
+      "name": "DEVPULSE",
+      "path": "/home/aipass/aipass_business/AIPass/src/aipass/devpulse",
+      "profile": "library",
+      "description": "Orchestration hub for AIPass public repo. Manages dev notes, DPLANs, system status dashboards. The DEV_CENTRAL of AIPass.",
+      "email": "@devpulse",
+      "status": "active",
+      "created": "2026-03-06",
+      "last_active": "2026-03-06"
     },
     {
       "name": "DRONE",
