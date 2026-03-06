@@ -36,7 +36,11 @@ site/
 DASHBOARD.local.json
 flow.local.md
 artifacts/
-tools/verify_branch.py
+tools/
 aipass_json/
+
+# Seedgo runtime artifacts (created by seedgo audit)
+.seed/
+.standards/
 # AIPASS_REGISTRY.json — NOT ignored. Ships with core modules pre-registered.
 

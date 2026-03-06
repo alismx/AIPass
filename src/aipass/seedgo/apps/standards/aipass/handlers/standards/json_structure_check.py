@@ -99,60 +99,52 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     }
 
 
+def _find_registry() -> Path:
+    """Find AIPASS_REGISTRY.json by walking up from this file's location."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        candidate = parent / "AIPASS_REGISTRY.json"
+        if candidate.exists():
+            return candidate
+    return Path.cwd() / "AIPASS_REGISTRY.json"
+
+
 def detect_branch(file_path: Path) -> Optional[str]:
     """
     Detect which branch a file belongs to from its path.
 
-    Checks both AIPASS_REGISTRY.json (pip/library) and
-    BRANCH_REGISTRY.json (Dev-Pass) as sources of truth.
-    Falls back to path heuristics if neither available.
+    Checks AIPASS_REGISTRY.json as source of truth.
+    Falls back to path heuristics if not available.
     """
-    file_path_str = str(file_path)
+    file_path_str = str(file_path.resolve())
 
-    # Try AIPASS_REGISTRY.json first (library profile)
-    aipass_registry = Path(__file__).parents[8] / "AIPASS_REGISTRY.json"
-    if aipass_registry.exists():
+    registry_path = _find_registry()
+    if registry_path.exists():
         try:
-            with open(aipass_registry, 'r', encoding='utf-8') as f:
+            with open(registry_path, 'r', encoding='utf-8') as f:
                 registry = json.load(f)
+            registry_dir = registry_path.parent
             branches = sorted(
                 registry.get('branches', []),
                 key=lambda b: len(b.get('path', '')),
                 reverse=True
             )
             for branch in branches:
-                branch_path = branch.get('path', '')
-                if branch_path and file_path_str.startswith(branch_path):
-                    return branch.get('name', '').lower()
-        except (json.JSONDecodeError, IOError):
-            pass
-
-    # Try BRANCH_REGISTRY.json (Dev-Pass)
-    branch_registry = Path.home() / "BRANCH_REGISTRY.json"
-    if branch_registry.exists():
-        try:
-            with open(branch_registry, 'r', encoding='utf-8') as f:
-                registry = json.load(f)
-            branches = sorted(
-                registry.get('branches', []),
-                key=lambda b: len(b.get('path', '')),
-                reverse=True
-            )
-            for branch in branches:
-                branch_path = branch.get('path', '')
-                if branch_path and file_path_str.startswith(branch_path):
+                raw_path = branch.get('path', '')
+                branch_path = Path(raw_path)
+                if not branch_path.is_absolute():
+                    branch_path = (registry_dir / branch_path).resolve()
+                if file_path_str.startswith(str(branch_path)):
                     return branch.get('name', '').lower()
         except (json.JSONDecodeError, IOError):
             pass
 
     # Fallback: path heuristics
     path_parts = file_path.parts
-    if 'seed' in path_parts:
-        return 'seed'
     if 'seedgo' in path_parts:
         return 'seedgo'
-    if 'aipass_core' in path_parts:
-        idx = path_parts.index('aipass_core')
+    if 'aipass' in path_parts:
+        idx = path_parts.index('aipass')
         if idx + 1 < len(path_parts):
             return path_parts[idx + 1]
 
@@ -160,28 +152,20 @@ def detect_branch(file_path: Path) -> Optional[str]:
 
 
 def get_branch_path(branch_name: str) -> Optional[str]:
-    """Get actual branch path from registries."""
-    # Try AIPASS_REGISTRY.json first
-    aipass_registry = Path(__file__).parents[8] / "AIPASS_REGISTRY.json"
-    if aipass_registry.exists():
+    """Get actual branch path from AIPASS_REGISTRY.json."""
+    registry_path = _find_registry()
+    if registry_path.exists():
         try:
-            with open(aipass_registry, 'r', encoding='utf-8') as f:
+            with open(registry_path, 'r', encoding='utf-8') as f:
                 registry = json.load(f)
+            registry_dir = registry_path.parent
             for branch in registry.get('branches', []):
                 if branch.get('name', '').lower() == branch_name.lower():
-                    return branch.get('path', '')
-        except (json.JSONDecodeError, IOError):
-            pass
-
-    # Fall back to BRANCH_REGISTRY.json
-    branch_registry = Path.home() / "BRANCH_REGISTRY.json"
-    if branch_registry.exists():
-        try:
-            with open(branch_registry, 'r', encoding='utf-8') as f:
-                registry = json.load(f)
-            for branch in registry.get('branches', []):
-                if branch.get('name', '').lower() == branch_name.lower():
-                    return branch.get('path', '')
+                    raw_path = branch.get('path', '')
+                    branch_path = Path(raw_path)
+                    if not branch_path.is_absolute():
+                        branch_path = (registry_dir / branch_path).resolve()
+                    return str(branch_path)
         except (json.JSONDecodeError, IOError):
             pass
 

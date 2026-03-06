@@ -21,7 +21,14 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 
-# Branch registry for detecting branch context
+def _find_registry() -> Path:
+    """Find AIPASS_REGISTRY.json by walking up from this file's location."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        candidate = parent / "AIPASS_REGISTRY.json"
+        if candidate.exists():
+            return candidate
+    return Path.cwd() / "AIPASS_REGISTRY.json"
 
 
 def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
@@ -47,18 +54,20 @@ def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_r
 
 
 def get_branch_from_path(file_path: str) -> Optional[Dict]:
-    """Detect which branch a file belongs to"""
+    """Detect which branch a file belongs to using AIPASS_REGISTRY.json."""
     try:
-        if not BRANCH_REGISTRY_PATH.exists():
+        registry_path = _find_registry()
+        if not registry_path.exists():
             return None
 
-        with open(BRANCH_REGISTRY_PATH, 'r', encoding='utf-8') as f:
+        with open(registry_path, 'r', encoding='utf-8') as f:
             registry = json.load(f)
 
         if not registry:
             return None
 
-        file_path = str(Path(file_path).resolve())
+        registry_dir = registry_path.parent
+        resolved_path = str(Path(file_path).resolve())
 
         # Sort branches by path length (longest first) to match most specific
         branches = sorted(registry.get('branches', []),
@@ -66,8 +75,12 @@ def get_branch_from_path(file_path: str) -> Optional[Dict]:
                          reverse=True)
 
         for branch in branches:
-            branch_path = branch.get('path', '')
-            if file_path.startswith(branch_path + '/') or file_path == branch_path:
+            raw_path = branch.get('path', '')
+            branch_path = Path(raw_path)
+            if not branch_path.is_absolute():
+                branch_path = (registry_dir / branch_path).resolve()
+            branch_path_str = str(branch_path)
+            if resolved_path.startswith(branch_path_str + '/') or resolved_path == branch_path_str:
                 return branch
 
         return None
@@ -89,8 +102,8 @@ def extract_branch_from_import(import_line: str) -> Optional[str]:
     if match:
         return match.group(1)
 
-    # Pattern 2: aipass_core.branch.apps.handlers...
-    match = re.search(r'from\s+aipass_core\.(\w+)\.apps\.handlers', import_line)
+    # Pattern 2: aipass.branch.apps.handlers...
+    match = re.search(r'from\s+aipass\.(\w+)\.apps\.handlers', import_line)
     if match:
         return match.group(1)
 

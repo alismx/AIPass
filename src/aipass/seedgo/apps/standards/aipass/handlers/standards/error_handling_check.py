@@ -14,7 +14,6 @@ Checks Prax imports in modules/handlers, logger calls in handlers.
 # =============================================
 
 
-import sys
 import re
 from pathlib import Path
 from typing import Dict, List
@@ -161,7 +160,10 @@ def check_module_has_prax(content: str, file_path: str, bypass_rules: list | Non
 
     Modules MUST import Prax for business logging
     """
-    has_prax_import = 'from prax.apps.modules.logger import system_logger' in content
+    has_prax_import = (
+        'from aipass.prax import logger' in content
+        or 'from aipass.prax import' in content and 'logger' in content
+    )
 
     if has_prax_import:
         return {
@@ -180,7 +182,7 @@ def check_module_has_prax(content: str, file_path: str, bypass_rules: list | Non
         return {
             'name': 'Module Prax import',
             'passed': False,
-            'message': 'Module MUST import Prax: from prax.apps.modules.logger import system_logger as logger'
+            'message': 'Module MUST import Prax: from aipass.prax import logger'
         }
 
 
@@ -234,7 +236,9 @@ def check_module_error_logging(content: str) -> Dict:
     Modules just need Prax import (checked separately).
     This check passes if Prax is imported - modules CAN log but aren't required to.
     """
-    has_prax_import = 'from prax.apps.modules.logger import system_logger' in content
+    has_prax_import = 'from aipass.prax import logger' in content or (
+        'from aipass.prax import' in content and 'logger' in content
+    )
 
     if has_prax_import:
         return {
