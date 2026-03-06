@@ -38,5 +38,5 @@ flow.local.md
 artifacts/
 tools/verify_branch.py
 aipass_json/
-AIPASS_REGISTRY.json
+# AIPASS_REGISTRY.json — NOT ignored. Ships with core modules pre-registered.
 

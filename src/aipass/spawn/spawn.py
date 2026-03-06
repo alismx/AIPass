@@ -7,7 +7,7 @@ Orchestrates the full agent creation workflow:
 3. Rename placeholder paths
 4. Replace all {{PLACEHOLDER}} patterns
 5. Regenerate .template_registry.json
-6. Register in BRANCH_REGISTRY.json
+6. Register in AIPASS_REGISTRY.json
 7. Validate no unreplaced placeholders remain
 """
 
@@ -36,7 +36,7 @@ def spawn_agent(target_path, role="", traits="", purpose="", profile=None,
         purpose: Agent's purpose (brief description)
         profile: AIPass profile override (default: auto-detect)
         template_dir: Custom template directory (default: built-in agent.template)
-        registry_path: Path to BRANCH_REGISTRY.json (default: auto-discover)
+        registry_path: Path to AIPASS_REGISTRY.json (default: auto-discover)
 
     Returns:
         Dict with creation results:
@@ -84,7 +84,7 @@ def spawn_agent(target_path, role="", traits="", purpose="", profile=None,
     # Step 3: Regenerate .template_registry.json with fresh hashes
     _regenerate_template_registry(target)
 
-    # Step 4: Register in BRANCH_REGISTRY.json
+    # Step 4: Register in AIPASS_REGISTRY.json
     registry_updated = add_to_registry(
         reg_path, branch_upper, str(target), detected_profile,
         f"@{branch_lower}", purpose or "New agent - purpose TBD",

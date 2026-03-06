@@ -1,0 +1,99 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "last_updated": "2026-03-05",
+    "total_branches": 9
+  },
+  "branches": [
+    {
+      "name": "AI_MAIL",
+      "path": "src/aipass/ai_mail",
+      "profile": "library",
+      "description": "Agent-to-agent messaging system",
+      "email": "@ai_mail",
+      "status": "active",
+      "created": "2026-03-05",
+      "last_active": "2026-03-05"
+    },
+    {
+      "name": "API",
+      "path": "src/aipass/api",
+      "profile": "library",
+      "description": "LLM access and model routing",
+      "email": "@api",
+      "status": "active",
+      "created": "2026-03-05",
+      "last_active": "2026-03-05"
+    },
+    {
+      "name": "CLI",
+      "path": "src/aipass/cli",
+      "profile": "library",
+      "description": "Display formatting with Rich",
+      "email": "@cli",
+      "status": "active",
+      "created": "2026-03-05",
+      "last_active": "2026-03-05"
+    },
+    {
+      "name": "DRONE",
+      "path": "src/aipass/drone",
+      "profile": "library",
+      "description": "Command routing and module discovery",
+      "email": "@drone",
+      "status": "active",
+      "created": "2026-03-05",
+      "last_active": "2026-03-05"
+    },
+    {
+      "name": "FLOW",
+      "path": "src/aipass/flow",
+      "profile": "library",
+      "description": "Workflow planning and tracking",
+      "email": "@flow",
+      "status": "active",
+      "created": "2026-03-05",
+      "last_active": "2026-03-05"
+    },
+    {
+      "name": "PRAX",
+      "path": "src/aipass/prax",
+      "profile": "library",
+      "description": "Logging and monitoring",
+      "email": "@prax",
+      "status": "active",
+      "created": "2026-03-05",
+      "last_active": "2026-03-05"
+    },
+    {
+      "name": "SEEDGO",
+      "path": "src/aipass/seedgo",
+      "profile": "library",
+      "description": "Standards compliance through pluggable standard packs",
+      "email": "@seedgo",
+      "status": "active",
+      "created": "2026-03-05",
+      "last_active": "2026-03-05"
+    },
+    {
+      "name": "SPAWN",
+      "path": "src/aipass/spawn",
+      "profile": "library",
+      "description": "Agent creation from templates",
+      "email": "@spawn",
+      "status": "active",
+      "created": "2026-03-05",
+      "last_active": "2026-03-05"
+    },
+    {
+      "name": "TRIGGER",
+      "path": "src/aipass/trigger",
+      "profile": "library",
+      "description": "Error detection and auto-dispatch",
+      "email": "@trigger",
+      "status": "active",
+      "created": "2026-03-05",
+      "last_active": "2026-03-05"
+    }
+  ]
+}

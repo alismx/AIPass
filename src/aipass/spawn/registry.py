@@ -1,4 +1,4 @@
-"""BRANCH_REGISTRY.json CRUD operations."""
+"""AIPASS_REGISTRY.json CRUD operations."""
 
 import json
 from datetime import datetime
@@ -7,26 +7,30 @@ from pathlib import Path
 
 def find_registry(start_path=None):
     """
-    Find BRANCH_REGISTRY.json by walking up from start_path.
-    Falls back to repo root or creates beside the spawned agent.
+    Find AIPASS_REGISTRY.json by walking up from start_path.
+    Falls back to project root (where pyproject.toml or .git lives).
 
     Args:
         start_path: Directory to start searching from
 
     Returns:
-        Path to BRANCH_REGISTRY.json
+        Path to AIPASS_REGISTRY.json
     """
-    if start_path:
-        current = Path(start_path).resolve()
-        # Walk up looking for existing registry
-        for parent in [current] + list(current.parents):
-            candidate = parent / "BRANCH_REGISTRY.json"
-            if candidate.exists():
-                return candidate
+    current = Path(start_path).resolve() if start_path else Path.cwd()
 
-    # Default: same directory as start_path or cwd
-    base = Path(start_path).resolve() if start_path else Path.cwd()
-    return base / "BRANCH_REGISTRY.json"
+    # Walk up looking for existing registry
+    for parent in [current] + list(current.parents):
+        candidate = parent / "AIPASS_REGISTRY.json"
+        if candidate.exists():
+            return candidate
+
+    # No registry found — place it at project root (pyproject.toml or .git)
+    for parent in [current] + list(current.parents):
+        if (parent / "pyproject.toml").exists() or (parent / ".git").exists():
+            return parent / "AIPASS_REGISTRY.json"
+
+    # Last resort: cwd
+    return Path.cwd() / "AIPASS_REGISTRY.json"
 
 
 def load_registry(registry_path):
@@ -34,7 +38,7 @@ def load_registry(registry_path):
     Load registry from JSON file. Returns empty schema if missing.
 
     Args:
-        registry_path: Path to BRANCH_REGISTRY.json
+        registry_path: Path to AIPASS_REGISTRY.json
 
     Returns:
         Dict with metadata and branches list
@@ -69,7 +73,7 @@ def save_registry(registry_path, data):
     Save registry to JSON file. Auto-updates timestamp and sorts branches.
 
     Args:
-        registry_path: Path to BRANCH_REGISTRY.json
+        registry_path: Path to AIPASS_REGISTRY.json
         data: Registry dict to save
 
     Returns:
@@ -99,7 +103,7 @@ def add_to_registry(registry_path, branch_name, branch_path, profile, email, pur
     Add a new branch entry to the registry.
 
     Args:
-        registry_path: Path to BRANCH_REGISTRY.json
+        registry_path: Path to AIPASS_REGISTRY.json
         branch_name: Uppercase branch name (e.g. "MY_AGENT")
         branch_path: Absolute path to branch directory
         profile: Profile string (e.g. "AIPass Workshop")

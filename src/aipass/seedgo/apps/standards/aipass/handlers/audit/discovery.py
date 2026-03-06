@@ -49,9 +49,22 @@ def _is_branch_private(branch_name: str) -> bool:
 # PUBLIC API
 # =============================================================================
 
+def _find_registry() -> Path:
+    """
+    Find AIPASS_REGISTRY.json by walking up from this file's location.
+    Works regardless of install path depth.
+    """
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        candidate = parent / "AIPASS_REGISTRY.json"
+        if candidate.exists():
+            return candidate
+    return Path.cwd() / "AIPASS_REGISTRY.json"
+
+
 def discover_branches(include_private: bool = False) -> List[Dict[str, str]]:
     """
-    Discover all AIPass branches from BRANCH_REGISTRY.json
+    Discover all AIPass branches from AIPASS_REGISTRY.json
 
     Args:
         include_private: If False (default), excludes branches listed in
@@ -61,106 +74,49 @@ def discover_branches(include_private: bool = False) -> List[Dict[str, str]]:
         List of dicts with 'name', 'path', 'entry_file' keys
     """
     branches = []
-    # AIPass public repo registry
-    registry_path = Path(__file__).parents[8] / "AIPASS_REGISTRY.json"
+    registry_path = _find_registry()
 
-    # Try to read from AIPASS_REGISTRY.json (source of truth)
-    if registry_path.exists():
-        try:
-            with open(registry_path, 'r', encoding='utf-8') as f:
-                registry_data = json.load(f)
+    if not registry_path.exists():
+        return branches
 
-            for branch in registry_data.get('branches', []):
-                branch_name = branch.get('name', '')
-                branch_path = Path(branch.get('path', ''))
+    try:
+        with open(registry_path, 'r', encoding='utf-8') as f:
+            registry_data = json.load(f)
 
-                if not branch_path.exists():
-                    continue
+        registry_dir = registry_path.parent
 
-                # Determine entry point based on branch name
-                entry_file = None
+        for branch in registry_data.get('branches', []):
+            branch_name = branch.get('name', '')
+            raw_path = branch.get('path', '')
+            branch_path = Path(raw_path)
 
-                # Most branches: apps/{branch_name}.py (lowercase)
-                standard_entry = branch_path / "apps" / f"{branch_name.lower()}.py"
-                if standard_entry.exists():
-                    entry_file = standard_entry
+            # Resolve relative paths against registry location
+            if not branch_path.is_absolute():
+                branch_path = (registry_dir / branch_path).resolve()
 
-                # SEED: apps/seed.py
-                elif branch_name == 'SEED':
-                    seed_entry = branch_path / "apps" / "seed.py"
-                    if seed_entry.exists():
-                        entry_file = seed_entry
-
-                # MEMORY_BANK: apps/modules/rollover.py
-                elif branch_name == 'MEMORY_BANK':
-                    rollover_entry = branch_path / "apps" / "modules" / "rollover.py"
-                    if rollover_entry.exists():
-                        entry_file = rollover_entry
-
-                # .VSCODE: apps/vscode.py (no dot prefix)
-                elif branch_name == '.VSCODE':
-                    vscode_entry = branch_path / "apps" / "vscode.py"
-                    if vscode_entry.exists():
-                        entry_file = vscode_entry
-
-                # Add branch if we found an entry point
-                if entry_file:
-                    branches.append({
-                        'name': branch_name,
-                        'path': str(branch_path),
-                        'entry_file': str(entry_file)
-                    })
-
-            if not include_private:
-                branches = [b for b in branches if not _is_branch_private(b['name'])]
-
-            return sorted(branches, key=lambda x: x['name'])
-
-        except Exception:
-            # Fall through to manual discovery
-            pass
-
-    # Fallback: manual directory scanning (if registry doesn't exist)
-
-    # Check aipass_core branches
-    aipass_core = Path.home() / "aipass_core"
-    if aipass_core.exists():
-        for branch_dir in aipass_core.iterdir():
-            if not branch_dir.is_dir() or branch_dir.name.startswith('.'):
+            if not branch_path.exists():
                 continue
 
-            apps_dir = branch_dir / "apps"
-            if apps_dir.exists():
-                entry_file = apps_dir / f"{branch_dir.name}.py"
-                if entry_file.exists():
-                    branches.append({
-                        'name': branch_dir.name.upper(),
-                        'path': str(branch_dir),
-                        'entry_file': str(entry_file)
-                    })
+            # Find entry point: apps/{branch_name}.py or apps/branch.py
+            entry_file = None
+            standard_entry = branch_path / "apps" / f"{branch_name.lower()}.py"
+            branch_entry = branch_path / "apps" / "branch.py"
+            if standard_entry.exists():
+                entry_file = standard_entry
+            elif branch_entry.exists():
+                entry_file = branch_entry
 
-    # Check SEED branch
-    seed_dir = Path.home() / "seed"
-    seed_entry = seed_dir / "apps" / "seed.py"
-    if seed_entry.exists():
-        branches.append({
-            'name': 'SEED',
-            'path': str(seed_dir),
-            'entry_file': str(seed_entry)
-        })
+            if entry_file:
+                branches.append({
+                    'name': branch_name,
+                    'path': str(branch_path),
+                    'entry_file': str(entry_file)
+                })
 
-    # Check MEMORY_BANK
-    memory_bank_dir = Path.home() / "MEMORY_BANK"
-    if memory_bank_dir.exists():
-        rollover_file = memory_bank_dir / "apps" / "modules" / "rollover.py"
-        if rollover_file.exists():
-            branches.append({
-                'name': 'MEMORY_BANK',
-                'path': str(memory_bank_dir),
-                'entry_file': str(rollover_file)
-            })
+        if not include_private:
+            branches = [b for b in branches if not _is_branch_private(b['name'])]
 
-    if not include_private:
-        branches = [b for b in branches if not _is_branch_private(b['name'])]
+        return sorted(branches, key=lambda x: x['name'])
 
-    return sorted(branches, key=lambda x: x['name'])
+    except (json.JSONDecodeError, IOError):
+        return branches
