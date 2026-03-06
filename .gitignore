@@ -44,3 +44,4 @@ aipass_json/
 .standards/
 # AIPASS_REGISTRY.json — NOT ignored. Ships with core modules pre-registered.
 
+
