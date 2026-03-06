@@ -7,6 +7,15 @@ Auto-discovery architecture:
 - No manual imports or routing needed
 """
 
+# =================== META ====================
+# Name: pack_entry.py
+# Description: AIPass Standards Pack - Entry Point
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import importlib.util
 from pathlib import Path

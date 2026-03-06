@@ -5,6 +5,15 @@ Validates module compliance with AIPass module standards.
 Checks handle_command pattern, thin orchestration, file size guidelines.
 """
 
+# =================== META ====================
+# Name: modules_check.py
+# Description: Modules Standards Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import re
 import ast

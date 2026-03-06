@@ -5,6 +5,15 @@ Scans Cortex template directory and generates baseline structure.
 Respects .registry_ignore.json patterns.
 """
 
+# =================== META ====================
+# Name: template_scanner.py
+# Description: Template Scanner - Automatically scan template to discover structure
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import json
 from pathlib import Path

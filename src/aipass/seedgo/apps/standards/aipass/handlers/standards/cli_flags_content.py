@@ -4,6 +4,14 @@ CLI Flags Standards Content
 Provides Rich-formatted reference text for the CLI flags standard.
 """
 
+# =================== META ====================
+# Name: cli_flags_content.py
+# Description: CLI Flags Standards Content
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_cli_flags_standards() -> str:
     """Return Rich-formatted CLI flags standards text"""

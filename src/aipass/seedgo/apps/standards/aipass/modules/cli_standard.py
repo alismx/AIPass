@@ -5,6 +5,15 @@ Provides condensed CLI standards for AIPass branches.
 Run directly or via: drone @seed cli
 """
 
+# =================== META ====================
+# Name: cli_standard.py
+# Description: CLI Standards Module
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 from pathlib import Path
 from typing import List

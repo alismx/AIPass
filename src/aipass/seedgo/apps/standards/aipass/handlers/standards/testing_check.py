@@ -6,6 +6,15 @@ Checks for test functions, error handling patterns.
 Note: Manual testing is acceptable in current rapid iteration phase.
 """
 
+# =================== META ====================
+# Name: testing_check.py
+# Description: Testing Standards Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import re
 from pathlib import Path

@@ -15,6 +15,15 @@ Valid bypass categories for .seed/bypass.json:
 - utility: Helper called by event-firing function
 """
 
+# =================== META ====================
+# Name: trigger_check.py
+# Description: Trigger Standards Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import re
 from pathlib import Path
 from typing import Dict, List, Optional

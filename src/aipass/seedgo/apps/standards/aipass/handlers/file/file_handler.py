@@ -5,6 +5,15 @@ Provides text file reading abstraction for modules.
 Keeps direct file operations in handlers, not modules.
 """
 
+# =================== META ====================
+# Name: file_handler.py
+# Description: File Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 from pathlib import Path
 from typing import Optional

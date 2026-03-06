@@ -4,6 +4,14 @@ Log Level Hygiene Standards Content
 Provides Rich-formatted reference text for the log level hygiene standard.
 """
 
+# =================== META ====================
+# Name: log_level_content.py
+# Description: Log Level Hygiene Standards Content
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_log_level_standards() -> str:
     """Return Rich-formatted log level hygiene standards text"""

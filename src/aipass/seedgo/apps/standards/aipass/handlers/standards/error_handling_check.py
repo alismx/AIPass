@@ -5,6 +5,15 @@ Validates module compliance with AIPass 3-tier logging standards.
 Checks Prax imports in modules/handlers, logger calls in handlers.
 """
 
+# =================== META ====================
+# Name: error_handling_check.py
+# Description: Error Handling Standards Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import re
 from pathlib import Path

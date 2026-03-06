@@ -7,6 +7,15 @@ Verifies packs are loadable, manifests are valid, and standards are consistent.
 Run: seedgo verify
 """
 
+# =================== META ====================
+# Name: seedgo_verify.py
+# Description: Seedgo Verify Module
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import json
 from pathlib import Path
 from typing import List

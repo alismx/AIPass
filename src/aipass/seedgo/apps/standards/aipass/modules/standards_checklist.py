@@ -5,6 +5,15 @@ Validates modules against AIPass code standards.
 Run directly or via: drone @seed checklist
 """
 
+# =================== META ====================
+# Name: standards_checklist.py
+# Description: Standards Checklist Module
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import json
 from pathlib import Path

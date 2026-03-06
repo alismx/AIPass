@@ -7,6 +7,15 @@ Validates that handlers are properly encapsulated:
 - Handlers should be accessed through module entry points, not directly
 """
 
+# =================== META ====================
+# Name: encapsulation_check.py
+# Description: Handler Encapsulation Standards Checker
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import re
 import json
 from pathlib import Path

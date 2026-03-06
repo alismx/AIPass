@@ -4,6 +4,14 @@ Log Handler Standards Content
 Provides Rich-formatted reference text for the log handler rotation standard.
 """
 
+# =================== META ====================
+# Name: log_handler_content.py
+# Description: Log Handler Standards Content
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_log_handler_standards() -> str:
     """Return Rich-formatted log handler standards text"""

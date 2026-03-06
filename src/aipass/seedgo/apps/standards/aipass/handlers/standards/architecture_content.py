@@ -5,6 +5,14 @@ Provides formatted Architecture standards content.
 Module orchestrates, handler implements.
 """
 
+# =================== META ====================
+# Name: architecture_content.py
+# Description: Architecture Standards Content Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_architecture_standards() -> str:
     """Return formatted architecture standards content with Rich markup

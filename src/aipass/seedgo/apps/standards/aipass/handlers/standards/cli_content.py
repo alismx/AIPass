@@ -5,6 +5,14 @@ Provides formatted CLI standards content.
 Module orchestrates, handler implements.
 """
 
+# =================== META ====================
+# Name: cli_content.py
+# Description: CLI Standards Content Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_cli_standards() -> str:
     """Return formatted CLI standards content with Rich markup

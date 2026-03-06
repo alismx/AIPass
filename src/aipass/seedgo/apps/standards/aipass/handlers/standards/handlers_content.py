@@ -8,6 +8,14 @@ Provides formatted handlers standards content.
 Module orchestrates, handler implements.
 """
 
+# =================== META ====================
+# Name: handlers_content.py
+# Description: Handlers Content
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_handlers_standards() -> str:
     """Return formatted handlers standards content with Rich markup

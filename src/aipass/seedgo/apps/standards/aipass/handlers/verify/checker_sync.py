@@ -5,6 +5,15 @@ Verifies that checker implementations match their documentation.
 Catches drift between trigger_check.py patterns and trigger_content.py docs.
 """
 
+# =================== META ====================
+# Name: checker_sync.py
+# Description: Checker Documentation Sync Check
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import re
 import sys
 from pathlib import Path

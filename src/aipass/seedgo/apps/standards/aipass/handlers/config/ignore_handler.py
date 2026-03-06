@@ -7,6 +7,15 @@ in business logic detection. Helps reduce false positives.
 Pure configuration with helper functions for pattern access and filtering.
 """
 
+# =================== META ====================
+# Name: ignore_handler.py
+# Description: Business Logic Detection Ignore Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 # =============================================
 # IMPORTS
 # =============================================

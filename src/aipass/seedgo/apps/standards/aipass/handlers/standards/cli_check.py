@@ -5,6 +5,15 @@ Validates module compliance with AIPass CLI standards.
 Checks console.print() usage, CLI service imports, handler separation.
 """
 
+# =================== META ====================
+# Name: cli_check.py
+# Description: CLI Standards Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import re
 from pathlib import Path

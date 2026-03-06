@@ -5,6 +5,15 @@ Checks if new commands/flags are documented everywhere they should be.
 Validates documentation completeness for command flags.
 """
 
+# =================== META ====================
+# Name: command_check.py
+# Description: Command Consistency Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 from pathlib import Path
 from typing import Dict

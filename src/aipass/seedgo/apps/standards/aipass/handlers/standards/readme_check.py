@@ -12,6 +12,15 @@ Checks:
 6. Command list presence (commands/usage section is not empty)
 """
 
+# =================== META ====================
+# Name: readme_check.py
+# Description: README Standards Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import os
 import re
 import sys

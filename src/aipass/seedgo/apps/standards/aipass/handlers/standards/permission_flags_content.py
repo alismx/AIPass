@@ -4,6 +4,14 @@ Permission Flags Standards Content
 Provides Rich-formatted reference text for the permission flags standard.
 """
 
+# =================== META ====================
+# Name: permission_flags_content.py
+# Description: Permission Flags Standards Content
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_permission_flags_standards() -> str:
     """Return Rich-formatted permission flags standards text"""

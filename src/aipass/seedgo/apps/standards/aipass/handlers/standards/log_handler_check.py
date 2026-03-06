@@ -12,6 +12,15 @@ THE STANDARD:
 - Prax's own logging infrastructure is exempt (it IS the implementation)
 """
 
+# =================== META ====================
+# Name: log_handler_check.py
+# Description: Log Handler Standards Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import re
 from pathlib import Path

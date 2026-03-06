@@ -5,6 +5,14 @@ Provides formatted import standards content.
 Module orchestrates, handler implements.
 """
 
+# =================== META ====================
+# Name: imports_content.py
+# Description: Import Standards Content Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_imports_standards() -> str:
     """Return formatted import standards content with Rich markup

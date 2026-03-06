@@ -12,6 +12,15 @@ THE STANDARD:
 - INFO = Normal operations, successful completions, discoveries
 """
 
+# =================== META ====================
+# Name: log_level_check.py
+# Description: Log Level Hygiene Standards Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import re
 from pathlib import Path

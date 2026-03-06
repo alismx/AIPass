@@ -4,6 +4,15 @@ Log Visibility Standards Content
 Provides Rich-formatted reference text for the log visibility standard.
 """
 
+# =================== META ====================
+# Name: log_visibility_content.py
+# Description: Log Visibility Standards Content
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 from pathlib import Path
 

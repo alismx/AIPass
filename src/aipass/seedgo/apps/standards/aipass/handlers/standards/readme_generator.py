@@ -13,6 +13,15 @@ Sections generated:
 - Last Updated timestamp
 """
 
+# =================== META ====================
+# Name: readme_generator.py
+# Description: README Section Auto-Generator
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import json
 import os
 import re

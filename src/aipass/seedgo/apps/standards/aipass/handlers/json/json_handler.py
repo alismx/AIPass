@@ -17,6 +17,15 @@ def _get_caller_module_name() -> str:
     Returns:
         Module name (e.g., "imports_standard" from imports_standard.py)
     """
+
+# =================== META ====================
+# Name: json_handler.py
+# Description: Json Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
     stack = inspect.stack()
     # Skip frames: [0]=this function, [1]=log_operation, [2]=actual caller
     if len(stack) > 2:

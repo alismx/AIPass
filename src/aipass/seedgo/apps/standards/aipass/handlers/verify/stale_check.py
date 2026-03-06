@@ -5,6 +5,15 @@ Checks for deprecated patterns in the seed codebase.
 Returns violations found during grep search.
 """
 
+# =================== META ====================
+# Name: stale_check.py
+# Description: Stale Patterns Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import subprocess
 from pathlib import Path

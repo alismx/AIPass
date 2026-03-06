@@ -24,6 +24,15 @@ Compares template directory with created branch to identify:
 - Renamed files
 """
 
+# =================== META ====================
+# Name: verify_branch.py
+# Description: Branch Template Verification Tool
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import json
 from pathlib import Path

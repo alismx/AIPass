@@ -5,6 +5,15 @@ Runs all verification checks and formats display output.
 Called by standards_verify module.
 """
 
+# =================== META ====================
+# Name: orchestrator.py
+# Description: Verification Orchestrator Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 from pathlib import Path
 from typing import Dict

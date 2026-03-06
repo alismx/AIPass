@@ -7,6 +7,15 @@ Shows per-branch scores, system-wide metrics, and top issues.
 Run: python3 seed.py audit
 """
 
+# =================== META ====================
+# Name: standards_audit.py
+# Description: Standards Audit Module
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 from pathlib import Path
 from typing import List

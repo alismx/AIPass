@@ -5,6 +5,14 @@ Provides formatted error handling standards content (3-tier architecture).
 Module orchestrates, handler implements.
 """
 
+# =================== META ====================
+# Name: error_handling_content.py
+# Description: Error Handling Standards Content Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_error_handling_standards() -> str:
     """Return formatted error handling standards content with Rich markup

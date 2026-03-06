@@ -15,6 +15,15 @@
 # =============================================
 
 """Shared pytest fixtures for cortex tests"""
+
+# =================== META ====================
+# Name: conftest.py
+# Description: Shared pytest fixtures for cortex tests
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 import pytest
 import shutil
 import tempfile

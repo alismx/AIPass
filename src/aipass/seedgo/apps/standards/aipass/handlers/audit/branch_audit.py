@@ -4,6 +4,15 @@ Branch Audit Handler
 Audits a single branch for standards compliance.
 """
 
+# =================== META ====================
+# Name: branch_audit.py
+# Description: Branch Audit Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 from pathlib import Path
 from typing import Dict
@@ -34,6 +43,7 @@ from ..standards import log_visibility_check
 from ..standards import permission_flags_check
 from ..standards import readme_check
 from ..standards import diagnostics_check
+from ..standards import meta_check
 from ..config import ignore_handler
 
 
@@ -95,7 +105,8 @@ def audit_branch(branch: Dict[str, str], bypass_rules: list) -> Dict:
         'log_handler': log_handler_check,
         'log_visibility': log_visibility_check,
         'permission_flags': permission_flags_check,
-        'readme': readme_check
+        'readme': readme_check,
+        'meta': meta_check
     }
 
     results = {}

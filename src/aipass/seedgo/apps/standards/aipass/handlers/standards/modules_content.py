@@ -5,6 +5,14 @@ Provides formatted module standards content.
 Module orchestrates, handler implements.
 """
 
+# =================== META ====================
+# Name: modules_content.py
+# Description: Modules Standards Content Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_modules_standards() -> str:
     """Return formatted module standards content with Rich markup

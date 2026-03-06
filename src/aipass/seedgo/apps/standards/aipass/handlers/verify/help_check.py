@@ -5,6 +5,15 @@ Checks that seed.py help text doesn't mention removed flags.
 Validates help documentation accuracy.
 """
 
+# =================== META ====================
+# Name: help_check.py
+# Description: Help Consistency Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 from pathlib import Path
 from typing import Dict

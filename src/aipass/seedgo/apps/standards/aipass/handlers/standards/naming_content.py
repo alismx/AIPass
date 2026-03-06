@@ -5,6 +5,14 @@ Provides formatted naming standards content.
 Module orchestrates, handler implements.
 """
 
+# =================== META ====================
+# Name: naming_content.py
+# Description: Naming Standards Content Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_naming_standards() -> str:
     """Return formatted naming standards content with Rich markup

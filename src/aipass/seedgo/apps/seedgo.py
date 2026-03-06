@@ -7,6 +7,15 @@ Routes commands to standard packs and seedgo-level modules.
 - 'list' shows installed standard packs
 """
 
+# =================== META ====================
+# Name: seedgo.py
+# Description: SEEDGO - Standards Platform for AIPass
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import json
 import sys
 import importlib.util

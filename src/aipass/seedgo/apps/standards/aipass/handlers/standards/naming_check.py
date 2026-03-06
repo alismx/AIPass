@@ -5,6 +5,15 @@ Validates module compliance with AIPass naming standards.
 Checks file naming, function naming, variable naming, constant naming.
 """
 
+# =================== META ====================
+# Name: naming_check.py
+# Description: Naming Standards Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import re
 from pathlib import Path

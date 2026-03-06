@@ -6,6 +6,15 @@ generator loading, and target resolution. Returns data structures for the
 module to display.
 """
 
+# =================== META ====================
+# Name: readme_ops.py
+# Description: README Update Operations Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import json
 import importlib.util

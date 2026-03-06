@@ -5,6 +5,15 @@ Checks if documentation is up-to-date with recent code changes.
 Validates modification times of key files.
 """
 
+# =================== META ====================
+# Name: freshness_check.py
+# Description: File Freshness Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 from pathlib import Path
 from datetime import datetime, timedelta
 from typing import Dict

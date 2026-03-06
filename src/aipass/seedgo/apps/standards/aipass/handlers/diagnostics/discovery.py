@@ -4,6 +4,15 @@ Branch Discovery Handler
 Discovers all branches from the registry for diagnostics scanning.
 """
 
+# =================== META ====================
+# Name: discovery.py
+# Description: Branch Discovery Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 from typing import Dict, List
 
 

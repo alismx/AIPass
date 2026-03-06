@@ -13,6 +13,15 @@ THE STANDARD:
 - Documentation files that mention these flags for reference are exempt
 """
 
+# =================== META ====================
+# Name: permission_flags_check.py
+# Description: Permission Flags Standards Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import re
 from pathlib import Path

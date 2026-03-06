@@ -12,6 +12,15 @@ TWO CHECKS:
 Prax logging infrastructure and test files are exempt from both checks.
 """
 
+# =================== META ====================
+# Name: log_visibility_check.py
+# Description: Log Visibility Standards Checker Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 import re
 from pathlib import Path

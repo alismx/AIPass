@@ -4,6 +4,15 @@ README Standards Content
 Provides Rich-formatted reference text for the README standard.
 """
 
+# =================== META ====================
+# Name: readme_content.py
+# Description: README Standards Content
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 from pathlib import Path
 

@@ -4,6 +4,15 @@ Bypass Audit Handler
 Audits all bypassed files to see their current state.
 """
 
+# =================== META ====================
+# Name: bypass_audit.py
+# Description: Bypass Audit Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 from pathlib import Path
 from typing import List, Dict
@@ -26,6 +35,7 @@ from ..standards import json_structure_check
 from ..standards import testing_check
 from ..standards import error_handling_check
 from ..standards import encapsulation_check
+from ..standards import meta_check
 
 
 # =============================================================================
@@ -95,6 +105,8 @@ def audit_bypasses(branches: List[Dict], bypass_rules_map: Dict[str, list]) -> L
                 checker = error_handling_check
             elif standard == 'encapsulation':
                 checker = encapsulation_check
+            elif standard == 'meta':
+                checker = meta_check
 
             if checker:
                 try:

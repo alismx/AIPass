@@ -5,6 +5,14 @@ Condensed documentation standards verified against actual codebase.
 Truth-checked 2025-11-13 against cortex and seed production code.
 """
 
+# =================== META ====================
+# Name: documentation_content.py
+# Description: Documentation Standards Content Handler
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
 
 def get_documentation_standards() -> str:
     """Return formatted documentation standards content with Rich markup

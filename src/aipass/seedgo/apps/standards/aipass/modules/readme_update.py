@@ -8,6 +8,15 @@ Uses readme_generator handler to produce content for sections marked with
 Run: python3 seed.py readme update @branch
 """
 
+# =================== META ====================
+# Name: readme_update.py
+# Description: README Auto-Update Module
+# Version: 1.0.0
+# Created: 2026-03-05
+# Modified: 2026-03-05
+# =============================================
+
+
 import sys
 from pathlib import Path
 from typing import List
