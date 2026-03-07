@@ -367,8 +367,20 @@ def _execute_addition(
             logger.info(f"[update] Template source not found, skipping: {source}")
         return
 
+    # NEVER overwrite existing .py files — even during additions
+    if dest.exists() and dest.suffix == ".py":
+        if trace:
+            logger.info(f"[update] SKIPPED existing .py file: {dest_rel_str}")
+        return
+
     # Create parent directories
     dest.parent.mkdir(parents=True, exist_ok=True)
+
+    # Don't overwrite any existing file — additions are for MISSING files only
+    if dest.exists():
+        if trace:
+            logger.info(f"[update] SKIPPED existing file: {dest_rel_str}")
+        return
 
     try:
         content = source.read_text(encoding="utf-8")

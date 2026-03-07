@@ -97,3 +97,4 @@ notepad.md
 !src/aipass/flow/flow_json/**
 !src/aipass/trigger/trigger_json/**
 *.json
+.backup

@@ -106,7 +106,7 @@ class TestSpawnAgent:
         # Verify key files exist
         assert (tmp_agent / ".trinity" / "passport.json").exists()
         assert (tmp_agent / "DASHBOARD.local.json").exists()
-        assert (tmp_agent / "apps" / "branch.py").exists()
+        assert (tmp_agent / "apps" / "test_agent.py").exists()
 
         # Verify passport content
         passport = json.loads((tmp_agent / ".trinity" / "passport.json").read_text())
