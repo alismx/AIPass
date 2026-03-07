@@ -1,0 +1,97 @@
+# =================== META ====================
+# Name: delete.py
+# Description: Branch deletion — thin CLI layer for archive and deregister
+# Version: 1.1.0
+# Created: 2026-03-07
+# Modified: 2026-03-07
+# =============================================
+
+"""Delete orchestrator for branch lifecycle management.
+
+Thin CLI module that parses arguments and delegates to the delete handler.
+All implementation logic lives in apps/handlers/delete_ops.py.
+"""
+
+from aipass.prax import logger
+# CLI service: from cli.apps.modules import console (via aipass namespace)
+from aipass.cli.apps.modules import console
+
+from aipass.spawn.apps.handlers.delete_ops import delete_branch
+
+
+# =============================================================================
+# PUBLIC API
+# =============================================================================
+
+def handle_delete(args: list[str]) -> int:
+    """Parse args and execute delete.
+
+    Args patterns:
+        ["@branch"]             -> delete with confirmation prompt
+        ["--yes", "@branch"]    -> skip confirmation
+        ["--dry-run", "@branch"] -> preview only
+
+    Returns exit code (0=success, 1=failure).
+    """
+    if not args:
+        console.print("[yellow]Usage: drone @spawn delete <@branch> [--yes] [--dry-run][/yellow]")
+        console.print()
+        console.print("  [green]@branch[/green]    Branch to archive and deregister")
+        console.print("  [green]--yes[/green]      Skip confirmation prompt")
+        console.print("  [green]--dry-run[/green]  Preview what would happen without changes")
+        return 1
+
+    dry_run = "--dry-run" in args
+    skip_confirm = "--yes" in args
+
+    # Filter out flags to find the target
+    targets = [a for a in args if not a.startswith("--")]
+
+    if not targets:
+        console.print("[red]Error: specify a branch name (e.g. @api)[/red]")
+        return 1
+
+    branch_name = targets[0].lstrip("@").lower()
+
+    try:
+        result = delete_branch(
+            branch_name,
+            confirm=not skip_confirm,
+            dry_run=dry_run,
+        )
+    except Exception as exc:
+        logger.error(f"[delete] Unexpected error deleting {branch_name}: {exc}")
+        console.print(f"[red]Error deleting {branch_name}: {exc}[/red]")
+        return 1
+
+    _print_summary(result, dry_run)
+    return 0 if result.get("success") else 1
+
+
+# =============================================================================
+# OUTPUT HELPERS
+# =============================================================================
+
+def _print_summary(result: dict, dry_run: bool) -> None:
+    """Print a rich summary of the delete operation."""
+    branch = result.get("branch", "unknown")
+    success = result.get("success", False)
+    mode = "[dim](dry-run)[/dim] " if dry_run else ""
+
+    console.print()
+    if success:
+        console.print(f"[green]Delete {mode}{branch}[/green]")
+    else:
+        console.print(f"[red]Delete FAILED {mode}{branch}[/red]")
+
+    archive_path = result.get("archive_path", "")
+    if archive_path:
+        console.print(f"  Archive: {archive_path}")
+
+    console.print(f"  Registry updated: {result.get('registry_updated', False)}")
+
+    error = result.get("error", "")
+    if error:
+        console.print(f"  [red]Error: {error}[/red]")
+
+    console.print()

@@ -57,22 +57,22 @@ def test_stub_delete_not_implemented():
     assert result["exit_code"] == 1
 
 
-def test_stub_sync_registry_not_implemented():
-    """Stub command 'sync-registry' should return not-yet-implemented message."""
+def test_sync_registry_report():
+    """sync-registry with no args should produce a report (exit 0)."""
     from aipass.spawn.drone_adapter import handle_command
 
     result = handle_command("sync-registry", [])
     assert isinstance(result, dict)
-    assert result["exit_code"] == 1
+    assert result["exit_code"] == 0
 
 
-def test_stub_sync_templates_not_implemented():
-    """Stub command 'sync-templates' should return not-yet-implemented message."""
+def test_sync_templates_report():
+    """sync-templates with no args should produce a status report (exit 0)."""
     from aipass.spawn.drone_adapter import handle_command
 
     result = handle_command("sync-templates", [])
     assert isinstance(result, dict)
-    assert result["exit_code"] == 1
+    assert result["exit_code"] == 0
 
 
 def test_stub_regenerate_registry_not_implemented():

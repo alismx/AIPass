@@ -40,17 +40,27 @@ spawn/
 ├── apps/
 │   ├── spawn.py             # Entry point (CLI)
 │   ├── modules/
-│   │   └── core.py          # Orchestrator — coordinates all steps
+│   │   ├── core.py          # Create orchestrator — coordinates spawn steps
+│   │   ├── update.py        # Update CLI — parses args, delegates to handler
+│   │   ├── delete.py        # Delete CLI — parses args, delegates to handler
+│   │   ├── sync_registry.py # Sync registry CLI — report and repair
+│   │   └── sync_templates.py # Sync templates CLI — pull from sources
 │   └── handlers/
 │       ├── file_ops.py      # Template copy, path renaming
 │       ├── metadata.py      # Branch name extraction, profile detection
 │       ├── placeholders.py  # {{PLACEHOLDER}} replacement engine
-│       └── registry.py      # AIPASS_REGISTRY.json CRUD
+│       ├── registry.py      # AIPASS_REGISTRY.json CRUD
+│       ├── update_ops.py    # Update implementation logic
+│       ├── delete_ops.py    # Delete implementation logic
+│       ├── sync_registry_ops.py  # Registry sync implementation
+│       └── sync_templates_ops.py # Template sync implementation
 ├── templates/
 │   ├── agent.template/      # Source template for new agents
 │   └── agent_mock_branch/   # Reference implementation
-└── tests/
-    └── test_spawn.py        # 13 tests covering all components
+├── tools/                   # Branch verification utilities
+├── docs/                    # Documentation
+├── spawn_json/              # JSON tracking directory
+└── tests/                   # Test suite (95 tests)
 ```
 
 ---
