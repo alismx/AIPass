@@ -1,3 +1,7 @@
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![CI](https://github.com/AIOSAI/AIPass/actions/workflows/ci.yml/badge.svg)](https://github.com/AIOSAI/AIPass/actions/workflows/ci.yml)
+
 # AIPass
 
 > **Building in public.** This is an active development repo — not a finished product. Modules are being built, tested, and rewired in real time. Some things work, some things don't yet. Follow along, poke around, or fork it and experiment. Contributions welcome once we stabilize.
