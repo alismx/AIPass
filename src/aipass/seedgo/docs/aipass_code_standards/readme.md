@@ -6,7 +6,7 @@
 
 ## What This Covers
 
-Standards for branch README.md files. Every branch must have a README that stays accurate without manual effort. Auto-generated sections update via Seed audit integration. Manual sections remain human-written.
+Standards for branch README.md files. Every branch must have a README that stays accurate without manual effort. Auto-generated sections update via Seedgo audit integration. Manual sections remain human-written.
 
 ---
 
@@ -59,7 +59,7 @@ apps/
 | `AUTO:TREE` | Directory structure | Filesystem scan |
 | `AUTO:MODULES` | Module list with descriptions | `apps/modules/*.py` docstrings |
 | `AUTO:COMMANDS` | CLI commands and usage | `--help` output |
-| `AUTO:HEADER` | Identity block | `.id.json` fields |
+| `AUTO:HEADER` | Identity block | `.trinity/passport.json` fields |
 | `AUTO:LAST_UPDATED` | Timestamp | Most recent file modification |
 
 **Rules:**
@@ -97,9 +97,9 @@ Auto-generation handles facts (file lists, timestamps). Humans handle meaning.
 
 | Tool | Purpose | Location |
 |------|---------|----------|
-| `readme_check.py` | 6 automated checks, score >= 75% to pass | `seed/apps/handlers/standards/` |
-| `readme_generator.py` | Auto-populates TREE, MODULES, COMMANDS, HEADER, LAST_UPDATED | `seed/apps/handlers/standards/` |
-| `seed readme update @branch` | On-demand regeneration (Phase 4, coming soon) | CLI |
+| `readme_check.py` | 6 automated checks, score >= 75% to pass | `seedgo/apps/handlers/standards/` |
+| `readme_generator.py` | Auto-populates TREE, MODULES, COMMANDS, HEADER, LAST_UPDATED | `seedgo/apps/handlers/standards/` |
+| `seedgo readme update @branch` | On-demand regeneration (Phase 4, coming soon) | CLI |
 
 **Checks performed by `readme_check.py`:**
 1. README.md exists
@@ -130,7 +130,7 @@ Auto-generation handles facts (file lists, timestamps). Humans handle meaning.
 <!-- AUTO:TREE -->
 ```
 apps/
-├── seed.py
+├── seedgo.py
 ├── modules/
 │   ├── imports_standard.py
 │   └── readme_standard.py
@@ -147,7 +147,7 @@ apps/
 ## Directory Structure
 ```
 apps/
-├── seed.py
+├── seedgo.py
 ├── modules/
 │   └── old_module.py    # deleted 3 weeks ago
 └── handlers/

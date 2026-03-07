@@ -81,7 +81,7 @@ ai_mail send @branch "Question: [topic]" "I'm working on X and need guidance on 
 **Common examples:**
 - Building something with email? Ask @ai_mail how delivery works
 - Need routing or @ resolution? Ask @drone
-- Unsure about standards? Ask @seed for reference code
+- Unsure about standards? Ask @seedgo for reference code
 - Need persistent storage or search? Ask @memory_bank
 - Event-driven behavior? Ask @trigger about their event system
 - Dashboard integration? Ask @devpulse about update_section()
@@ -112,10 +112,10 @@ drone @flow close FPLAN-XXXX           # Close plan
 drone @flow list                       # List active plans
 drone @flow --help                     # Full help
 
-# Seed - Quality gates
-drone @seed checklist <file>           # 10-point check on file
-drone @seed audit @branch              # Full branch audit
-drone @seed --help                     # Full help
+# Seedgo - Quality gates
+drone @seedgo checklist <file>           # 10-point check on file
+drone @seedgo audit @branch              # Full branch audit
+drone @seedgo --help                     # Full help
 
 # AI_Mail - Status updates
 drone @ai_mail send @devpulse "Subject" "Message"
@@ -184,7 +184,7 @@ DELIVERABLES:
 - Reports/logs → artifacts/reports/ or artifacts/logs/
 
 CONSTRAINTS:
-- Follow Seed standards (3-layer architecture)
+- Follow Seedgo standards (3-layer architecture)
 - Do NOT modify files outside your task scope
 - CROSS-BRANCH: Never modify other branches' files unless explicitly authorized by the user
 - 2-ATTEMPT RULE: If something fails twice, note the issue and move on
@@ -204,7 +204,7 @@ WHEN COMPLETE:
 - [ ] Created FPLAN-{number}
 - [ ] Agent deployed for: [task]
 - [ ] Agent completed: [outcome]
-- [ ] Seed checklist passed: [file]
+- [ ] Seedgo checklist passed: [file]
 - [ ] Memories updated
 
 **Log Pattern:** Task → Agent → Outcome → Quality check → Next
@@ -228,7 +228,7 @@ drone @ai_mail send @devpulse "PRODUCTION STOPPED: FPLAN-{number}" "Issue: [desc
 
 - [ ] All goals achieved
 - [ ] Agent output reviewed and verified
-- [ ] Seed checklist on new code: `drone @seed checklist <file>`
+- [ ] Seedgo checklist on new code: `drone @seedgo checklist <file>`
 - [ ] Branch memories updated:
   - [ ] `BRANCH.local.json` - session/work log
   - [ ] `BRANCH.observations.json` - patterns learned (if any)

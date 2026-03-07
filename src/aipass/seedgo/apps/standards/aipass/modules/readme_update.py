@@ -75,7 +75,7 @@ def handle_command(command: str, args: List[str]) -> bool:
     elif subcommand == "check":
         _handle_check(remaining_args)
     else:
-        # Maybe it's a branch name without subcommand: `seed readme @cortex`
+        # Maybe it's a branch name without subcommand: `seedgo readme @spawn`
         _handle_update(args)
 
     return True
@@ -174,7 +174,7 @@ def _handle_check(args: List[str]) -> None:
 def _print_target_error(error: str) -> None:
     """Display target resolution errors"""
     if error == "no_args":
-        console.print("[yellow]Usage: seed readme update @branch[/yellow]")
+        console.print("[yellow]Usage: seedgo readme update @branch[/yellow]")
         console.print("[dim]Use @all to update all branches[/dim]")
     elif error == "no_branches":
         console.print("[red]No branches found in registry[/red]")
@@ -213,15 +213,15 @@ def print_help():
     header("README Auto-Update")
     console.print()
     console.print("[yellow]USAGE:[/yellow]")
-    console.print("  seed readme update @branch    Update auto-generated sections")
-    console.print("  seed readme update @all       Update all branch READMEs")
-    console.print("  seed readme check @branch     Dry run - show what would change")
+    console.print("  seedgo readme update @branch    Update auto-generated sections")
+    console.print("  seedgo readme update @all       Update all branch READMEs")
+    console.print("  seedgo readme check @branch     Dry run - show what would change")
     console.print()
     console.print("[yellow]AUTO-GENERATED SECTIONS:[/yellow]")
     console.print("  TREE          Directory structure")
     console.print("  MODULES       Module list from apps/modules/")
     console.print("  COMMANDS      Commands from --help output")
-    console.print("  HEADER        Branch info from id.json")
+    console.print("  HEADER        Branch info from .trinity/passport.json")
     console.print("  LAST_UPDATED  Timestamp")
     console.print()
     console.print("[dim]Sections are marked with <!-- AUTO:NAME --> comments in README.md[/dim]")

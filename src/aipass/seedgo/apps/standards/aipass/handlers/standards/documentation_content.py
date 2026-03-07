@@ -2,7 +2,7 @@
 Documentation Standards Content Handler
 
 Condensed documentation standards verified against actual codebase.
-Truth-checked 2025-11-13 against cortex and seed production code.
+Truth-checked 2025-11-13 against spawn and seedgo production code.
 """
 
 # =================== META ====================

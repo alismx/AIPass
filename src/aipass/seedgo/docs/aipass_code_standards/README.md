@@ -29,10 +29,10 @@ Each file in this directory covers a specific aspect of code standards:
 - CLI branch now provides centralized formatting and error handling services
 - Follows Prax pattern: import once, use throughout
 - Rich library integration for beautiful console output
-- Error handling migrated from Cortex to CLI (eliminated ~10,300 lines duplicate code)
+- Error handling centralized in CLI (eliminated ~10,300 lines duplicate code)
 
 **Service Components:**
-1. **Console Service** - Rich Console instance (`from cli.apps.modules import console`)
+1. **Console Service** - Rich Console instance (`from aipass.cli.apps.modules import console`)
 2. **Display Functions** - header, success, error, warning, section
 3. **Operation Templates** - operation_start, operation_complete
 4. **Error Handling** - OperationResult, decorators, automatic logging
@@ -46,7 +46,7 @@ Each file in this directory covers a specific aspect of code standards:
 
 **Current Status:**
 - CLI service implemented and tested (test_cli_errors.py passing)
-- Seed pilot integration complete
+- Seedgo pilot integration complete
 - CLI branch self-adoption: 31% (needs error_handler.py and formatters.py migration)
 - External adoption: 0 branches (ready for rollout)
 

@@ -162,7 +162,7 @@ def load_trl_registry() -> Dict[str, Any]:
         "version": "1.0.0",
         "trl_mapping": {
             "types": {
-                "SEED": "Seed AI System",
+                "SEEDGO": "Seedgo AI System",
                 "NEXUS": "Nexus AI System",
                 "SKILL": "Skills Modules",
                 "PRAX": "Prax Infrastructure",

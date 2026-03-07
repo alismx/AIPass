@@ -28,7 +28,7 @@ After (event-driven):
 ## Core API
 
 ```python
-from trigger import trigger
+from aipass.trigger import trigger
 
 # Fire an event (branches do this)
 trigger.fire('event_name', **data)
@@ -46,7 +46,7 @@ trigger.status()  # Returns {'startup': 1, 'plan_closed': 2, ...}
 
 ### Standard Import (Most Modules)
 ```python
-from trigger import trigger
+from aipass.trigger import trigger
 
 def some_function():
     trigger.fire('event_name', key=value)
@@ -63,7 +63,7 @@ def _ensure_trigger():
     if not _trigger_loaded:
         _trigger_loaded = True
         try:
-            from trigger.apps.modules.core import trigger as t
+            from aipass.trigger.apps.modules.core import trigger as t
             _trigger = t
         except ImportError:
             pass  # Trigger not available, silent fallback
@@ -123,7 +123,7 @@ def handle_{event_name}(**kwargs) -> None:
 1. **NO LOGGER IMPORTS**
    ```python
    # FORBIDDEN - causes infinite recursion
-   from prax.apps.modules.logger import system_logger
+   from aipass.prax.apps.modules.logger import system_logger
 
    # Logger calls trigger → trigger calls handler → handler calls logger → loop
    ```
@@ -154,7 +154,7 @@ def handle_{event_name}(**kwargs) -> None:
 All handlers registered in `trigger/apps/handlers/events/registry.py`:
 
 ```python
-from trigger.apps.modules.core import trigger
+from aipass.trigger.apps.modules.core import trigger
 from .startup import handle_startup
 from .flow import handle_plan_created, handle_plan_closed
 
@@ -206,8 +206,8 @@ def setup_handlers():
 ### Before: Direct Cross-Branch Calls
 ```python
 # flow/close_plan.py - WRONG
-from flow.apps.handlers.dashboard.update_local import update_dashboard_local
-from flow.apps.handlers.mbank.process import process_closed_plans
+from aipass.flow.apps.handlers.dashboard.update_local import update_dashboard_local
+from aipass.flow.apps.handlers.mbank.process import process_closed_plans
 
 def close_plan():
     # ... close logic ...
@@ -218,7 +218,7 @@ def close_plan():
 ### After: Event-Driven
 ```python
 # flow/close_plan.py - CORRECT
-from trigger import trigger
+from aipass.trigger import trigger
 
 def close_plan():
     # ... close logic ...
@@ -230,8 +230,8 @@ def close_plan():
 # trigger/apps/handlers/events/flow.py - Handlers
 def handle_plan_closed(**kwargs):
     """React to plan closure"""
-    from flow.apps.handlers.dashboard.update_local import update_dashboard_local
-    from flow.apps.handlers.mbank.process import process_closed_plans
+    from aipass.flow.apps.handlers.dashboard.update_local import update_dashboard_local
+    from aipass.flow.apps.handlers.mbank.process import process_closed_plans
 
     update_dashboard_local()
     process_closed_plans()
@@ -241,7 +241,7 @@ def handle_plan_closed(**kwargs):
 
 ## Bypass Configuration
 
-Some cross-branch handler imports are intentional in Trigger. Configure in `.seed/bypass.json`:
+Some cross-branch handler imports are intentional in Trigger. Configure in `.seedgo/bypass.json`:
 
 ```json
 {
@@ -353,7 +353,7 @@ The trigger checker (`trigger_check.py v1.0.0`) detects these event-worthy patte
 
 For branches using Trigger:
 
-- [ ] Import pattern correct (`from trigger import trigger` or lazy-load)
+- [ ] Import pattern correct (`from aipass.trigger import trigger` or lazy-load)
 - [ ] Events named correctly (lowercase, underscore, past tense)
 - [ ] Handlers have no logger imports
 - [ ] Handlers have no print statements
@@ -374,4 +374,4 @@ For Trigger branch itself:
 - **Trigger Core:** `<project_root>/trigger/apps/modules/core.py`
 - **Handler Registry:** `<project_root>/trigger/apps/handlers/events/registry.py`
 - **Event Handlers:** `<project_root>/trigger/apps/handlers/events/*.py`
-- **Standard:** `/home/aipass/seed/standards/CODE_STANDARDS/trigger.md`
+- **Standard:** `<project_root>/src/aipass/seedgo/docs/aipass_code_standards/trigger.md`

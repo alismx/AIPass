@@ -40,18 +40,18 @@ The diagnostics checker runs pyright on Python files to detect:
 
 ### Single File
 ```bash
-python3 /home/aipass/seed/apps/handlers/standards/diagnostics_check.py /path/to/file.py
+python3 src/aipass/seedgo/apps/handlers/standards/diagnostics_check.py /path/to/file.py
 ```
 
 ### Entire Directory
 ```bash
-python3 /home/aipass/seed/apps/handlers/standards/diagnostics_check.py /home/aipass/seed/apps/
+python3 src/aipass/seedgo/apps/handlers/standards/diagnostics_check.py src/aipass/seedgo/apps/
 ```
 
 ### Branch Check
 ```python
-from seed.apps.handlers.standards.diagnostics_check import check_branch
-result = check_branch('/home/aipass/seed')
+from aipass.seedgo.apps.handlers.standards.diagnostics_check import check_branch
+result = check_branch('src/aipass/seedgo')
 ```
 
 ---
@@ -158,7 +158,7 @@ If you use VS Code with Pylance, you see the same errors in real-time. The diagn
 ### Audit Integration
 The standards audit can include diagnostics:
 ```bash
-drone @seed audit --diagnostics
+drone @seedgo audit --diagnostics
 ```
 
 ---
@@ -183,6 +183,6 @@ drone @seed audit --diagnostics
 
 ## Reference
 
-- **Checker:** `/home/aipass/seed/apps/handlers/standards/diagnostics_check.py`
+- **Checker:** `src/aipass/seedgo/apps/handlers/standards/diagnostics_check.py`
 - **Pyright Docs:** https://microsoft.github.io/pyright/
 - **Python Typing:** https://docs.python.org/3/library/typing.html

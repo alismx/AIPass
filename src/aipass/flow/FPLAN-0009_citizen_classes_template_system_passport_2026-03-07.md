@@ -1,4 +1,4 @@
-# FPLAN-0008 - Spawn Rebuild — Full Branch Lifecycle Manager (MASTER PLAN)
+# FPLAN-0009 - Citizen Classes — Template System + Passport Command (MASTER PLAN)
 
 **Created**: 2026-03-07
 **Branch**: flow
@@ -104,7 +104,7 @@ Update it as you work - lightweight, not formal. The user checks it when they wa
 
 ```bash
 # Create it at plan start
-echo "# Notepad - FPLAN-0008" > notepad.md
+echo "# Notepad - FPLAN-0009" > notepad.md
 ```
 
 ---
@@ -156,32 +156,27 @@ Master Plans are for **complex multi-phase projects**. You define all phases upf
 ## Project Overview
 
 ### Goal
-Rebuild spawn from a create-only tool into a **full branch lifecycle manager** — matching and exceeding Dev-Pass cortex capabilities. When complete, spawn can create, update, delete, and sync branches. Template changes propagate system-wide with a single command. 100% seedgo audit compliance.
+Evolve spawn from a single-template system into a **class-based template system** where citizens have different types (builder, manager, researcher, birthright). Each class has its own template. Commands become class-aware. `update --all` scopes by class. A new `passport` command grants lightweight citizenship without full scaffold.
 
 ### Reference Documentation
-- **Dev-Pass cortex** (reference, not source): `/home/coder/share/cortex/`
-  - `apps/modules/update_branch.py` — 965-line update system (the crown jewel)
-  - `apps/handlers/branch/change_detection.py` — ID-based rename detection
-  - `apps/handlers/branch/reconcile.py` — pre/post-flight verification
-  - `apps/handlers/json/ops.py` — deep merge + migrations
-  - `apps/handlers/registry/meta_ops.py` — template registry + branch metadata ops
-  - `apps/handlers/templates/sync.py` — managed file sync from source branches
-- **Our spawn** (current state): `/home/coder/workspace/AIPass/src/aipass/spawn/`
-- **Template**: `spawn/templates/agent.template/`
-- **Existing tracking**: `.spawn/` dir per branch (template_registry, migrations stub, ignore files)
-- **Registry**: `AIPASS_REGISTRY.json` at repo root
+- **Current spawn**: `/home/coder/workspace/AIPass/src/aipass/spawn/`
+- **Current template**: `spawn/templates/agent.template/` (becomes `builder` template)
+- **FPLAN-0008**: Spawn rebuild plan (completed — lifecycle commands working)
+- **Session 7 design discussion**: citizen_classes key in local.json + MEMORY.md
+- **Dev-Pass cortex templates**: `/home/coder/share/cortex/templates/` (had branch, business_branch, team — same concept, different naming)
+- **daemon branch**: `/home/coder/workspace/AIPass/src/aipass/daemon/` — the real-world case that drove this design (needs citizenship without apps/)
 
 ### Success Criteria
-1. `drone @spawn create @newbranch` — creates branch from template (already works, wire through drone)
-2. `drone @spawn update @branch` — fills missing scaffold, deep merges JSON, preserves code
-3. `drone @spawn update --all` — batch update all branches
-4. `drone @spawn sync-registry` — repair registry against filesystem
-5. `drone @spawn delete @branch` — archive + deregister (with confirmation)
-6. `.spawn/.branch_meta.json` tracks files by ID + hash per branch
-7. `.spawn/.migrations.json` executes structural JSON transforms
-8. Python files (.py) NEVER auto-overwritten — user code protected
-9. Dry-run mode (`--dry-run`) for preview without execution
-10. `drone @seedgo audit aipass` — spawn branch passes at highest possible score
+1. `drone @spawn create builder @newbranch` — creates full 3-layer branch (current behavior, new syntax)
+2. `drone @spawn create manager @ops` — creates manager-class citizen (lighter template)
+3. `drone @spawn passport @daemon` — grants birthright only (.trinity/ + .aipass/ + registry)
+4. `drone @spawn update builder --all` — updates only builder-class branches
+5. `drone @spawn update --all` — BLOCKED with "specify a class" message
+6. Passport stores `citizen_class` field — spawn reads it for routing
+7. `agent.template/` renamed to `builder/` in templates dir
+8. At least 2 templates: `builder` (full) and `birthright` (minimal)
+9. All existing branches get `citizen_class: "builder"` in passport
+10. 84+ tests still passing, new tests for class-based features
 
 ---
 
@@ -213,110 +208,101 @@ branch/
 
 Define ALL phases before starting work:
 
-### Phase 1: Drone Adapter + CLI Wiring
-**Goal:** Make spawn routable via `drone @spawn` — currently spawn is only callable directly, not through drone routing.
+### Phase 1: Template Restructure + Class Registry
+**Goal:** Reorganize templates directory from single template to class-based structure. Create a class registry that maps class names to template dirs. Rename `agent.template/` to `builder/`.
 **Agent Task:**
-- Create `spawn/apps/handlers/drone_adapter.py` following the pattern from other branches (e.g., `drone/apps/handlers/module_registry.py`)
-- Register spawn in drone's module registry so `drone @spawn` resolves
-- Wire existing `create` command through adapter
-- Add `--help` output listing all commands (create, update, delete, sync-registry)
-- Stub command routing for future commands (update, delete, sync-registry) — they can return "not yet implemented"
+- Rename `spawn/templates/agent.template/` to `spawn/templates/builder/`
+- Create `spawn/templates/birthright/` with minimal template:
+  - `.trinity/passport.json` (with `citizen_class: "birthright"`)
+  - `.trinity/local.json` (empty session template)
+  - `.trinity/observations.json` (empty observations template)
+  - `.aipass/branch_system_prompt.md` (placeholder prompt)
+  - `README.md` (minimal)
+  - `.spawn/.template_registry.json` (generated)
+- Create `spawn/apps/handlers/class_registry.py`:
+  - `CITIZEN_CLASSES` dict mapping class name → template dir
+  - `get_template_dir(citizen_class)` → returns Path to template
+  - `get_available_classes()` → returns list of class names
+  - `validate_class(name)` → bool
+- Update `spawn/apps/handlers/meta_ops.py` → `get_template_dir()` now accepts optional `citizen_class` param (default: "builder")
+- Update all references to `agent.template` across spawn code
+- Update `spawn/templates/agent_mock_branch/` references if needed
+- Generate `.template_registry.json` for both builder and birthright templates
 **Deliverables:**
-- `spawn/apps/handlers/drone_adapter.py`
-- Updated module registry entry
-- `drone @spawn --help` works
-- `drone @spawn create` routes to existing create logic
-- Tests in `spawn/tests/`
+- `spawn/templates/builder/` (renamed from agent.template)
+- `spawn/templates/birthright/` (new minimal template)
+- `spawn/apps/handlers/class_registry.py`
+- Updated meta_ops.py
+- All existing tests still pass
 
-### Phase 2: Branch Metadata + Reconciliation Handlers
-**Goal:** Build the tracking infrastructure that update depends on. Each branch needs `.spawn/.branch_meta.json` (ID-based file tracking with hashes). Need handlers for: loading/saving metadata, reconciling tracked state vs filesystem, and change detection.
+### Phase 2: Passport Command + Class-Aware Create
+**Goal:** Build the `passport` command for lightweight citizenship. Make `create` class-aware with new syntax.
 **Agent Task:**
-- Create `spawn/apps/handlers/meta_ops.py` — load/save `.branch_meta.json`, generate metadata for existing branches (scan filesystem, assign IDs, compute hashes)
-- Create `spawn/apps/handlers/reconcile.py` — compare `.branch_meta.json` vs actual filesystem (missing files, untracked files, hash mismatches)
-- Create `spawn/apps/handlers/change_detection.py` — compare template registry vs branch metadata: detect renames (by ID), additions, content updates (by hash), pruned files
-- Create `spawn/apps/handlers/json_ops.py` — deep merge (template structure + existing values), load/apply migrations from `.migrations.json`
-- Reference cortex handlers for logic patterns but use AIPass conventions (imports, prax logging, Path resolution)
+- Create `spawn/apps/modules/passport.py` (thin module) + `spawn/apps/handlers/passport_ops.py` (implementation):
+  - `drone @spawn passport @dirname` — grants birthright to existing directory
+  - Creates .trinity/ with passport (citizen_class: "birthright"), local.json, observations.json
+  - Creates .aipass/ with branch_system_prompt.md
+  - Registers in AIPASS_REGISTRY.json
+  - Accepts `--role`, `--purpose` flags for passport fields
+  - If directory doesn't exist, creates it
+  - If .trinity/ already exists, error: "already a citizen"
+- Update `spawn/apps/spawn.py` to route `passport` command
+- Update `create` command to accept class as first arg:
+  - `drone @spawn create builder @path` (explicit class)
+  - `drone @spawn create @path` (default: builder, backward compatible)
+- Wire class through to `_spawn_agent()` in core.py → passes class to template selection
+- Add `citizen_class` field to passport.json template and create logic
 **Deliverables:**
-- `spawn/apps/handlers/meta_ops.py`
-- `spawn/apps/handlers/reconcile.py`
-- `spawn/apps/handlers/change_detection.py`
-- `spawn/apps/handlers/json_ops.py`
-- Tests in `spawn/tests/`
+- `spawn/apps/modules/passport.py`
+- `spawn/apps/handlers/passport_ops.py`
+- Updated `spawn/apps/spawn.py` with passport + class-aware create
+- Updated `spawn/apps/modules/core.py` with class routing
+- Tests for passport command
 
-### Phase 3: Update Command
-**Goal:** Build `drone @spawn update @branch` — the core feature. Uses Phase 2 handlers to: load tracking, detect changes, backup, apply changes (add missing files, deep merge JSON, archive pruned), update tracking.
+### Phase 3: Class-Aware Update + Profile Check
+**Goal:** Make update class-aware. `update --all` requires class. Update checks passport's citizen_class to know which template applies. Light citizens don't get builder scaffold forced on them.
 **Agent Task:**
-- Create `spawn/apps/modules/update.py` — orchestrator for the update workflow:
-  1. Resolve branch path from registry
-  2. Load `.spawn/.template_registry.json` + `.spawn/.branch_meta.json`
-  3. If no branch_meta → generate from filesystem scan (first-time adoption)
-  4. Pre-flight reconciliation (reconcile.py)
-  5. Change detection (change_detection.py)
-  6. If `--dry-run` → print what would change, exit
-  7. Create backup of branch state
-  8. Execute: renames → additions → JSON deep merges → archive pruned
-  9. NEVER overwrite .py files — log as "manual review needed"
-  10. Update `.spawn/.branch_meta.json` with new state
-  11. Post-flight reconciliation to verify
-- Wire `update` command into drone_adapter.py
-- Support `--dry-run`, `--all` (batch), `--trace` (verbose logging)
+- Update `spawn/apps/handlers/update_ops.py`:
+  - `update_branch()` reads passport.json → gets `citizen_class` → selects correct template
+  - If no citizen_class in passport → default to "builder" (backward compat for existing branches)
+  - Template comparison uses class-appropriate template dir
+- Update `update_all()`:
+  - REQUIRE class arg: `update_all(citizen_class, dry_run, trace)`
+  - `drone @spawn update --all` without class → error message: "Specify a class: drone @spawn update builder --all"
+  - `drone @spawn update builder --all` → only updates branches with citizen_class="builder"
+  - `drone @spawn update birthright --all` → only updates birthright branches
+- Update CLI parsing in `spawn/apps/modules/update.py`:
+  - `["builder", "--all"]` → update all builders
+  - `["builder", "@branch"]` → update specific branch as builder
+  - `["@branch"]` → update using branch's own citizen_class from passport
+  - `["--all"]` → blocked
+- Backfill: add `citizen_class: "builder"` to all 10 existing branch passports
 **Deliverables:**
-- `spawn/apps/modules/update.py`
-- Updated `drone_adapter.py` with `update` routing
-- `drone @spawn update @branch` works end-to-end
-- `drone @spawn update --all` iterates all registered branches
-- `drone @spawn update --dry-run @branch` previews without executing
-- Tests in `spawn/tests/`
+- Updated `spawn/apps/handlers/update_ops.py`
+- Updated `spawn/apps/modules/update.py`
+- All 10 existing passports updated with citizen_class
+- Tests for class-scoped update
 
-### Phase 4: Delete + Sync-Registry + Template Sync
-**Goal:** Complete the lifecycle with delete (archive + deregister), registry repair, and managed file sync.
+### Phase 4: Integration Testing + Seedgo Compliance
+**Goal:** End-to-end testing of the full class system. Verify seedgo compliance.
 **Agent Task:**
-- Create `spawn/apps/modules/delete.py`:
-  - Move branch to `.archive/deleted_branches/{name}_{timestamp}/`
-  - Remove from AIPASS_REGISTRY.json
-  - Require `--yes` flag to skip confirmation (default: confirm)
-  - Fire `branch_deleted` trigger event
-- Create `spawn/apps/modules/sync_registry.py`:
-  - Scan `src/aipass/` for branches with `.trinity/passport.json`
-  - Compare against AIPASS_REGISTRY.json
-  - Report stale entries (registered but missing) and unregistered branches
-  - `--fix` flag to auto-repair
-- Create `spawn/apps/modules/sync_templates.py`:
-  - Define `template_owners.json` — maps template files to authoritative source branches
-  - Pull latest versions of managed files from source branches into template
-  - Example: if devpulse owns DASHBOARD.local.json schema → sync latest into template
-- Wire all commands into drone_adapter.py
-- Add `drone @spawn --help` showing complete command list
+- Create integration tests:
+  - `passport @dirname` → verify birthright files created, registered
+  - `create builder @path` → verify full scaffold
+  - `create @path` → verify backward compat (defaults to builder)
+  - `update builder --all` → only touches builders, skips birthright
+  - `update --all` → blocked with clear error
+  - `update @birthright_branch` → uses birthright template, doesn't add apps/
+  - `passport` on existing citizen → error
+  - `delete @birthright_branch` → archive works for light citizens too
+- Run `drone @seedgo audit aipass` → fix any new violations
+- Update spawn README.md with new command syntax
+- Update spawn --help text
 **Deliverables:**
-- `spawn/apps/modules/delete.py`
-- `spawn/apps/modules/sync_registry.py`
-- `spawn/apps/modules/sync_templates.py`
-- `spawn/apps/handlers/templates/template_owners.json`
-- Updated `drone_adapter.py`
-- Tests in `spawn/tests/`
-
-### Phase 5: Seedgo Compliance + Integration Testing
-**Goal:** Get spawn to highest possible seedgo audit score. End-to-end integration tests. Verify the full lifecycle: create → update → re-update after template change → delete.
-**Agent Task:**
-- Run `drone @seedgo audit aipass` and focus on spawn branch violations
-- Fix all fixable violations (imports, structure, docstrings, logging)
-- Create integration test suite:
-  - Test create → verify scaffold complete
-  - Test update on fresh branch → verify metadata generated
-  - Test update after template change → verify additions detected
-  - Test update --dry-run → verify no filesystem changes
-  - Test JSON deep merge → verify values preserved, structure updated
-  - Test .py file protection → verify Python never overwritten
-  - Test delete → verify archive created + registry cleaned
-  - Test sync-registry → verify stale/missing detection
-- Update spawn README.md with complete API documentation
-- Update spawn's `.trinity/` identity files
-**Deliverables:**
-- All seedgo violations fixed
-- `spawn/tests/test_lifecycle.py` — integration test suite
-- Updated `spawn/README.md`
-- Updated `.trinity/passport.json` reflecting new capabilities
-- Final `drone @seedgo audit aipass` report showing spawn score
+- `spawn/tests/test_citizen_classes.py`
+- Updated README.md
+- Seedgo compliance maintained
+- All tests passing
 
 ---
 
@@ -411,7 +397,7 @@ Seedgo audits are helpful but not infallible.
 If something causes production to STOP (critical blocker), **immediately email @devpulse**:
 
 ```bash
-drone @ai_mail send @devpulse "PRODUCTION STOPPED: FPLAN-0008" "Phase X halted. Issue: [description]. Attempted: [what was tried]. Awaiting guidance."
+drone @ai_mail send @devpulse "PRODUCTION STOPPED: FPLAN-0009" "Phase X halted. Issue: [description]. Attempted: [what was tried]. Awaiting guidance."
 ```
 
 **Never leave a branch stopped without reporting.** The orchestration hub needs visibility into all work.
@@ -498,7 +484,7 @@ WHEN COMPLETE:
 
 ## Phase Tracking
 
-### Phase 1: Drone Adapter + CLI Wiring
+### Phase 1: Template Restructure + Class Registry
 - [ ] Sub-plan created: FPLAN-____
 - [ ] Agent deployed
 - [ ] Agent completed
@@ -510,7 +496,7 @@ WHEN COMPLETE:
 - **Status:** Pending
 - **Notes:**
 
-### Phase 2: Branch Metadata + Reconciliation Handlers
+### Phase 2: Passport Command + Class-Aware Create
 - [ ] Sub-plan created: FPLAN-____
 - [ ] Agent deployed
 - [ ] Agent completed
@@ -522,7 +508,7 @@ WHEN COMPLETE:
 - **Status:** Pending
 - **Notes:**
 
-### Phase 3: Update Command
+### Phase 3: Class-Aware Update + Profile Check
 - [ ] Sub-plan created: FPLAN-____
 - [ ] Agent deployed
 - [ ] Agent completed
@@ -534,19 +520,7 @@ WHEN COMPLETE:
 - **Status:** Pending
 - **Notes:**
 
-### Phase 4: Delete + Sync-Registry + Template Sync
-- [ ] Sub-plan created: FPLAN-____
-- [ ] Agent deployed
-- [ ] Agent completed
-- [ ] Output reviewed
-- [ ] Seedgo checklist passed
-- [ ] Sub-plan closed
-- [ ] Memories updated
-- [ ] Email sent to @devpulse
-- **Status:** Pending
-- **Notes:**
-
-### Phase 5: Seedgo Compliance + Integration Testing
+### Phase 4: Integration Testing + Seedgo Compliance
 - [ ] Sub-plan created: FPLAN-____
 - [ ] Agent deployed
 - [ ] Agent completed
@@ -606,7 +580,7 @@ Track issues here as you encounter them. Don't fix during build - log and contin
 - [ ] Artifacts reviewed (devpulse manages cleanup)
 - [ ] Final email to @devpulse:
   ```bash
-  drone @ai_mail send @devpulse "FPLAN-0008 MASTER COMPLETE" "Full build summary: phases completed, deliverables, remaining issues (if any)"
+  drone @ai_mail send @devpulse "FPLAN-0009 MASTER COMPLETE" "Full build summary: phases completed, deliverables, remaining issues (if any)"
   ```
 
 **Completion Order:** Memories → README → Email (README before email - don't report complete with stale docs)
@@ -614,16 +588,16 @@ Track issues here as you encounter them. Don't fix during build - log and contin
 **Note:** Devpulse will perform its own Seedgo audit for visibility into the work.
 
 ### Definition of Done
-1. All 5 commands work via drone: `create`, `update`, `delete`, `sync-registry`, `sync-templates`
-2. `drone @spawn update --all` successfully updates all 10 branches from template
-3. `.spawn/.branch_meta.json` exists in every branch with ID-based tracking
-4. JSON deep merge preserves existing values while adopting template structure changes
-5. Python files are never auto-overwritten during updates
-6. `--dry-run` mode works for update and delete
-7. Integration tests pass for full lifecycle (create → update → delete)
-8. `drone @seedgo audit aipass` — spawn scores highest possible
-9. spawn README.md documents complete API
-10. spawn `.trinity/` identity reflects lifecycle manager role
+1. `templates/` has `builder/` and `birthright/` (no more `agent.template/`)
+2. `drone @spawn passport @daemon` creates .trinity/ + .aipass/ + registry entry
+3. `drone @spawn create builder @path` creates full scaffold
+4. `drone @spawn create @path` defaults to builder (backward compat)
+5. `drone @spawn update builder --all` only touches builders
+6. `drone @spawn update --all` blocked with clear error
+7. All 10 existing passports have `citizen_class: "builder"`
+8. daemon has `citizen_class: "birthright"` after passport command
+9. All tests passing (84+ existing + new class tests)
+10. Seedgo audit score maintained
 
 ---
 
@@ -631,5 +605,5 @@ Track issues here as you encounter them. Don't fix during build - log and contin
 
 When ALL phases complete and checklist done:
 ```bash
-drone @flow close FPLAN-0008
+drone @flow close FPLAN-0009
 ```

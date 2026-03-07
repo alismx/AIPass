@@ -57,7 +57,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     if is_bypassed(module_path, 'imports', bypass_rules=bypass_rules):
         return {
             'passed': True,
-            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seed/bypass.json'}],
+            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seedgo/bypass.json'}],
             'score': 100,
             'standard': 'IMPORTS'
         }
@@ -377,7 +377,7 @@ def check_no_bare_imports(lines: List[str], file_path: str = "", bypass_rules: l
     - from handlers.{name} import ...  (bare handler import, missing namespace)
     - from modules.{name} import ...   (bare module import, missing namespace)
     - from {module}.apps...            (bare module, missing aipass. prefix)
-    - from seed.apps...                (old Dev-Pass namespace)
+    - from seed.apps...                (old Dev-Pass namespace, now aipass.seedgo)
     - from prax.apps...                (bare, should be from aipass.prax...)
 
     VALID patterns:

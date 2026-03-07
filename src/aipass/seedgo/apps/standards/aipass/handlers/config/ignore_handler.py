@@ -61,7 +61,7 @@ FILE_SPECIFIC_IGNORES = {
 # TEMPLATE IGNORE PATTERNS
 # =============================================
 
-# Template files that exist in Cortex template but aren't required in branches
+# Template files that exist in spawn template but aren't required in branches
 # Used by architecture_check.py when checking template baseline
 TEMPLATE_IGNORE_PATTERNS = [
     '.gitkeep',       # Git placeholder files - not actual requirements

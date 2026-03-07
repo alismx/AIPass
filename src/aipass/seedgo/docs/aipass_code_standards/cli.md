@@ -33,7 +33,7 @@ Command-line interface design, arguments, the dual approach (interactive for hum
 
 **For AI:** Argument-based commands via Drone
 - `drone email send @recipient "subject" "message"`
-- `drone dev add @cortex "category" "note"`
+- `drone dev add @flow "category" "note"`
 - Fast, scriptable, no interaction needed
 
 **Rule:** If you build an interactive CLI, you MUST build argument equivalents.
@@ -49,7 +49,7 @@ drone <module> <command> [options] [arguments]
 
 Examples:
 drone email send @flow "Update" "Plan created successfully"
-drone plan create @cortex "New Feature" "Add handler marketplace"
+drone plan create @flow "New Feature" "Add handler marketplace"
 drone dev add @prax "bug" "Logger not writing to file"
 ```
 
@@ -117,7 +117,7 @@ One line, done. No navigation.
 ### Approved Output Method
 
 ```python
-from cli.apps.modules import console
+from aipass.cli.apps.modules import console
 
 console.print("[cyan]This is the ONLY approved way to output text[/cyan]")
 ```
@@ -173,7 +173,7 @@ parser.print_help()
 
 ```python
 # Import CLI services
-from cli.apps.modules import console, header, success, error, warning
+from aipass.cli.apps.modules import console, header, success, error, warning
 
 # Use throughout your module
 console.print("[bold cyan]Starting operation...[/bold cyan]")
@@ -249,7 +249,7 @@ print("✅ Success!")
 
 **After (CLI service):**
 ```python
-from cli.apps.modules import console, header, success
+from aipass.cli.apps.modules import console, header, success
 
 console.print()
 header("My Operation")
@@ -267,16 +267,16 @@ success("Operation complete!")
 ### Implementation Notes
 
 - CLI branch provides service (like Prax for logging)
-- Branches import from `cli.apps.modules`
+- Branches import from `aipass.cli.apps.modules`
 - Public API in `apps/modules/`, implementation in `apps/handlers/`
 - Backward compatible (old usage still works)
 
 **Reference:**
-- Standard: `/home/aipass/standards/CODE_STANDARDS/cli.md`
-- Implementation: `<project_root>/cli/`
-- Example Usage: `/home/aipass/seed/apps/modules/test_cli_errors.py`
+- Standard: `src/aipass/seedgo/docs/aipass_code_standards/cli.md`
+- Implementation: `src/aipass/cli/`
+- Example Usage: `src/aipass/seedgo/apps/modules/test_cli_errors.py`
 - Interactive Demo: `<project_root>/planning/cli_layout_demo.py`
-- Module Demo: `python3 /home/aipass/seed/apps/modules/cli_standard.py`
+- Module Demo: `python3 src/aipass/seedgo/apps/modules/cli_standard.py`
 
 ---
 
@@ -409,7 +409,7 @@ parser.add_argument('--v1', type=str, help='First version for comparison')
 **Every module MUST respond to `--help` using Rich formatting:**
 
 ```python
-from cli.apps.modules import console
+from aipass.cli.apps.modules import console
 
 if __name__ == "__main__":
     # Check for help FIRST
@@ -438,10 +438,10 @@ def print_help():
     console.print()
 ```
 
-**Reference: See any SEED module for complete examples**
+**Reference: See any seedgo module for complete examples**
 ```bash
 # See proper help formatting in action
-python3 /home/aipass/seed/apps/modules/imports_standard.py --help
+python3 src/aipass/seedgo/apps/modules/imports_standard.py --help
 ```
 
 ### Argument Types
@@ -635,7 +635,7 @@ if __name__ == "__main__":
 **Real example from create_branch.py:**
 ```python
 def handle_command(args) -> bool:
-    """Orchestrator interface - called by cortex.py"""
+    """Orchestrator interface - called by drone.py"""
     if not hasattr(args, 'command'):
         return False
 
@@ -687,7 +687,7 @@ def main():
 **@-notation for targets:**
 ```bash
 drone email send @flow "Subject" "Message"
-drone plan create @cortex "Feature" "Description"
+drone plan create @flow "Feature" "Description"
 ```
 
 Implementation:
@@ -732,10 +732,10 @@ python backup.py snapshot --dry-run=true
 **create_plan.py:**
 ```bash
 # Simple positional args
-python create_plan.py @cortex "New Feature" default
+python create_plan.py @flow "New Feature" default
 
 # With flags
-python create_plan.py @cortex "New Feature" --template master
+python create_plan.py @flow "New Feature" --template master
 ```
 
 **delete_plan.py:**
@@ -974,7 +974,7 @@ def interactive_create_plan():
 
 ```bash
 # Direct argument path
-drone plan create @cortex "New Feature" default
+drone plan create @flow "New Feature" default
 ```
 
 ### Synchronization Checklist

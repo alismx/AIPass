@@ -75,7 +75,7 @@ def _find_registry() -> Path:
 REGISTRY_PATH = _find_registry()
 
 # =============================================================================
-# BYPASS SYSTEM - .seed/ config per branch
+# BYPASS SYSTEM - .seedgo/ config per branch
 # =============================================================================
 
 
@@ -142,9 +142,9 @@ def get_branch_from_path(file_path: str) -> Optional[Dict[str, Any]]:
         return None
 
 
-def ensure_seed_config(branch_path: str) -> Path:
+def ensure_seedgo_config(branch_path: str) -> Path:
     """
-    Ensure .seed/bypass.json exists for a branch, create if missing
+    Ensure .seedgo/bypass.json exists for a branch, create if missing
 
     Args:
         branch_path: Path to branch root
@@ -152,12 +152,12 @@ def ensure_seed_config(branch_path: str) -> Path:
     Returns:
         Path to bypass.json file
     """
-    seed_dir = Path(branch_path) / ".seed"
-    bypass_file = seed_dir / "bypass.json"
+    seedgo_dir = Path(branch_path) / ".seedgo"
+    bypass_file = seedgo_dir / "bypass.json"
 
     try:
-        # Create .seed directory if needed
-        seed_dir.mkdir(exist_ok=True)
+        # Create .seedgo directory if needed
+        seedgo_dir.mkdir(exist_ok=True)
 
         # Create bypass.json if missing
         if not bypass_file.exists():
@@ -171,13 +171,13 @@ def ensure_seed_config(branch_path: str) -> Path:
 
         return bypass_file
     except Exception as e:
-        logger.error(f"[standards_checklist] Error creating seed config: {e}")
+        logger.error(f"[standards_checklist] Error creating seedgo config: {e}")
         return bypass_file
 
 
 def load_bypass_rules(branch_path: str) -> List[Dict[str, Any]]:
     """
-    Load bypass rules from branch's .seed/bypass.json
+    Load bypass rules from branch's .seedgo/bypass.json
 
     Args:
         branch_path: Path to branch root
@@ -185,7 +185,7 @@ def load_bypass_rules(branch_path: str) -> List[Dict[str, Any]]:
     Returns:
         List of bypass rule dicts
     """
-    bypass_file = ensure_seed_config(branch_path)
+    bypass_file = ensure_seedgo_config(branch_path)
 
     try:
         if bypass_file.exists():
@@ -294,7 +294,7 @@ def print_json_handler_introspection():
 
     # OVERVIEW
     console.print("[bold white]OVERVIEW:[/bold white]")
-    console.print("  Handles default JSON files (config, data, log) for seed modules.")
+    console.print("  Handles default JSON files (config, data, log) for seedgo modules.")
     console.print("  Never manually create JSONs - they build themselves on first use.")
     console.print()
 
@@ -358,7 +358,7 @@ def print_json_handler_introspection():
     console.print("[bold white]TYPICAL WORKFLOW IN A MODULE:[/bold white]")
     console.print()
     console.print("[bold cyan]Step 1:[/bold cyan] Import the handler")
-    console.print("   [dim]from seed.apps.handlers.json import json_handler[/dim]")
+    console.print("   [dim]from aipass.seedgo.apps.handlers.json import json_handler[/dim]")
     console.print()
 
     console.print("[bold cyan]Step 2:[/bold cyan] Log operations (auto-creates all JSONs)")
@@ -402,8 +402,8 @@ def print_json_handler_introspection():
     # CONSTANTS
     console.print("[bold white]CONSTANTS:[/bold white]")
     console.print("  [dim]PACK_ROOT = Path(__file__).resolve().parent.parent.parent[/dim]")
-    console.print("  [dim]SEED_JSON_DIR = SEED_ROOT / 'seed_json'[/dim]")
-    console.print("  [dim]JSON_TEMPLATES_DIR = SEED_ROOT / 'apps' / 'json_templates'[/dim]")
+    console.print("  [dim]SEEDGO_JSON_DIR = SEEDGO_ROOT / 'seedgo_json'[/dim]")
+    console.print("  [dim]JSON_TEMPLATES_DIR = SEEDGO_ROOT / 'apps' / 'json_templates'[/dim]")
     console.print()
 
     console.print("─" * 70)
@@ -494,7 +494,7 @@ def print_checklist(args: List[str]):
 
     logger.info(f"[{MODULE_NAME}] Starting standards compliance check on {file_path}")
 
-    # Detect branch and setup .seed/ config
+    # Detect branch and setup .seedgo/ config
     branch = get_branch_from_path(file_path)
     bypass_rules = []
     branch_name = "Unknown"
@@ -514,7 +514,7 @@ def print_checklist(args: List[str]):
     # Show branch info
     console.print(f"[dim]Branch: {branch_name}[/dim]")
     if branch_path:
-        bypass_file = Path(branch_path) / ".seed" / "bypass.json"
+        bypass_file = Path(branch_path) / ".seedgo" / "bypass.json"
         console.print(f"[dim]Bypass config: {bypass_file}[/dim]")
         if bypass_rules:
             console.print(f"[dim]Active bypasses: {len(bypass_rules)}[/dim]")

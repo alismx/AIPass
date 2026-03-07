@@ -97,14 +97,14 @@ Process:
 
 **Infrastructure in place:**
 - `pytest.ini` at root - Configuration for test discovery and markers
-- `/home/aipass/tests/` - Root test directory with conftest.py
+- `<project_root>/tests/` - Root test directory with conftest.py
 - `<project_root>/tests/` - Core system tests
 - Branch-specific test directories (API, Prax, CLI, etc.)
 
 **Already operational in some branches:**
 - API branch: 4 test files (test_api_system.py, test_openrouter_key.py, etc.)
 - Prax branch: test_log_rotation.py validates rotation behavior
-- Seed branch: test_cli_errors.py demonstrates error handling patterns
+- Seedgo branch: test_cli_errors.py demonstrates error handling patterns
 
 **When to expand testing:**
 - Once modules and branches stabilize
@@ -289,12 +289,11 @@ cat ~/system_logs/module_name.log
 
 **Current implementation:**
 ```
-/home/aipass/
+<project_root>/
   pytest.ini              # Test configuration
   tests/                  # Root test directory
     conftest.py           # Shared fixtures
-  aipass_core/
-    tests/conftest.py     # Core system fixtures
+  src/aipass/
     api/tests/            # API tests (4 files operational)
       test_api_system.py
       test_openrouter_key.py
@@ -303,7 +302,7 @@ cat ~/system_logs/module_name.log
     prax/tests/           # Prax tests
       test_log_rotation.py
     cli/tests/            # CLI tests (infrastructure ready)
-  seed/
+  seedgo/
     tests/conftest.py
     apps/modules/test_cli_errors.py  # Demo module
 ```
@@ -323,9 +322,9 @@ pytest -m slow
 ```
 
 **Test demonstration module:**
-- `/home/aipass/seed/apps/modules/test_cli_errors.py` - Shows error handling patterns
+- `<project_root>/src/aipass/seedgo/apps/modules/test_cli_errors.py` - Shows error handling patterns
 - Not a pytest test, but demonstrates testing concepts
-- Run directly: `python3 /home/aipass/seed/apps/modules/test_cli_errors.py`
+- Run directly: `python3 <project_root>/src/aipass/seedgo/apps/modules/test_cli_errors.py`
 
 ---
 

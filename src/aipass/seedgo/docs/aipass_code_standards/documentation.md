@@ -9,7 +9,7 @@
 Every Python file follows this header pattern:
 
 ```python
-# =================== META ====================
+# =================== AIPass ====================
 # Name: filename.py
 # Description: Brief description of the file
 # Version: 1.0.0
@@ -40,7 +40,7 @@ AIPass is a pip package. All execution goes through entry points defined in `pyp
 
 **Standard format (enforced by `meta_check.py`):**
 ```python
-# =================== META ====================
+# =================== AIPass ====================
 # Name: example_module.py
 # Description: Example module for demonstration
 # Version: 1.0.0
@@ -57,7 +57,7 @@ AIPass is a pip package. All execution goes through entry points defined in `pyp
 - **Modified:** Date the file was last modified (YYYY-MM-DD)
 
 **Markers:**
-- Header: `# =================== META ====================`
+- Header: `# =================== AIPass ====================`
 - Footer: `# =============================================`
 
 **Rules:**

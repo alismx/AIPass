@@ -6,7 +6,7 @@ import sys
 import inspect
 
 PACK_ROOT = Path(__file__).resolve().parent.parent.parent  # json/ -> handlers/ -> aipass/
-SEED_JSON_DIR = PACK_ROOT / "aipass_json"
+SEEDGO_JSON_DIR = PACK_ROOT / "aipass_json"
 JSON_TEMPLATES_DIR = PACK_ROOT / "json_templates"
 
 
@@ -82,12 +82,12 @@ def validate_json_structure(data: Any, json_type: str) -> bool:
 def get_json_path(module_name: str, json_type: str) -> Path:
     """Get path for module JSON file"""
     filename = f"{module_name}_{json_type}.json"
-    return SEED_JSON_DIR / filename
+    return SEEDGO_JSON_DIR / filename
 
 
 def ensure_json_exists(module_name: str, json_type: str) -> bool:
     """Ensure JSON file exists, create from template if missing"""
-    SEED_JSON_DIR.mkdir(parents=True, exist_ok=True)
+    SEEDGO_JSON_DIR.mkdir(parents=True, exist_ok=True)
 
     json_path = get_json_path(module_name, json_type)
 
@@ -238,16 +238,16 @@ if __name__ == "__main__":
         border_style="bright_blue"
     ))
     console.print()
-    console.print("[yellow]TESTING:[/yellow] Creating seed JSONs...")
+    console.print("[yellow]TESTING:[/yellow] Creating seedgo JSONs...")
 
     # Test auto-creation
-    log_operation("test_operation", {"test": "data"}, "seed")
-    increment_counter("seed", "test_counter", 1)
-    update_data_metrics("seed", test_metric="working")
+    log_operation("test_operation", {"test": "data"}, "seedgo")
+    increment_counter("seedgo", "test_counter", 1)
+    update_data_metrics("seedgo", test_metric="working")
 
     console.print()
     console.print("[green]Check aipass_json/ directory for created files:[/green]")
-    console.print("  [dim]•[/dim] seed_config.json")
-    console.print("  [dim]•[/dim] seed_data.json")
-    console.print("  [dim]•[/dim] seed_log.json")
+    console.print("  [dim]•[/dim] seedgo_config.json")
+    console.print("  [dim]•[/dim] seedgo_data.json")
+    console.print("  [dim]•[/dim] seedgo_log.json")
     console.print()

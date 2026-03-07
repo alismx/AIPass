@@ -92,7 +92,7 @@ notepad.md
 
 # Module JSON exceptions — these are source configs, must be tracked
 !AIPASS_REGISTRY.json
-!AI_CENTRAL/**/*.json
+!.ai_central/**/*.json
 !src/aipass/api/api_json/**
 !src/aipass/flow/flow_json/**
 !src/aipass/trigger/trigger_json/**

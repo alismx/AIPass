@@ -3,23 +3,17 @@
 **Date:** 2025-11-12
 
 ---
-
-## Standard Import Order
+#@comments:patrick:whole file needs updating
+## Standard Import Order 
 
 **Every Python file follows this pattern:**
 
 ```python
-#!/home/aipass/.venv/bin/python3
+#!/usr/bin/env python3
 
 # [META BLOCK]
 
 """Module docstring"""
-
-# Infrastructure setup (if needed)
-import sys
-from pathlib import Path
-AIPASS_ROOT = Path.home() / "aipass_core"
-sys.path.insert(0, str(AIPASS_ROOT))
 
 # Standard library imports
 import json
@@ -27,92 +21,71 @@ from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
 # Prax logger (system-wide - nearly always imported)
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 
 # Services (CLI, etc.)
-from cli.apps.modules import console, header, success, error
+from aipass.cli.apps.modules import console, header, success, error
 
 # Internal/local imports
-from seed.apps.handlers.json import json_handler
-from seed.apps.handlers.domain1 import ops
+from aipass.seedgo.apps.handlers.json import json_handler
+from aipass.seedgo.apps.handlers.domain1 import ops
 ```
 
 **WHY this order:**
-1. **Infrastructure first** - Must run before other imports can work
-2. **Standard library** - Python built-ins grouped together
-3. **Prax logger** - System-wide logging service
-4. **Services** - CLI, other branch services (import before internal handlers)
-5. **Internal imports** - After all external dependencies resolved
+1. **Standard library** - Python built-ins grouped together
+2. **Prax logger** - System-wide logging service
+3. **Services** - CLI, other branch services (import before internal handlers)
+4. **Internal imports** - After all external dependencies resolved
+
+> **Note:** AIPass uses pip-installable namespace imports (`from aipass.{module}...`). No `sys.path` manipulation or `AIPASS_ROOT` path setup is needed.
 
 ---
 
-## AIPASS_ROOT Pattern
+## Import Namespace Pattern
 
 **The standard:**
 ```python
-from pathlib import Path
-AIPASS_ROOT = Path.home() / "aipass_core"
+from aipass.{module}.apps.modules.{name} import something
+from aipass.{module}.apps.handlers.{domain} import handler
 ```
 
-**WHY Path.home():**
-- Works across all environments (no hardcoded paths)
-- User-agnostic (any user can run AIPass)
-- System-agnostic (Linux, Mac, Windows)
+**WHY namespace imports:**
+- Works across all environments (pip-installed package)
+- No `sys.path` manipulation needed
+- Explicit, traceable import paths
 
 **Where it's used:**
 ```python
-# Finding branch components
-PRAX_ROOT = AIPASS_ROOT / "prax"
-CLI_ROOT = AIPASS_ROOT / "cli"
-SEED_ROOT = Path.home() / "seed"  # Seed is outside aipass_core
+# Cross-branch service imports
+from aipass.prax.apps.modules.logger import system_logger as logger
+from aipass.cli.apps.modules import console, header
 
-# Accessing shared resources
-TEMPLATES_DIR = AIPASS_ROOT / "templates"
+# Internal branch imports
+from aipass.seedgo.apps.handlers.json import json_handler
+from aipass.flow.apps.modules.plans import create_plan
 ```
 
-**Consistency rule:** Always use `AIPASS_ROOT` or `Path.home()`, never hardcode `/home/username/`
+**Consistency rule:** Always use `from aipass.{module}...`, never bare imports like `from prax...`
 
 ---
 
-## sys.path Setup (When Needed)
+## No sys.path Setup Needed
 
-**Pattern:**
+AIPass is a pip-installable package. All imports use the `aipass.*` namespace and resolve automatically via the installed package.
+
 ```python
-import sys
-from pathlib import Path
-AIPASS_ROOT = Path.home() / "aipass_core"
-sys.path.insert(0, str(AIPASS_ROOT))
+# No sys.path manipulation required
+# Just import directly:
+from aipass.prax.apps.modules.logger import system_logger as logger
+from aipass.seedgo.apps.handlers.json import json_handler
 ```
 
-**WHY sys.path.insert(0, ...):**
-- Allows imports from any branch without relative path gymnastics
-- Makes `from prax.apps.modules.logger import system_logger` work from anywhere
-- Adds aipass_core to Python's import search path
-
-**When to use:**
-- **Modules and handlers:** Need it (they're deep in directory structure)
-- **Main entry points:** Usually need it
-- **Standalone scripts:** Definitely need it
-
-**Example enabling import:**
-```python
-# Without sys.path setup - fails
-from prax.apps.modules.logger import system_logger  # ModuleNotFoundError
-
-# With sys.path setup - works
-sys.path.insert(0, str(AIPASS_ROOT))
-from prax.apps.modules.logger import system_logger  # ✓
+**Install for development:**
+```bash
+pip install -e .
 ```
 
-### Branch-Specific sys.path Patterns
-
-**Seed-specific pattern:**
-```python
-sys.path.insert(0, str(AIPASS_ROOT))
-sys.path.insert(0, str(Path.home()))  # Seed-specific: enables `from seed.apps.handlers...` imports
-```
-
-**Why seed needs both:** Seed lives at `/home/aipass/seed/` (outside `aipass_core`), so adding `Path.home()` to sys.path allows `from seed.apps.handlers...` imports to work. Other branches typically only need the `AIPASS_ROOT` line since they live inside `aipass_core`.
+This registers the `aipass` namespace so all `from aipass.{module}...` imports work from anywhere.
 
 ---
 
@@ -121,7 +94,7 @@ sys.path.insert(0, str(Path.home()))  # Seed-specific: enables `from seed.apps.h
 **The most common import in the system:**
 
 ```python
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 ```
 
 **WHY Prax is important:**
@@ -140,11 +113,11 @@ logger.error("Failed to backup branch", exc_info=True)
 **Consistency:** Same import pattern everywhere
 ```python
 # Always this
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 
 # Never variations like these
-from prax import logger  # ✗
-import prax.system_logger  # ✗
+from aipass.prax import logger  # ✗
+import aipass.prax.system_logger  # ✗
 ```
 
 **Output location:** Prax manages log files, branches don't need to worry about where logs go
@@ -155,25 +128,25 @@ import prax.system_logger  # ✗
 
 **Core rule:** Handlers CANNOT import from parent branch modules
 
-**Example - Seed:**
+**Example - Seedgo:**
 
 ```python
 # ✓ ALLOWED - Handler imports another handler
-# seed/apps/handlers/domain1/ops.py
-from seed.apps.handlers.json import json_handler
+# seedgo/apps/handlers/domain1/ops.py
+from aipass.seedgo.apps.handlers.json import json_handler
 
 # ✓ ALLOWED - Handler imports standard library
 import json
 from pathlib import Path
 
 # ✓ ALLOWED - Handler imports Prax service
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 
 # ✓ ALLOWED - Handler imports CLI service
-from cli.apps.modules import console, error
+from aipass.cli.apps.modules import console, error
 
 # ✗ FORBIDDEN - Handler imports parent module
-from seed.apps.modules.create_thing import something  # BREAKS INDEPENDENCE
+from aipass.seedgo.apps.modules.create_thing import something  # BREAKS INDEPENDENCE
 ```
 
 **WHY this matters:**
@@ -194,22 +167,22 @@ Handlers import modules ✗
 
 **From modules to handlers:**
 ```python
-# In seed/apps/modules/create_thing.py
-from seed.apps.handlers.json import json_handler
-from seed.apps.handlers.domain1 import ops
+# In seedgo/apps/modules/create_thing.py
+from aipass.seedgo.apps.handlers.json import json_handler
+from aipass.seedgo.apps.handlers.domain1 import ops
 ```
 
 **From handlers to handlers (within same branch):**
 ```python
-# In seed/apps/handlers/domain1/ops.py
-from seed.apps.handlers.json import json_handler
+# In seedgo/apps/handlers/domain1/ops.py
+from aipass.seedgo.apps.handlers.json import json_handler
 ```
 
 **Cross-branch service imports:**
 ```python
 # Services can be imported anywhere (modules or handlers)
-from prax.apps.modules.logger import system_logger as logger
-from cli.apps.modules import console, header, success, error
+from aipass.prax.apps.modules.logger import system_logger as logger
+from aipass.cli.apps.modules import console, header, success, error
 ```
 
 **Relative imports (avoided):**
@@ -217,8 +190,8 @@ from cli.apps.modules import console, header, success, error
 # ✗ Don't use relative imports
 from ...handlers.json import json_handler  # Confusing, hard to trace
 
-# ✓ Use absolute imports from sys.path
-from seed.apps.handlers.json import json_handler  # Clear, explicit
+# ✓ Use absolute namespace imports
+from aipass.seedgo.apps.handlers.json import json_handler  # Clear, explicit
 ```
 
 ---
@@ -238,7 +211,7 @@ Some AIPass services need to know **which branch is calling them** to provide pr
 **Router Services (CLI Invocation Only):**
 - **Drone** - NOT a library service, it's a CLI router
   - Resolves `@` targets before passing commands to branches
-  - Branches NEVER import from `drone.apps.modules`
+  - Branches NEVER import from `aipass.drone.apps.modules`
   - Invoked via subprocess: `subprocess.run(["drone", "command", ...])`
 
 ### Context-Independent Services (Import & Use Anywhere)
@@ -247,11 +220,11 @@ Some AIPass services need to know **which branch is calling them** to provide pr
 
 ```python
 # Prax Logger - context-independent
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 logger.info("Works from anywhere")
 
 # CLI Services - context-independent
-from cli.apps.modules import console, header
+from aipass.cli.apps.modules import console, header
 console.print("Works from anywhere")
 ```
 
@@ -271,14 +244,14 @@ import subprocess
 # Drone resolves @ and routes the command
 subprocess.run(["drone", "email", "send", "@recipient", "Subject", "Message"])
 subprocess.run(["drone", "log", "show"])
-subprocess.run(["drone", "@seed", "some-command"])
+subprocess.run(["drone", "@seedgo", "some-command"])
 ```
 
 **✗ FORBIDDEN - Never import from Drone:**
 ```python
 # ✗ WRONG - Drone is not a library service
-from drone.apps.modules import resolve_target  # NO!
-from drone.apps.modules.router import route_command  # NO!
+from aipass.drone.apps.modules import resolve_target  # NO!
+from aipass.drone.apps.modules.router import route_command  # NO!
 
 # Branches should NOT handle @ resolution themselves
 # That's Drone's job - it resolves @ before passing to branches
@@ -300,35 +273,32 @@ from drone.apps.modules.router import route_command  # NO!
 
 ```python
 # ✓ CORRECT - Call from your branch directory
-# Working dir: /home/aipass/seed/
+# Working dir: src/aipass/seedgo/
 
 import subprocess
-subprocess.run(["python3", "<project_root>/ai_mail/apps/ai_mail.py",
-                "send", "@drone", "Subject", "Message"])
+subprocess.run(["drone", "@ai_mail", "send", "@drone", "Subject", "Message"])
 
-# AI_MAIL walks up from your CWD, finds SEED.id.json, knows you're @seed
-# Your email sends FROM @seed (not @dev_central or @ai_mail)
+# AI_MAIL walks up from your CWD, finds branch identity, knows you're @seedgo
+# Your email sends FROM @seedgo (not @devpulse or @ai_mail)
 ```
 
 ```python
 # ✗ WRONG - Call from wrong directory
-# Working dir: /home/aipass/
+# Working dir: / (no branch context)
 
-subprocess.run(["python3", "<project_root>/ai_mail/apps/ai_mail.py",
-                "send", "@drone", "Subject", "Message"])
+subprocess.run(["drone", "@ai_mail", "send", "@drone", "Subject", "Message"])
 
-# AI_MAIL can't find branch identity, falls back to @dev_central
+# AI_MAIL can't find branch identity, falls back to @devpulse
 # Email sends from wrong identity
 ```
 
 #### How PWD Detection Works
 
 1. **AI_MAIL starts** at your current working directory
-2. **Walks up** the directory tree looking for `*.id.json` file
-3. **Finds** (e.g.) `SEED.id.json` at `/home/aipass/seed/`
-4. **Derives identity**: Branch name = "seed", email = "@seed"
-5. **Auto-generates config** at `/home/aipass/seed/seed_json/user_config.json`
-6. **Uses correct sender**: Email sends FROM @seed
+2. **Walks up** the directory tree looking for `.trinity/passport.json`
+3. **Finds** (e.g.) `passport.json` at `src/aipass/seedgo/.trinity/`
+4. **Derives identity**: Branch name = "seedgo", email = "@seedgo"
+5. **Uses correct sender**: Email sends FROM @seedgo
 
 #### Best Practice: Use Drone for AI_MAIL
 
@@ -356,8 +326,7 @@ from pathlib import Path
 # Ensure you're in your branch directory
 branch_dir = Path(__file__).parent.parent  # Adjust based on file depth
 result = subprocess.run(
-    ["python3", "<project_root>/ai_mail/apps/ai_mail.py",
-     "send", "@recipient", "Subject", "Message"],
+    ["drone", "@ai_mail", "send", "@recipient", "Subject", "Message"],
     cwd=str(branch_dir),  # Force working directory to branch root
     capture_output=True
 )
@@ -379,13 +348,10 @@ result = subprocess.run(
 When you call AI_MAIL from your branch directory, it auto-generates:
 
 ```
-/home/aipass/seed/
-├── seed_json/
-│   └── user_config.json          # Your email config (@seed identity)
-├── ai_mail.local/
+src/aipass/seedgo/
+├── .ai_mail.local/
 │   ├── inbox.json                # Your inbox
 │   └── sent/                     # Your sent folder
-└── SEED.ai_mail.json             # Your email summary dashboard
 ```
 
 **Pattern:** Each branch gets its own isolated email configuration and mailbox.
@@ -449,15 +415,10 @@ pip install pillow
 ```
 
 **Virtual environment:**
-- AIPass uses `~/.venv/` (user's home directory venv)
-- Shebang points to it: `#!/home/aipass/.venv/bin/python3`
-- All branches share the same venv
+- AIPass is pip-installable: `pip install -e .`
+- Shebang: `#!/usr/bin/env python3`
+- All branches share the same package namespace
 - Packages install once, available everywhere
-
-**EXCEPTION - MEMORY_BANK:**
-- MEMORY_BANK uses its own venv: `/home/aipass/MEMORY_BANK/.venv`
-- Shebang for MEMORY_BANK: `#!/home/aipass/MEMORY_BANK/.venv/bin/python3`
-- Isolated environment for memory management operations
 
 ---
 
@@ -510,18 +471,18 @@ import shutil
 
 ```python
 # ✗ Wildcard imports
-from cortex.apps.handlers.json import *  # What did I import? Who knows!
+from aipass.flow.apps.handlers.json import *  # What did I import? Who knows!
 
 # ✗ Hardcoded paths
-sys.path.insert(0, "/home/patrick/aipass_core")  # Breaks on other machines
+sys.path.insert(0, "/home/user/project")  # Breaks on other machines
 
 # ✗ Relative imports
 from ...handlers import something  # Hard to trace, confusing
 
 # ✗ Import entire modules when you need one function
-import seed.apps.handlers.json.json_handler  # Long, repetitive
+import aipass.seedgo.apps.handlers.json.json_handler  # Long, repetitive
 # Better:
-from seed.apps.handlers.json import json_handler
+from aipass.seedgo.apps.handlers.json import json_handler
 
 # ✗ Circular imports (handler imports module that imports handler)
 # Module imports handler ✓
@@ -534,12 +495,9 @@ from seed.apps.handlers.json import json_handler
 
 | Import Type | Pattern | Required? |
 |-------------|---------|-----------|
-| Infrastructure | `AIPASS_ROOT = Path.home() / "aipass_core"` | When needed |
-| sys.path | `sys.path.insert(0, str(AIPASS_ROOT))` | When needed |
-| Prax logger | `from prax.apps.modules.logger import system_logger as logger` | **Nearly always** |
-| CLI service | `from cli.apps.modules import console, header` | When needed |
-| API service | `from api.apps.modules import llm_call` | When needed |
-| Memory Bank | `from memory_bank.apps.modules import vector_search` | When needed |
+| Prax logger | `from aipass.prax.apps.modules.logger import system_logger as logger` | **Nearly always** |
+| CLI service | `from aipass.cli.apps.modules import console, header` | When needed |
+| API service | `from aipass.api.apps.modules import llm_call` | When needed |
 | **Drone** | `subprocess.run(["drone", "cmd", ...])` | **CLI only - NEVER import** |
 | Standard lib | Grouped by category, alphabetical | Yes |
 | Internal | Absolute imports (not relative) | Yes |
@@ -549,15 +507,15 @@ from seed.apps.handlers.json import json_handler
 
 ## Summary
 
-**Import order:** Infrastructure → Standard lib → Prax → Services → Internal
+**Import order:** Standard lib → Prax → Services → Internal
 
-**AIPASS_ROOT pattern:** `Path.home() / "aipass_core"` - never hardcode paths
+**Namespace pattern:** `from aipass.{module}...` - never bare imports or hardcoded paths
 
 **Prax logger:** Nearly always imported - system-wide logging service
 
 **Service imports:** CLI, API, Memory Bank imported as libraries; Drone invoked via CLI only
 
-**Drone is special:** NOT a library service - it's a CLI router. Never import from drone.apps.modules
+**Drone is special:** NOT a library service - it's a CLI router. Never import from aipass.drone.apps.modules
 
 **Handler independence:** Same-branch handler→handler ✓, Handler→own-branch-module ✗, Cross-branch handler ✗
 
@@ -569,9 +527,10 @@ from seed.apps.handlers.json import json_handler
 
 ## Comments
 
-#@comments:2025-11-13:claude: Updated examples to use seed/ instead of fictional cortex/ references
+#@comments:2025-11-13:claude: Updated examples to use seedgo/ instead of fictional cortex/ references
 #@comments:2025-11-13:claude: Added Services import section (CLI) to match actual codebase patterns
 #@comments:2025-11-13:claude: Toned down "critical" language around Prax to "nearly always" for accuracy
 #@comments:2025-11-29:claude: Added Service Categories section clarifying Drone is NOT a library service
 #@comments:2025-11-29:claude: Added explicit "Drone: CLI Router Pattern" section with FORBIDDEN import examples
-#@comments:2025-11-29:claude: Clarified that branches should NEVER import from drone.apps.modules - Drone resolves @ before calling them
+#@comments:2025-11-29:claude: Clarified that branches should NEVER import from aipass.drone.apps.modules - Drone resolves @ before calling them
+#@comments:2026-03-07:claude: Cleaned Dev-Pass references - updated to AIPass namespace imports, removed sys.path/AIPASS_ROOT patterns, fixed /home/aipass/ paths, seed->seedgo naming

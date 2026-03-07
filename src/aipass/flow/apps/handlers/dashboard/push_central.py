@@ -60,7 +60,7 @@ def _find_repo_root() -> Path:
 
 
 _REPO_ROOT = _find_repo_root()
-AI_CENTRAL_DIR = _REPO_ROOT / "AI_CENTRAL"
+AI_CENTRAL_DIR = _REPO_ROOT / ".ai_central"
 CENTRAL_FILE = AI_CENTRAL_DIR / "PLANS.central.json"
 
 # =============================================

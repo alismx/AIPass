@@ -14,7 +14,7 @@ Error handling, logging architecture, exception patterns, and the 3-tier separat
 **Core Principle:** Logging responsibility follows the architectural hierarchy.
 
 ```
-Entry Point (flow.py, seed.py)
+Entry Point (flow.py, seedgo.py)
     ↓ (operational logging via Prax)
 Module (apps/modules/*.py)
     ↓ (business logging via Prax - catches and logs everything)
@@ -32,7 +32,7 @@ Handler (apps/handlers/**/*.py)
 
 ## Tier 1: Entry Points
 
-**Files:** `flow.py`, `seed.py`, `prax.py`, `drone.py`, `ai_mail.py`
+**Files:** `flow.py`, `seedgo.py`, `prax.py`, `drone.py`, `ai_mail.py`
 
 **Prax Import:** YES (minimal)
 
@@ -40,7 +40,7 @@ Handler (apps/handlers/**/*.py)
 
 **What to Log:**
 ```python
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 
 # ✓ Module discovery results
 logger.info(f"Discovered {len(modules)} modules")
@@ -85,7 +85,7 @@ logger.warning("Invalid input")  # NO!
 
 **Pattern:**
 ```python
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 
 MODULE_NAME = "create_plan"
 
@@ -203,7 +203,7 @@ logger.warning(f"[{MODULE_NAME}] Invalid format: expected PLAN0001")
 Regular handlers called by module orchestrators return results. The module logs on their behalf. These handlers MAY also log directly via Prax if they need to record operational details.
 
 ```python
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 
 def create_plan_handler(location: str, subject: str) -> dict:
     """Create a plan file"""
@@ -228,7 +228,7 @@ def create_plan_handler(location: str, subject: str) -> dict:
 Plugin and service handlers are mini entry points — invoked by schedulers, daemons, or running as long-lived processes. They MUST use Prax system_logger.
 
 ```python
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 
 # Plugin triggered by cron — no calling module exists
 def run():
@@ -261,10 +261,10 @@ handler = logging.FileHandler('logs/output.log')  # NO! Prax handles routing
 
 ```bash
 # All modules MUST import Prax
-grep -r "from prax.apps.modules.logger import" apps/modules/*.py
+grep -r "from aipass.prax.apps.modules.logger import" apps/modules/*.py
 
 # Handlers SHOULD import Prax (no longer prohibited)
-grep -r "from prax.apps.modules.logger import" apps/handlers/**/*.py
+grep -r "from aipass.prax.apps.modules.logger import" apps/handlers/**/*.py
 
 # Handlers MUST NOT use stdlib logging.getLogger
 grep -r "logging.getLogger" apps/handlers/**/*.py  # Should find NOTHING
@@ -291,7 +291,7 @@ grep -r "logger.error" apps/modules/*.py  # Should find ALL modules
    ```
 
 2. **Replace stdlib with Prax system_logger**
-   - Replace `import logging` / `logging.getLogger()` with `from prax.apps.modules.logger import system_logger as logger`
+   - Replace `import logging` / `logging.getLogger()` with `from aipass.prax.apps.modules.logger import system_logger as logger`
    - Remove any `logging.FileHandler()` creation (Prax handles routing)
    - Keep logger calls as-is (logger.info, logger.error, etc.)
 
@@ -301,7 +301,7 @@ grep -r "logger.error" apps/modules/*.py  # Should find ALL modules
    - Log all errors with MODULE_NAME prefix
 
 4. **Test compliance**
-   - Run `drone @seed audit @branch`
+   - Run `drone @seedgo audit @branch`
    - Verify logs appear in system_logs/
    - Verify no stdlib logging.getLogger remains
 
@@ -312,7 +312,7 @@ grep -r "logger.error" apps/modules/*.py  # Should find ALL modules
 ### Module Error Handling Template
 
 ```python
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 
 MODULE_NAME = "module_name"
 
@@ -405,8 +405,8 @@ def handler_function(param1: str, param2: int) -> dict:
 - No more two-logging-system inconsistency
 
 **Auditability:**
-- Automated Seed checks verify Prax imports across ALL tiers
-- `drone @seed audit @branch` catches stdlib logging violations
+- Automated Seedgo checks verify Prax imports across ALL tiers
+- `drone @seedgo audit @branch` catches stdlib logging violations
 - One pattern to check: does it use Prax?
 
 **Testability:**
@@ -427,9 +427,9 @@ def handler_function(param1: str, param2: int) -> dict:
 - `<project_root>/flow/apps/modules/`
 - `<project_root>/flow/apps/handlers/`
 
-**See Seed for reference implementation:**
-- `/home/aipass/seed/apps/modules/`
-- `/home/aipass/seed/apps/handlers/`
+**See Seedgo for reference implementation:**
+- `<project_root>/seedgo/apps/modules/`
+- `<project_root>/seedgo/apps/handlers/`
 
 **Related Standards:**
 - Architecture (3-tier pattern)
@@ -444,7 +444,7 @@ def handler_function(param1: str, param2: int) -> dict:
 
 Prax handlers in `apps/handlers/logging/` use Python's stdlib `logging` instead of `system_logger`. This is **intentional** to avoid circular dependencies — the logging handlers ARE the logging infrastructure.
 
-**Status:** Documented in `<project_root>/prax/.seed/bypass.json`
+**Status:** Documented in `<project_root>/prax/.seedgo/bypass.json`
 
 ### Trigger Infrastructure Handlers
 

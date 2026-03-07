@@ -5,7 +5,7 @@
 # Date: 2025-11-21
 # Version: 2.1.0
 # Category: flow/handlers/json
-# Code Standards: Seed-compliant (3-tier architecture, no logger in handlers)
+# Code Standards: Seedgo-compliant (3-tier architecture, no logger in handlers)
 #
 # CHANGELOG (Max 5 entries):
 #   - v2.1.0 (2025-11-29): Removed Prax logger - handlers must not log (tier 3 standard)

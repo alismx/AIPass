@@ -10,7 +10,7 @@
 #   - v1.0.0 (2025-11-21): Initial implementation, handler-based architecture
 #
 # CODE STANDARDS:
-#   - Seed v3.0 compliant (imports, architecture, error handling)
+#   - Seedgo v3.0 compliant (imports, architecture, error handling)
 # ==============================================
 
 """

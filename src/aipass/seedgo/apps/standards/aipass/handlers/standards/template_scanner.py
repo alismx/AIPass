@@ -1,7 +1,7 @@
 """
 Template Scanner - Automatically scan template to discover structure
 
-Scans Cortex template directory and generates baseline structure.
+Scans Spawn template directory and generates baseline structure.
 Respects .registry_ignore.json patterns.
 """
 
@@ -155,7 +155,7 @@ if __name__ == "__main__":
     for f in sorted(structure['root_files']):
         console.print(f"  - {f}")
 
-    # Compare to SEED
+    # Compare to branch
     if len(sys.argv) > 1:
         branch_path = Path(sys.argv[1])
         branch_name = branch_path.name

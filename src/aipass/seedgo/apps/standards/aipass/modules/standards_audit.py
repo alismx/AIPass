@@ -208,10 +208,10 @@ def print_help():
     console.print("[yellow]USAGE:[/yellow]")
     console.print("  [dim]# Via drone[/dim]")
     console.print("  seedgo audit")
-    console.print("  seedgo audit cortex")
+    console.print("  seedgo audit spawn")
     console.print()
     console.print("  seedgo audit")
-    console.print("  seedgo audit cortex")
+    console.print("  seedgo audit spawn")
     console.print("  seedgo audit --help")
     console.print()
 
@@ -220,7 +220,7 @@ def print_help():
     console.print("  seedgo audit")
     console.print()
     console.print("  [dim]# Full audit of specific branch[/dim]")
-    console.print("  seedgo audit cortex")
+    console.print("  seedgo audit spawn")
     console.print()
 
     console.print("[yellow]REFERENCE:[/yellow]")

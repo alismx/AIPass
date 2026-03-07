@@ -57,7 +57,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     if is_bypassed(module_path, 'documentation', bypass_rules=bypass_rules):
         return {
             'passed': True,
-            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seed/bypass.json'}],
+            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seedgo/bypass.json'}],
             'score': 100,
             'standard': 'DOCUMENTATION'
         }

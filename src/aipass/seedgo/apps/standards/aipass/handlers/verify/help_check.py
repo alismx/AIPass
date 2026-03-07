@@ -28,11 +28,11 @@ def check_help_consistency() -> Dict:
     Returns:
         Dict with check results
     """
-    seed_file = Path(__file__).resolve().parents[5] / "apps" / "seedgo.py"  # seedgo root / apps / seedgo.py
+    seedgo_file = Path(__file__).resolve().parents[5] / "apps" / "seedgo.py"  # seedgo root / apps / seedgo.py
     issues = []
     removed_flags = []
 
-    if not seed_file.exists():
+    if not seedgo_file.exists():
         return {
             'name': 'Help Consistency',
             'passed': False,
@@ -42,7 +42,7 @@ def check_help_consistency() -> Dict:
 
     # Read seedgo.py and check for removed flags in help text
     try:
-        content = file_handler.read_file(str(seed_file))
+        content = file_handler.read_file(str(seedgo_file))
         if content is None:
             return {
                 'name': 'Help Consistency',

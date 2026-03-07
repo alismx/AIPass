@@ -200,7 +200,7 @@ def handle_command(command: str, args: List[str]) -> bool:
 
 
 def print_introspection():
-    """Display module info when run without arguments (Seed pattern)"""
+    """Display module info when run without arguments (Seedgo pattern)"""
     console.print()
     console.print("[bold cyan]Diagnostics Audit Module[/bold cyan]")
     console.print()
@@ -232,7 +232,7 @@ def print_help():
     console.print("  seedgo diagnostics flow")
     console.print()
     console.print("  seedgo diagnostics")
-    console.print("  seedgo diagnostics cortex")
+    console.print("  seedgo diagnostics spawn")
     console.print()
 
     console.print("[yellow]WHAT IT CHECKS:[/yellow]")

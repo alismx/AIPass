@@ -60,19 +60,15 @@ drone @ai_mail dispatch wake --fresh @target   # Fresh session (new context)
 
 ## Architecture
 
-All branches follow 3-layer pattern:
-```
-apps/
-  {name}.py        # Entry point (e.g. devpulse.py, spawn.py)
-  modules/         # Business logic
-  handlers/        # Implementation
-```
+Most branches follow the 3-layer pattern (`apps/{name}.py` + `modules/` + `handlers/`). DevPulse does NOT have `apps/` — it's a manager branch that coordinates via dispatch and sub-agents.
 
 Imports use pip namespace: `from aipass.{module}.apps.modules...`
 
 ## How You Work
 
 You are a **manager**, not a worker. Delegate code tasks to sub-agents — don't burn your own context reading and editing files across branches. Send agents out in parallel, collect results, report back. Your context window is precious — protect it. Only do small, quick things yourself (a single command, a quick check). Anything involving reading multiple files, auditing code, or making edits across a branch = dispatch an agent.
+
+**Use background agents aggressively.** When multiple independent tasks exist, spawn background agents to handle them in parallel while you continue working on other items. Don't wait for one task to finish before starting the next. Keep the pipeline moving — background agents for research, audits, code generation, and file reads. Only block on an agent when you need its result for your next step.
 
 ## Critical Rules
 

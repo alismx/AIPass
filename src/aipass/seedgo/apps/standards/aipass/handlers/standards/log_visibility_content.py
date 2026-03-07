@@ -18,7 +18,7 @@ from pathlib import Path
 
 _GETLOGGER = "logging" + ".getLogger"
 _FILEHANDLER = "logging" + ".FileHandler"
-_PRAX_IMPORT = "from prax.apps.modules.logger import system_logger as logger"
+_PRAX_IMPORT = "from aipass.prax.apps.modules.logger import system_logger as logger"
 
 
 def get_log_visibility_standards() -> str:
@@ -45,7 +45,7 @@ def get_log_visibility_standards() -> str:
   [bold cyan]EXEMPT[/bold cyan]
     - Prax's own logging infrastructure (it IS the implementation)
     - Test files (test isolation)
-    - Files with .seed/bypass.json exceptions
+    - Files with .seedgo/bypass.json exceptions
 
 [yellow]TWO CHECKS (v3.0.0):[/yellow]
 

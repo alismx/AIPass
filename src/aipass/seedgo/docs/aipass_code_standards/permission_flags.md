@@ -63,7 +63,7 @@ The AIPass standard `--permission-mode bypassPermissions` provides:
 
 ## Checker
 
-**File:** `/home/aipass/seed/apps/handlers/standards/permission_flags_check.py`
+**File:** `seedgo/apps/handlers/standards/permission_flags_check.py`
 
 Checks:
 1. No `--dangerously-skip-permissions` usage in code (comments/docstrings excluded)

@@ -84,7 +84,7 @@ ai_mail send @branch "Question: [topic]" "I'm working on X and need guidance on 
 **Common examples:**
 - Building something with email? Ask @ai_mail how delivery works
 - Need routing or @ resolution? Ask @drone
-- Unsure about standards? Ask @seed for reference code
+- Unsure about standards? Ask @seedgo for reference code
 - Need persistent storage or search? Ask @memory_bank
 - Event-driven behavior? Ask @trigger about their event system
 - Dashboard integration? Ask @devpulse about update_section()
@@ -122,10 +122,10 @@ drone @flow list                       # List active plans
 drone @flow status                     # Plan status
 drone @flow --help                     # Full help
 
-# Seed - Quality gates
-drone @seed checklist <file>           # 10-point check on file
-drone @seed audit @branch              # Full branch audit (before master close)
-drone @seed --help                     # Full help
+# Seedgo - Quality gates
+drone @seedgo checklist <file>           # 10-point check on file
+drone @seedgo audit @branch              # Full branch audit (before master close)
+drone @seedgo --help                     # Full help
 
 # AI_Mail - Status updates
 drone @ai_mail send @devpulse "Subject" "Message"
@@ -286,16 +286,16 @@ When you see an issue, decide:
 
 ### False Positives Awareness
 
-Seed audits are helpful but not infallible.
+Seedgo audits are helpful but not infallible.
 
-**When Seed flags something:**
+**When Seedgo flags something:**
 1. Check if the code is actually correct from your understanding
 2. If you're confident it's right → mark as false positive, move on
 3. If you're unsure → note it, continue, review later
 
 **Don't stop production for:**
 - Style preferences (comments, spacing)
-- Patterns that differ from Seed's but still work
+- Patterns that differ from Seedgo's but still work
 - Checks that don't apply to your context
 
 ### Forward Momentum Summary
@@ -323,7 +323,7 @@ For quick status checks and debugging, these resources are available:
 | Branch logs | `logs/` directory | Local execution logs |
 | JSON tree | `apps/json_templates/` | Module firing status |
 | Prax monitor | `drone @prax monitor` | Real-time system events |
-| Seed audit | `drone @seed audit @branch` | Code quality check |
+| Seedgo audit | `drone @seedgo audit @branch` | Code quality check |
 
 Use these when you need to confirm status or investigate issues.
 
@@ -333,7 +333,7 @@ Each phase = focused agent deployment:
 2. Write agent instructions in sub-plan
 3. Deploy agent with single-task focus
 4. Review agent output (don't rebuild yourself)
-5. Seed checklist on new code
+5. Seedgo checklist on new code
 6. Close sub-plan
 7. Update memories
 8. Email status to @devpulse
@@ -380,7 +380,7 @@ DELIVERABLES:
 - Reports/logs → artifacts/reports/ or artifacts/logs/
 
 CONSTRAINTS:
-- Follow Seed standards (3-layer architecture: apps/modules/handlers)
+- Follow Seedgo standards (3-layer architecture: apps/modules/handlers)
 - Do NOT modify files outside your task scope
 - CROSS-BRANCH: Never modify other branches' files unless explicitly authorized by the user in the planning doc
 - 2-ATTEMPT RULE: If something fails twice, note the issue and move on
@@ -401,7 +401,7 @@ WHEN COMPLETE:
 - [ ] Agent deployed
 - [ ] Agent completed
 - [ ] Output reviewed
-- [ ] Seed checklist passed
+- [ ] Seedgo checklist passed
 - [ ] Sub-plan closed
 - [ ] Memories updated
 - [ ] Email sent to @devpulse
@@ -413,7 +413,7 @@ WHEN COMPLETE:
 - [ ] Agent deployed
 - [ ] Agent completed
 - [ ] Output reviewed
-- [ ] Seed checklist passed
+- [ ] Seedgo checklist passed
 - [ ] Sub-plan closed
 - [ ] Memories updated
 - [ ] Email sent to @devpulse
@@ -425,7 +425,7 @@ WHEN COMPLETE:
 - [ ] Agent deployed
 - [ ] Agent completed
 - [ ] Output reviewed
-- [ ] Seed checklist passed
+- [ ] Seedgo checklist passed
 - [ ] Sub-plan closed
 - [ ] Memories updated
 - [ ] Email sent to @devpulse
@@ -437,7 +437,7 @@ WHEN COMPLETE:
 - [ ] Agent deployed
 - [ ] Agent completed
 - [ ] Output reviewed
-- [ ] Seed checklist passed
+- [ ] Seedgo checklist passed
 - [ ] Sub-plan closed
 - [ ] Memories updated
 - [ ] Email sent to @devpulse
@@ -486,7 +486,7 @@ Track issues here as you encounter them. Don't fix during build - log and contin
 - [ ] All phases complete
 - [ ] All sub-plans closed
 - [ ] Issues Log reviewed - High/Med issues addressed
-- [ ] Full branch audit: `drone @seed audit @branch`
+- [ ] Full branch audit: `drone @seedgo audit @branch`
 - [ ] Branch memories updated:
   - [ ] `BRANCH.local.json` - full session log
   - [ ] `BRANCH.observations.json` - patterns learned
@@ -499,7 +499,7 @@ Track issues here as you encounter them. Don't fix during build - log and contin
 
 **Completion Order:** Memories → README → Email (README before email - don't report complete with stale docs)
 
-**Note:** Devpulse will perform its own Seed audit for visibility into the work.
+**Note:** Devpulse will perform its own Seedgo audit for visibility into the work.
 
 ### Definition of Done
 [What specifically defines the project complete?]

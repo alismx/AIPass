@@ -93,7 +93,7 @@ def _guard_branch_access():
                     f"    from {MY_BRANCH}.apps.modules.create_plan import handle_command\n"
                     f"\n"
                     f"  For full standards guide:\n"
-                    f"    drone @seed handlers\n"
+                    f"    drone @seedgo handlers\n"
                     f"{'='*60}"
                 )
         return  # Allow if truly can't determine
@@ -123,7 +123,7 @@ def _guard_branch_access():
         f"    from {MY_BRANCH}.apps.modules.create_plan import handle_command\n"
         f"\n"
         f"  For full standards guide:\n"
-        f"    drone @seed handlers\n"
+        f"    drone @seedgo handlers\n"
         f"{'='*60}"
     )
 

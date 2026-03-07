@@ -11,7 +11,7 @@
 #   - v1.0.0 (2025-11-21): Initial port from archive_temp with Python watchdog integration
 #
 # CODE STANDARDS:
-#   - Seed v3.0 compliant (imports, architecture, error handling)
+#   - Seedgo v3.0 compliant (imports, architecture, error handling)
 #   - Module-level logging (3-tier pattern)
 #   - Event-driven: fires trigger events, handlers in Trigger branch
 # ==============================================

@@ -57,11 +57,11 @@ def handler_function(operation: str, module_name: str | None = None):
 
 ```python
 # ✅ GOOD - Like Prax logger
-from seed.apps.handlers.json import json_handler
+from aipass.seedgo.apps.handlers.json import json_handler
 json_handler.log_operation("operation", data)
 
 # ❌ BAD - Modules shouldn't pass their own name
-from seed.apps.handlers.json import json_handler
+from aipass.seedgo.apps.handlers.json import json_handler
 json_handler.log_operation("my_module", "operation", data)  # Typo-prone, boilerplate
 ```
 
@@ -82,7 +82,7 @@ json_handler.log_operation("my_module", "operation", data)  # Typo-prone, boiler
 
 ## Default Handlers
 
-**Status:** Standard (packaged by Cortex into all branches)
+**Status:** Standard (packaged by Spawn into all branches)
 
 ### json_handler.py - JSON Operations
 
@@ -107,13 +107,13 @@ json_handler.log_operation("my_module", "operation", data)  # Typo-prone, boiler
 
 **Usage Pattern:**
 ```python
-from seed.apps.handlers.json import json_handler
+from aipass.seedgo.apps.handlers.json import json_handler
 
 # Module just calls - handler auto-detects caller
 json_handler.log_operation("validation_run", {"files": 42})
 ```
 
-**Cortex Integration:** This handler is packaged into every branch by Cortex during branch creation/updates. All branches use identical or near-identical implementations.
+**Spawn Integration:** This handler is packaged into every branch by Spawn during branch creation/updates. All branches use identical or near-identical implementations.
 
 **3-Tier Compliance:** Default handlers follow the same 3-tier error handling rules as custom handlers. Location (`handlers/`) determines rules, not conceptual role. json_handler.py raises exceptions; calling modules handle logging. See `error_handling.md` for 3-tier architecture details.
 
@@ -141,11 +141,11 @@ Handler → imports Module ✗ (creates cycle)
 **✅ ALLOWED - Same-branch handler imports (even across packages):**
 
 ```python
-# seed/apps/handlers/standards/imports_check.py
-from seed.apps.handlers.json import json_handler  # ✅ OK - same branch
+# seedgo/apps/handlers/standards/imports_check.py
+from aipass.seedgo.apps.handlers.json import json_handler  # ✅ OK - same branch
 
 # flow/apps/handlers/plan/create.py
-from flow.apps.handlers.registry.load import load_registry  # ✅ OK - same branch
+from aipass.flow.apps.handlers.registry.load import load_registry  # ✅ OK - same branch
 ```
 
 **Why allowed:** Handlers within the same branch are coworkers. The security boundary is at BRANCH level.
@@ -163,8 +163,8 @@ from .logger import log_operation_start, log_operation_end
 **❌ FORBIDDEN - Handler imports own branch's modules:**
 
 ```python
-# seed/apps/handlers/json/json_handler.py
-from seed.apps.modules.create_thing import something  # ❌ NO - circular risk
+# seedgo/apps/handlers/json/json_handler.py
+from aipass.seedgo.apps.modules.create_thing import something  # ❌ NO - circular risk
 ```
 
 **Why forbidden:** Creates circular dependency risk. Modules import handlers, not the other way.
@@ -173,10 +173,10 @@ from seed.apps.modules.create_thing import something  # ❌ NO - circular risk
 
 ```python
 # flow/apps/modules/list_plans.py
-from prax.apps.handlers.logging.setup import get_logger  # ❌ BLOCKED
+from aipass.prax.apps.handlers.logging.setup import get_logger  # ❌ BLOCKED
 
 # ✅ CORRECT - use the module (public API)
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 ```
 
 **Why forbidden:** Handlers are internal implementation. External branches use MODULES.
@@ -209,10 +209,10 @@ from .formatters import format_result, format_batch_header
 
 ```python
 # modules/imports_standard.py
-from prax.apps.modules.logger import system_logger as logger
-from seed.apps.handlers.json import json_handler
-from seed.apps.handlers.cli import prompts
-from seed.apps.handlers.standards import imports_check
+from aipass.prax.apps.modules.logger import system_logger as logger
+from aipass.seedgo.apps.handlers.json import json_handler
+from aipass.seedgo.apps.handlers.cli import prompts
+from aipass.seedgo.apps.handlers.standards import imports_check
 ```
 
 **Why this works:** Dependencies flow ONE way (modules → handlers). Better one module imports 20 handlers than handlers importing each other.
@@ -222,9 +222,9 @@ from seed.apps.handlers.standards import imports_check
 **Error handlers are system-wide service:**
 
 ```python
-# Any handler can import error system (current: cortex, future: CLI)
-from cortex.apps.handlers.error import track_operation
-from cortex.apps.handlers.error.result_types import OperationResult
+# Any handler can import error system (current: cli)
+from aipass.cli.apps.handlers.error import track_operation
+from aipass.cli.apps.handlers.error.result_types import OperationResult
 
 @track_operation
 def create_branch(name):
@@ -234,9 +234,9 @@ def create_branch(name):
 
 **Why exception:** Error handlers are infrastructure service - three-tier output (JSON log, system log, console). Not domain logic, but framework service.
 
-**Current reality:** Error system lives in `cortex.apps.handlers.error` and is imported by handlers in speakeasy and other branches. This creates dependency on cortex, but is necessary for consistent error handling across system.
+**Current reality:** Error system lives in `aipass.cli.apps.handlers.error` and is imported by handlers across branches. This creates dependency on cli, but is necessary for consistent error handling across system.
 
-**Future direction:** Migrate error system to `cli.apps.handlers.error` (already started) so it's clearly infrastructure, not branch-specific.
+**Current direction:** Error system in `aipass.cli.apps.handlers.error` — clearly infrastructure, not branch-specific.
 
 **Rule:** Service providers (infrastructure shared across ALL branches) can be imported cross-domain.
 
@@ -265,13 +265,13 @@ External Branch
 ### Two Types of Branches
 
 1. **CLI Tools** - Used via command line, not imported
-   - Flow, Seed, AI_Mail, Backup_System, Drone
+   - Flow, Seedgo, AI_Mail, Spawn, Drone
    - You run `drone @flow create`, you don't `import flow` or `import drone`
    - Drone is a CLI router that resolves @ and routes commands to branches
 
 2. **Library Services** - Imported by other code
    - Prax (logging), CLI (formatting), API (LLM calls), Memory Bank (vectors)
-   - You `import prax` then `from prax.apps.modules.logger import logger`
+   - You `import aipass.prax` then `from aipass.prax.apps.modules.logger import logger`
    - **NOTE:** Drone is NOT a library service - it's a CLI router, never imported
 
 ### Same-Branch Handler Imports - ALLOWED
@@ -280,8 +280,8 @@ Handlers within the SAME BRANCH can import each other freely, even across packag
 
 ```python
 # flow/apps/handlers/plan/create.py
-from flow.apps.handlers.registry.load import load_registry  # ✅ OK - same branch
-from flow.apps.handlers.json.json_handler import log_operation  # ✅ OK - same branch
+from aipass.flow.apps.handlers.registry.load import load_registry  # ✅ OK - same branch
+from aipass.flow.apps.handlers.json.json_handler import log_operation  # ✅ OK - same branch
 ```
 
 **Rationale:** Handlers are unique to each branch. The security boundary is at the BRANCH level, not package level. Trying to enforce package-level isolation adds complexity without benefit.
@@ -292,18 +292,18 @@ from flow.apps.handlers.json.json_handler import log_operation  # ✅ OK - same 
 
 ```python
 # ❌ WRONG - reaching into Prax handlers from Flow
-from prax.apps.handlers.logging.setup import get_logger
+from aipass.prax.apps.handlers.logging.setup import get_logger
 
 # ✅ RIGHT - import Prax module (public API)
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 ```
 
 ```python
-# ❌ WRONG - reaching into Cortex handlers from Speakeasy
-from cortex.apps.handlers.error_handler import track_operation
+# ❌ WRONG - reaching into CLI handlers from Spawn
+from aipass.cli.apps.handlers.error_handler import track_operation
 
-# ✅ RIGHT - import Cortex module (public API)
-from cortex.apps.modules.error_tracking import track_operation
+# ✅ RIGHT - import CLI module (public API)
+from aipass.cli.apps.modules.error_tracking import track_operation
 ```
 
 ### Security Guard Implementation
@@ -327,17 +327,17 @@ ACCESS DENIED: Cross-branch handler import blocked
 ============================================================
   Caller branch: flow
   Caller file:   list_plans.py
-  Blocked:       from prax.apps.handlers.logging.setup import get_logger
+  Blocked:       from aipass.prax.apps.handlers.logging.setup import get_logger
 
   Handlers are internal to their branch.
   Use the module API instead:
-    from prax.apps.modules.<module> import <function>
+    from aipass.prax.apps.modules.<module> import <function>
 
   Example:
-    from prax.apps.modules.logger import logger
+    from aipass.prax.apps.modules.logger import logger
 
   For full standards guide:
-    drone @seed handlers
+    drone @seedgo handlers
 ============================================================
 ```
 
@@ -380,7 +380,7 @@ Example with library services:
 
 **You import the service that owns the capability.** You don't care about its internal dependencies.
 
-**Important:** CLI branches like Flow, Seed, AI_Mail don't import each other or Drone. They're invoked via `drone @branch command`, not imported.
+**Important:** CLI branches like Flow, Seedgo, AI_Mail don't import each other or Drone. They're invoked via `drone @branch command`, not imported.
 
 ---
 
@@ -416,10 +416,10 @@ drone @flow create @project1 --name "test"
 
 # Drone resolves @ symbols:
 @flow → <project_root>/flow/flow.py
-@project1 → /home/aipass/projects/project1
+@project1 → <project_root>/projects/project1
 
 # Flow receives:
-sys.argv = ["flow.py", "create", "/home/aipass/projects/project1", "--name", "test"]
+sys.argv = ["flow.py", "create", "<project_root>/projects/project1", "--name", "test"]
 ```
 
 ### Architectural Debt - @ Handling in Branches
@@ -428,7 +428,7 @@ sys.argv = ["flow.py", "create", "/home/aipass/projects/project1", "--name", "te
 
 ```python
 # ❌ WRONG - Branch should NEVER handle @ resolution
-from drone.apps.modules.resolve import resolve_path
+from aipass.drone.apps.modules.resolve import resolve_path
 
 def some_function(path_arg):
     if "@" in path_arg:
@@ -465,14 +465,14 @@ def create_plan(project_path: str, name: str):
 ### Two Types of Branches (Updated)
 
 **1. CLI Tools** - Invoked via Drone, never imported:
-- Flow, Seed, AI_Mail, Backup_System, **Drone itself**
+- Flow, Seedgo, AI_Mail, Spawn, **Drone itself**
 - Usage: `drone @branch command`
 - Communication: Via CLI arguments (@ pre-resolved)
 - Never import each other
 
 **2. Library Services** - Imported by other code:
 - Prax (logging), CLI (formatting), API (LLM calls), Memory Bank (vectors)
-- Usage: `from prax.apps.modules.logger import logger`
+- Usage: `from aipass.prax.apps.modules.logger import logger`
 - Communication: Via Python imports
 - Can be imported by any branch
 
@@ -513,14 +513,14 @@ def create_plan(project_path: str, name: str):
 **✅ GOOD - Single-purpose handlers:**
 
 ```
-json_handler.py:           279 lines  (JSON file operations - seed)
-                          356 lines  (speakeasy version)
+json_handler.py:           279 lines  (JSON file operations - seedgo)
+                          356 lines  (spawn version)
 decorators.py:            257 lines  (Error decorators)
 formatters.py:            194 lines  (Console formatting)
 result_types.py:          248 lines  (Result type definitions)
 metadata.py:              119 lines  (Branch metadata)
-prompts.py:                72 lines  (CLI prompts - seed)
-                           59 lines  (speakeasy version)
+prompts.py:                72 lines  (CLI prompts - seedgo)
+                           59 lines  (spawn version)
 ```
 
 **These are perfect:** Each file has single clear purpose. AI processes fast, minimal context burn.
@@ -528,10 +528,10 @@ prompts.py:                72 lines  (CLI prompts - seed)
 **⚠️ GETTING HEAVY - Complex handlers:**
 
 ```
-file_ops.py:              845 lines  (Branch file operations - speakeasy)
+file_ops.py:              845 lines  (Branch file operations - spawn)
                           892 lines  (Other branches)
-                          981 lines  (cortex - most complex)
-json_ops.py:              762 lines  (JSON migrations - speakeasy)
+                          981 lines  (spawn - most complex)
+json_ops.py:              762 lines  (JSON migrations - spawn)
 ```
 
 **Why still okay:**
@@ -557,7 +557,7 @@ hypothetical_god_object.py:  2000+ lines
 **Complex domains with many related operations:**
 
 ```python
-# json_ops.py (762 lines in speakeasy)
+# json_ops.py (762 lines in spawn)
 # All JSON migration operations - breaking up would separate related logic
 
 def migrate_key(data, old_key, new_key):
@@ -650,12 +650,12 @@ handlers/
 - Technical organization: requires mental translation ("What technical category is this?")
 - Domain organization: direct mapping ("What am I working with?")
 
-### Real Example - Seed Handlers
+### Real Example - Seedgo Handlers
 
 **Current structure:**
 
 ```
-/home/aipass/seed/apps/handlers/
+<project_root>/seedgo/apps/handlers/
   ├── json/
   │   ├── json_handler.py          → JSON file operations (279 lines)
   │   └── test_auto_detection.py   → Tests
@@ -680,12 +680,12 @@ handlers/
 3. **Easy extension:** Add new JSON operation → obvious where it goes
 4. **Marketplace ready:** Grab entire `json/` package → self-contained
 
-### Real Example - Speakeasy Handlers
+### Real Example - Spawn Handlers
 
 **Branch/registry/error separation:**
 
 ```
-/home/aipass/speakeasy/apps/handlers/
+<project_root>/spawn/apps/handlers/
   ├── branch/
   │   ├── file_ops.py       → 845 lines (file operations)
   │   ├── metadata.py       → 119 lines (branch metadata)
@@ -706,7 +706,7 @@ handlers/
       └── prompts.py        → 59 lines (user prompts)
 ```
 
-**Note:** Speakeasy handlers currently import from `cortex.apps.handlers.error` for error tracking. This is the service provider exception - error handlers are infrastructure used across all branches.
+**Note:** Spawn handlers currently import from `aipass.cli.apps.handlers.error` for error tracking. This is the service provider exception - error handlers are infrastructure used across all branches.
 
 **Notice:**
 - Each domain self-contained
@@ -777,7 +777,7 @@ error/
 
 ## Handler Testing Requirements
 
-**Status:** Testing infrastructure in progress (started in Cortex, not yet standardized).
+**Status:** Testing infrastructure in progress (not yet standardized).
 
 ### Current Reality
 
@@ -785,7 +785,7 @@ error/
 - AIPass is custom system, building from scratch
 - JSONs + Prax logs = current debugging infrastructure
 - Fast iteration with manual testing
-- pytest framework started in Cortex (future direction)
+- pytest framework (future direction)
 
 ### Testing Approach When Infrastructure Ready
 
@@ -798,7 +798,7 @@ error/
 ```python
 # test_json_handler.py
 import pytest
-from seed.apps.handlers.json import json_handler
+from aipass.seedgo.apps.handlers.json import json_handler
 
 def test_validate_json_structure_config():
     """Test config JSON validation"""
@@ -829,18 +829,18 @@ def test_validate_json_structure_invalid():
 # test_json_handler_integration.py
 import pytest
 from pathlib import Path
-from seed.apps.handlers.json import json_handler
+from aipass.seedgo.apps.handlers.json import json_handler
 
 @pytest.fixture
 def temp_json_dir(tmp_path):
     """Create temporary JSON directory"""
-    json_dir = tmp_path / "seed_json"
+    json_dir = tmp_path / "seedgo_json"
     json_dir.mkdir()
-    # Temporarily override SEED_JSON_DIR
-    original = json_handler.SEED_JSON_DIR
-    json_handler.SEED_JSON_DIR = json_dir
+    # Temporarily override SEEDGO_JSON_DIR
+    original = json_handler.SEEDGO_JSON_DIR
+    json_handler.SEEDGO_JSON_DIR = json_dir
     yield json_dir
-    json_handler.SEED_JSON_DIR = original
+    json_handler.SEEDGO_JSON_DIR = original
 
 def test_ensure_module_jsons_creates_files(temp_json_dir):
     """Test JSON auto-creation"""
@@ -870,9 +870,9 @@ def test_log_operation_rotation(temp_json_dir):
 # test_registry_handler.py
 import pytest
 from unittest.mock import patch, Mock
-from seed.apps.handlers.registry import registry_ops
+from aipass.seedgo.apps.handlers.registry import registry_ops
 
-@patch('seed.apps.handlers.registry.registry_ops.Path.exists')
+@patch('aipass.seedgo.apps.handlers.registry.registry_ops.Path.exists')
 def test_validate_registry_missing_file(mock_exists):
     """Test registry validation when file missing"""
     mock_exists.return_value = False
@@ -961,17 +961,17 @@ tests/handlers/
 
 ```bash
 # Test json_handler auto-creation
-rm -rf /home/aipass/seed/seed_json/test_*
+rm -rf <project_root>/seedgo/seedgo_json/test_*
 
 # Run handler
-python3 -c "from seed.apps.handlers.json import json_handler; json_handler.log_operation('test_op')"
+python3 -c "from aipass.seedgo.apps.handlers.json import json_handler; json_handler.log_operation('test_op')"
 
 # Check created files
-ls /home/aipass/seed/seed_json/
+ls <project_root>/seedgo/seedgo_json/
 # Expected: test_module_config.json, test_module_data.json, test_module_log.json
 
 # Inspect contents
-cat /home/aipass/seed/seed_json/test_module_log.json
+cat <project_root>/seedgo/seedgo_json/test_module_log.json
 # Verify: operation logged with timestamp
 ```
 
@@ -1027,7 +1027,7 @@ def handle_error_detected(event_data: Dict[str, Any]) -> None:
 
 ```python
 # Module layer - injects the callback at startup
-from trigger.apps.handlers.events.error_detected import set_send_email_callback
+from aipass.trigger.apps.handlers.events.error_detected import set_send_email_callback
 set_send_email_callback(send_email_direct)
 ```
 
@@ -1247,18 +1247,18 @@ def _migrate_inbox_format(inbox_data: Dict, inbox_file: Path) -> Dict:
 
 ---
 
-### 5. Direct BRANCH_REGISTRY.json Reads
+### 5. Direct AIPASS_REGISTRY.json Reads
 
 **Problem:** Handlers need branch routing data but can't import modules. Using subprocess to call drone is slow and fragile.
 
-**Solution:** Read BRANCH_REGISTRY.json directly. It's a stable, well-defined JSON file at a known path.
+**Solution:** Read AIPASS_REGISTRY.json directly. It's a stable, well-defined JSON file at a known path.
 
 **Reference:** `ai_mail/apps/handlers/email/delivery.py`
 
 ```python
 def get_all_branches() -> List[Dict]:
     """Read branch registry directly for email routing."""
-    registry_file = Path("/home/aipass/BRANCH_REGISTRY.json")
+    registry_file = Path("<project_root>/AIPASS_REGISTRY.json")
 
     if not registry_file.exists():
         return []
@@ -1282,13 +1282,13 @@ def get_all_branches() -> List[Dict]:
 **Reference:** `trigger/apps/handlers/events/error_detected.py`
 
 ```python
-BRANCH_REGISTRY_FILE = AIPASS_HOME / "BRANCH_REGISTRY.json"
+AIPASS_REGISTRY_FILE = AIPASS_ROOT / "AIPASS_REGISTRY.json"
 
 def _get_registered_emails() -> set:
-    """Read registered branch emails from BRANCH_REGISTRY.json."""
+    """Read registered branch emails from AIPASS_REGISTRY.json."""
     try:
-        if BRANCH_REGISTRY_FILE.exists():
-            data = json.loads(BRANCH_REGISTRY_FILE.read_text(encoding='utf-8'))
+        if AIPASS_REGISTRY_FILE.exists():
+            data = json.loads(AIPASS_REGISTRY_FILE.read_text(encoding='utf-8'))
             return {b["email"] for b in data.get("branches", [])}
     except Exception:
         return set()
@@ -1296,17 +1296,17 @@ def _get_registered_emails() -> set:
 ```
 
 **Key principles:**
-- Hardcoded path (`/home/aipass/BRANCH_REGISTRY.json`) - it's a system constant
+- Hardcoded path (`<project_root>/AIPASS_REGISTRY.json`) - it's a system constant
 - Read-only (handlers never write to registry)
 - Defensive reads (missing file → empty result, not crash)
 - No module import needed (pure file I/O)
 
 **When to use:**
 - Handler needs branch routing, naming, or path data
-- The data is in BRANCH_REGISTRY.json (it usually is)
+- The data is in AIPASS_REGISTRY.json (it usually is)
 
 **When NOT to use:**
-- Need to modify the registry (use Cortex module API)
+- Need to modify the registry (use Spawn module API)
 - Need complex registry queries (consider whether a module should handle this)
 
 ---

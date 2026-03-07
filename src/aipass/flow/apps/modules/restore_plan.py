@@ -14,7 +14,7 @@
 #   - v1.0.0 (2025-11-21): Initial creation - restore closed plans to open status
 #
 # CODE STANDARDS:
-#   - Seed v3.0 compliant (imports, architecture, error handling)
+#   - Seedgo v3.0 compliant (imports, architecture, error handling)
 # ==============================================
 
 """

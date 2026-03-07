@@ -258,7 +258,7 @@ def print_help(modules: List[Any]):
     console.print("    [dim]python3 flow.py list[/dim]")
     console.print()
     console.print()
-    console.print("[bold]NOTE:[/bold] @ syntax (e.g., @flow, @seed) only works through drone:")
+    console.print("[bold]NOTE:[/bold] @ syntax (e.g., @flow, @seedgo) only works through drone:")
     console.print("  [dim]drone flow create @flow \"Implementation task\"[/dim]")
     console.print()
     console.print("─" * 70)

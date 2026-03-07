@@ -5,7 +5,7 @@
 # Date: 2025-11-30
 # Version: 1.2.0
 # Category: flow/handlers/template
-# CODE STANDARDS: Seed v3.0
+# CODE STANDARDS: Seedgo v3.0
 #
 # CHANGELOG:
 #   - v1.2.0 (2025-11-30): Changed TEMPLATES_DIR from .cached_templates to templates (Flow owns templates now)

@@ -9,7 +9,7 @@ Sections generated:
 - Directory tree (apps/ structure)
 - Modules list (with docstring descriptions)
 - Commands (from --help output)
-- Header (from id.json)
+- Header (from .trinity/passport.json)
 - Last Updated timestamp
 """
 
@@ -476,9 +476,9 @@ def _parse_help_output(help_text: str) -> str:
 
 def generate_header_section(branch_path: str) -> str:
     """
-    Generate the README header block from the branch's id.json.
+    Generate the README header block from the branch's passport.
 
-    Reads [BRANCH].id.json and extracts: branch_name, path, profile,
+    Reads .trinity/passport.json and extracts: branch_name, path, profile,
     created, email.
 
     Args:
@@ -490,8 +490,8 @@ def generate_header_section(branch_path: str) -> str:
     branch_dir = Path(branch_path)
     branch_name = branch_dir.name.upper().replace('-', '_')
 
-    # Find id.json
-    id_file = branch_dir / f'{branch_name}.id.json'
+    # Find passport.json
+    id_file = branch_dir / '.trinity' / 'passport.json'
     if not id_file.exists():
         return ""
 

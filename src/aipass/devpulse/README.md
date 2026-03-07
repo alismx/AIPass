@@ -1,18 +1,21 @@
 # DevPulse
 
-**Purpose:** Dev notes and status tracking for AIPass projects
+**Purpose:** Orchestration hub for the AIPass ecosystem
 **Module:** `aipass.devpulse`
-**Status:** Building
+**Status:** Active
 
 ---
 
 ## Overview
 
-DevPulse tracks development notes, plans, and project status across an AIPass ecosystem. It provides a shared notation layer where both humans and agents can log issues, todos, and progress — giving visibility into what's happening without requiring meetings or status emails.
+DevPulse is the central coordination branch for AIPass. It plans, delegates, and tracks work across all 10 branches in the ecosystem. Think of it as the project manager — it doesn't build modules itself, but dispatches work to branch agents, monitors results, and maintains system-wide visibility.
 
-### How It Works
-- **Entry Point:** `apps/devpulse.py`
-- **Pattern:** Auto-discovers modules in `apps/modules/` with `handle_command()` and routes commands
+### What DevPulse Does
+- **Cross-branch orchestration** — Dispatch tasks to branches via AI Mail + wake
+- **System-wide planning** — Create and manage flow plans (FPLANs) for multi-phase work
+- **Status tracking** — Dashboard, dev notes, session history
+- **Architecture discussions** — Work with Patrick on design decisions
+- **Agent coordination** — Deploy sub-agents in parallel for research and builds
 
 ---
 
@@ -20,39 +23,45 @@ DevPulse tracks development notes, plans, and project status across an AIPass ec
 
 ```
 devpulse/
-├── apps/
-│   ├── devpulse.py        # Entry point (auto-discovery + routing)
-│   ├── modules/           # Business logic
-│   ├── handlers/          # Implementation
-│   └── plugins/           # Extensions
-├── devpulse_json/         # JSON storage
+├── .trinity/              # Identity + memory
+│   ├── passport.json      # Branch identity
+│   ├── local.json         # Session history + active tasks
+│   └── observations.json  # Collaboration patterns
+├── .aipass/               # AI context
+│   └── branch_system_prompt.md
+├── .spawn/                # Spawn metadata
 ├── docs/
 ├── tests/
 └── README.md
 ```
+
+DevPulse has no `apps/` directory — it's a **manager** branch, not a builder. It coordinates via dispatch and sub-agents rather than implementing code.
 
 ---
 
 ## Commands
 
 ```bash
-drone @devpulse --help     # Show available commands
-```
+# System status
+drone systems                    # List all registered branches
+drone @seedgo verify             # Verify standards packs
+drone @seedgo audit aipass       # Run full standards audit
 
-*Modules are being built out — commands will appear as they ship.*
+# Flow plans
+drone @flow create . "Subject"              # Create plan (default template)
+drone @flow create . "Subject" master       # Create master plan (multi-phase)
+drone @flow list                            # List active plans
+drone @flow close FPLAN-XXXX                # Close a plan
 
----
+# Dispatch work
+drone @ai_mail send @target "Subject" "Body" --dispatch
+drone @ai_mail dispatch wake @target        # Wake branch agent
+drone @ai_mail dispatch wake --fresh @target  # Fresh session
 
-## Python Usage
-
-```python
-from aipass.devpulse.apps.devpulse import discover_modules, route_command
-
-# Discover available sub-modules
-modules = discover_modules()
-
-# Route a command
-route_command("status", [], modules)
+# Branch management
+drone @spawn create <path>       # Create new branch from template
+drone @spawn update @branch      # Update branch scaffold
+drone @spawn delete @branch      # Archive + deregister branch
 ```
 
 ---
@@ -60,8 +69,18 @@ route_command("status", [], modules)
 ## Integration Points
 
 ### Depends On
-- `aipass.prax` — Logging
-- `aipass.cli` — Display formatting
+- `aipass.prax` — Logging (all logging goes through prax)
+- `aipass.ai_mail` — Inter-branch communication + dispatch
+- `aipass.flow` — Plan creation and tracking
+- `aipass.drone` — Command routing to all branches
+- `aipass.spawn` — Branch lifecycle management
+- `aipass.seedgo` — Standards verification
 
-### Provides To
-- All modules — dev notes, plan tracking, project status
+### Coordinates
+- All 10 branches: drone, seedgo, prax, cli, flow, ai_mail, api, trigger, spawn, devpulse
+
+---
+
+## Role
+
+DevPulse is a **manager** branch, not a builder. It delegates code tasks to sub-agents and branch agents. Its context window is reserved for coordination, planning, and architecture — not for reading and editing files across the codebase.

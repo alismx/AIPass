@@ -7,7 +7,7 @@ Validates compliance with AIPass Trigger event bus standards:
 - No print statements in event handlers
 - Proper event naming conventions
 
-Valid bypass categories for .seed/bypass.json:
+Valid bypass categories for .seedgo/bypass.json:
 - handler_layer: Function in handlers/ layer (orchestrator fires instead)
 - initialization: One-time setup/config creation
 - internal_ops: Same-module internal operation
@@ -45,7 +45,7 @@ def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_r
         file_path: Path to file being checked
         standard: Standard name (e.g., 'trigger')
         line: Optional specific line number
-        bypass_rules: List of bypass rules from .seed/bypass.json
+        bypass_rules: List of bypass rules from .seedgo/bypass.json
 
     Returns:
         tuple: (is_bypassed: bool, category: str | None, reason: str | None)
@@ -109,7 +109,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     # Check if entire standard is bypassed
     bypassed, category, reason = is_bypassed(module_path, 'trigger', bypass_rules=bypass_rules)
     if bypassed:
-        bypass_msg = 'Standard bypassed via .seed/bypass.json'
+        bypass_msg = 'Standard bypassed via .seedgo/bypass.json'
         if category:
             bypass_msg += f' [category: {category}]'
         if reason:

@@ -20,7 +20,7 @@ All logging in AIPass MUST use `RotatingFileHandler` via prax's `system_logger`.
 
 ### REQUIRED
 
-1. **Use prax system_logger** — `from prax.apps.modules.logger import system_logger as logger`
+1. **Use prax system_logger** — `from aipass.prax.apps.modules.logger import system_logger as logger`
 2. **All log output via logger methods** — `logger.info()`, `logger.warning()`, `logger.error()`
 3. **Prax handles rotation automatically** — maxBytes + backupCount configured centrally
 
@@ -49,7 +49,7 @@ my_logger.addHandler(logging.FileHandler(log_file))
 
 ```python
 # CORRECT: Use prax system_logger (handles rotation automatically)
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 
 logger.info("Operation completed successfully")
 logger.warning("Invalid user input: %s", user_input)
@@ -69,7 +69,7 @@ All other branches using prax's `system_logger` rotated correctly (verified: `.l
 
 ## Checker
 
-**File:** `/home/aipass/seed/apps/handlers/standards/log_handler_check.py`
+**File:** `src/aipass/seedgo/apps/handlers/standards/log_handler_check.py`
 
 Checks:
 1. No raw `logging.FileHandler()` usage

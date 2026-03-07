@@ -30,7 +30,7 @@ When any file uses raw `logging.getLogger()`:
 
 ### REQUIRED
 
-- Import prax system_logger: `from prax.apps.modules.logger import system_logger as logger`
+- Import prax system_logger: `from aipass.prax.apps.modules.logger import system_logger as logger`
 - Use `system_logger` for ALL logging — modules, handlers, entry points
 - If `logging.getLogger()` is needed for specific purposes, the prax import must also be present
 
@@ -38,13 +38,13 @@ When any file uses raw `logging.getLogger()`:
 
 - **Prax logging infrastructure** — it IS the implementation (exempt from both checks)
 - **Test files** — test isolation (exempt from both checks)
-- **Files with `.seed/bypass.json` exceptions**
+- **Files with `.seedgo/bypass.json` exceptions**
 
 ## Detection (Two-Check System v3.0.0)
 
 ### Check 1: Prax Import (ALL files — no handler exemption)
 1. Scans for `logging.getLogger()` calls
-2. If found, checks for `from prax.apps.modules.logger import`
+2. If found, checks for `from aipass.prax.apps.modules.logger import`
 3. If prax import is missing, flags as violation with line numbers
 4. Applies to modules AND handlers — unified Prax logging everywhere
 
@@ -67,7 +67,7 @@ logger.info("This only writes to local logs/")
 ### Good — Visible System-Wide
 
 ```python
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 logger.info("Visible in Prax monitor and system_logs/")
 ```
 
@@ -75,7 +75,7 @@ logger.info("Visible in Prax monitor and system_logs/")
 
 ```python
 import logging
-from prax.apps.modules.logger import system_logger as logger
+from aipass.prax.apps.modules.logger import system_logger as logger
 
 # Raw logger for specific subprocess/library needs
 subprocess_logger = logging.getLogger('subprocess')
@@ -97,4 +97,4 @@ logger.info("Application log — visible system-wide")
 
 ---
 
-*Part of AIPass Code Standards — maintained by SEED branch*
+*Part of AIPass Code Standards — maintained by seedgo branch*

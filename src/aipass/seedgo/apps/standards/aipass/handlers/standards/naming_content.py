@@ -34,7 +34,7 @@ def get_naming_standards() -> str:
         "  [green]✓[/green] [dim]cli/apps/handlers/error/decorators.py[/dim]",
         "  [green]✓[/green] [dim]cli/apps/handlers/error/formatters.py[/dim]",
         "  [green]✓[/green] [dim]prax/apps/handlers/config/load_config.py[/dim]",
-        "  [green]✓[/green] [dim]seed/apps/handlers/domain1/ops.py[/dim]",
+        "  [green]✓[/green] [dim]seedgo/apps/handlers/domain1/ops.py[/dim]",
         "",
         "[bold]Bad (current violations):[/bold]",
         "  [red]✗[/red] [dim]prax/apps/handlers/json/json_ops.py[/dim] - redundant 'json_'",

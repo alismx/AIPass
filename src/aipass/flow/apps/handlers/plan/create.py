@@ -11,7 +11,7 @@
 #   - v1.0.0 (2025-11-16): Handler extraction from archive_temp
 #
 # CODE STANDARDS:
-#   - Seed v3.0 compliant (handler independence, imports, architecture)
+#   - Seedgo v3.0 compliant (handler independence, imports, architecture)
 # ==============================================
 
 """

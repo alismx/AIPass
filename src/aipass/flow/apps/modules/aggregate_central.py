@@ -5,7 +5,7 @@
 # Date: 2025-11-30
 # Version: 1.2.0
 # Category: flow/modules
-# CODE STANDARDS: Seed v3.0
+# CODE STANDARDS: Seedgo v3.0
 #
 # CHANGELOG:
 #   - v1.2.0 (2025-11-30): Comprehensive sync fix - update branch statistics, recently_closed, and global_statistics
@@ -77,7 +77,7 @@ def _find_repo_root() -> Path:
 
 
 _REPO_ROOT = _find_repo_root()
-AI_CENTRAL_DIR = _REPO_ROOT / "AI_CENTRAL"
+AI_CENTRAL_DIR = _REPO_ROOT / ".ai_central"
 CENTRAL_FILE = AI_CENTRAL_DIR / "PLANS.central.json"
 
 # =============================================

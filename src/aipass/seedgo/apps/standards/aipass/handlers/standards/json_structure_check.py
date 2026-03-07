@@ -184,7 +184,7 @@ def check_json_handler_config(handler_path: Path, content: str, bypass_rules: li
 
     # Check 1: No hardcoded absolute paths
     has_path_home = bool(re.search(r'Path\.home\(\)', content))
-    # Only flag _ROOT constants that use Path.home() (Dev-Pass pattern)
+    # Only flag _ROOT constants that use Path.home() (legacy pattern)
     # Allow _ROOT = Path(__file__).resolve()... (relative, pip-safe)
     has_branch_root = False
     for line in content.split('\n'):

@@ -9,14 +9,14 @@
 # CHANGELOG (Max 5 entries):
 #   - v3.4.0 (2026-02-25): FIX orphaned .md files - idempotency check now cleans up stranded files on re-close
 #   - v3.3.0 (2026-02-14): FIX race condition - close_all spawns ONE background process instead of N
-#   - v3.2.0 (2026-02-14): Auto-confirm by default, step-by-step progress, per-step error handling (Seed standards)
+#   - v3.2.0 (2026-02-14): Auto-confirm by default, step-by-step progress, per-step error handling (Seedgo standards)
 #   - v3.1.0 (2026-02-14): FIX timeout - summary/archive now truly async via subprocess (was synchronous despite comments)
 #   - v3.0.0 (2026-02-14): DECOUPLE close from archive - close always succeeds, archive is non-blocking
 #   - v2.4.0 (2026-01-30): FIX close_all EOF error - handle non-interactive stdin in bulk close
 #   - v2.3.0 (2025-11-25): RE-ADDED template deletion - empty templates now deleted instead of archived
 #
 # CODE STANDARDS:
-#   - Seed v3.0 compliant (imports, architecture, error handling)
+#   - Seedgo v3.0 compliant (imports, architecture, error handling)
 # ==============================================
 
 """

@@ -75,14 +75,14 @@ Modules are the aggregation point for functionality:
 
 ```python
 # Service imports (shared infrastructure)
-from prax.apps.modules.logger import system_logger as logger
-from cli.apps.modules import console, header, success, error
+from aipass.prax.apps.modules.logger import system_logger as logger
+from aipass.cli.apps.modules import console, header, success, error
 
 # Domain handler imports (business logic)
-from seed.apps.handlers.json import json_handler
-from seed.apps.handlers.standards.cli_content import get_cli_standards
-from seed.apps.handlers.validation import validate_input
-from seed.apps.handlers.operations import create_thing, update_thing
+from aipass.seedgo.apps.handlers.json import json_handler
+from aipass.seedgo.apps.handlers.standards.cli_content import get_cli_standards
+from aipass.seedgo.apps.handlers.validation import validate_input
+from aipass.seedgo.apps.handlers.operations import create_thing, update_thing
 ```
 
 **Why 20+ imports is fine:** Better one module imports 20 handlers than handlers importing each other. Dependencies flow ONE direction: modules → handlers.
@@ -144,7 +144,7 @@ def create_branch(path: str):
         "created": datetime.now().isoformat(),
         "version": "1.0"
     }
-    config_file = branch_path / f"{branch_path.name}.id.json"
+    config_file = branch_path / ".trinity" / "passport.json"
     with open(config_file, 'w') as f:
         json.dump(config, f, indent=2)
 
@@ -180,7 +180,7 @@ Use handlers for file operations:
 # ❌ BAD - module does file operations
 def update_config(branch: str, key: str, value: str):
     """Module handles files directly"""
-    config_path = Path(f"/home/aipass/{branch}/{branch}.id.json")
+    config_path = Path(f"src/aipass/{branch}/.trinity/passport.json")
     with open(config_path) as f:
         config = json.load(f)
 
@@ -219,7 +219,7 @@ def calculate_scores(data: List[dict]):
 
 ## File Size Expectations
 
-Based on analysis of `/home/aipass/seed/apps/modules/` (14 modules):
+Based on analysis of `src/aipass/seedgo/apps/modules/` (14 modules):
 
 **Size Distribution:**
 - **110-135 lines:** Simple modules (single operation, minimal workflow)
@@ -336,7 +336,7 @@ def publish_standard(standard_name: str):
 
 **Use when:** User choice or runtime conditions determine next steps.
 
-**Reference:** `/home/aipass/seed/apps/modules/cli_standard.py` (135 lines)
+**Reference:** `src/aipass/seedgo/apps/modules/cli_standard.py` (135 lines)
 ```python
 def print_standard():
     """Print cli standards - orchestrates handler call"""
@@ -370,7 +370,7 @@ def create_thing(name: str, thing_type: str):
 
 **Use when:** Standard error handling is sufficient (most cases).
 
-**Reference:** `/home/aipass/seed/apps/modules/test_cli_errors.py`
+**Reference:** `src/aipass/seedgo/apps/modules/test_cli_errors.py`
 ```python
 @track_operation
 def example_success_operation():
@@ -418,7 +418,7 @@ def create_and_configure(name: str):
 
 **Use when:** Operation needs multiple system services.
 
-**Reference:** `/home/aipass/seed/apps/modules/cli_standard.py`
+**Reference:** `src/aipass/seedgo/apps/modules/cli_standard.py`
 ```python
 def handle_command(command: str, args: List[str]) -> bool:
     """Handle 'cli' command"""
@@ -594,7 +594,7 @@ Modules orchestrate workflows, so test the complete operation:
 ```python
 # tests/test_standards_module.py
 import pytest
-from seed.apps.modules.cli_standard import handle_command, print_standard
+from aipass.seedgo.apps.modules.cli_standard import handle_command, print_standard
 
 def test_handle_command_cli():
     """Test cli command routing"""
@@ -720,7 +720,7 @@ If using error handling decorators, test they work:
 
 ```python
 # tests/test_decorators.py
-from cli.apps.modules import track_operation
+from aipass.cli.apps.modules import track_operation
 
 def test_track_operation_success():
     """Test decorator handles success"""
@@ -755,18 +755,18 @@ def test_track_operation_exception():
 
 ## Reference Examples
 
-**Simple module (135 lines):** `/home/aipass/seed/apps/modules/cli_standard.py`
+**Simple module (135 lines):** `src/aipass/seedgo/apps/modules/cli_standard.py`
 - Single workflow (display standard)
 - Conditional branching (offer demo)
 - Service integration (CLI + JSON handler)
 
-**Complex module (283 lines):** `/home/aipass/seed/apps/modules/test_cli_errors.py`
+**Complex module (283 lines):** `src/aipass/seedgo/apps/modules/test_cli_errors.py`
 - Multiple example workflows
 - Decorator demonstrations
 - Service integration examples
 - Display integration
 
-**Showroom module (152 lines):** `/home/aipass/seed/apps/modules/create_thing.py`
+**Showroom module (152 lines):** `src/aipass/seedgo/apps/modules/create_thing.py`
 - Documents module patterns
 - Shows orchestration flow
 - Demonstrates good practices

@@ -69,7 +69,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     if is_bypassed(module_path, 'log_visibility', bypass_rules=bypass_rules):
         return {
             'passed': True,
-            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seed/bypass.json'}],
+            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seedgo/bypass.json'}],
             'score': 100,
             'standard': 'LOG_VISIBILITY'
         }
@@ -168,7 +168,7 @@ def _check_prax_import(lines: List[str], content: str, file_path: str, bypass_ru
     Applies to ALL files — no handler exemption.
     """
     has_prax_import = bool(re.search(
-        r'from\s+prax\.apps\.modules\.logger\s+import',
+        r'from\s+aipass\.prax\.apps\.modules\.logger\s+import',
         content
     ))
 

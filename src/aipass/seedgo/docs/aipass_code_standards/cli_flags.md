@@ -1,7 +1,7 @@
 # CLI Flags Standard
 **Status:** Active — Approved for Full Rollout
 **Date:** 2026-02-21
-**Proposed by:** SEED (Session 68, dispatch from DEV_CENTRAL)
+**Proposed by:** SEEDGO (Session 68, dispatch from DEVPULSE)
 
 ## What This Covers
 
@@ -14,9 +14,9 @@ This is a companion to the existing CLI standard (`cli.md`), which covers output
 ## The Problem
 
 Each branch independently decides which flags to support. Result:
-- `--verbose` exists in 3 branches (PRAX, CORTEX, BACKUP_SYSTEM), absent from 13
-- `--dry-run` exists in 3 branches (CORTEX, BACKUP_SYSTEM, MEMORY_BANK), absent from 13
-- `--test` exists in 1 branch (BACKUP_SYSTEM only)
+- `--verbose` exists in 3 branches (PRAX, SPAWN, TRIGGER), absent from 7
+- `--dry-run` exists in 3 branches (SPAWN, TRIGGER, FLOW), absent from 7
+- `--test` exists in 1 branch (TRIGGER only)
 - `--version` exists in 0 branches
 - `--help` is universal (the only consistent flag)
 
@@ -68,7 +68,7 @@ BRANCH_NAME v1.2.3
 ```python
 def show_version():
     """Print version from META header."""
-    console.print("SEED v3.0.0")
+    console.print("SEEDGO v3.0.0")
 
 # In main():
 if args[0] in ['--version', '-V']:
@@ -119,13 +119,11 @@ Preview what would happen without executing.
 **Branches where this applies:**
 - FLOW (creating/deleting plans)
 - AI_MAIL (sending emails)
-- CORTEX (creating/deleting branches)
-- BACKUP_SYSTEM (running backups)
-- MEMORY_BANK (rolling over memories)
+- SPAWN (creating/deleting branches)
 - TRIGGER (firing events)
 
 **Branches where this does NOT apply:**
-- SEED (read-only checks)
+- SEEDGO (read-only checks)
 - CLI (display services)
 - DEVPULSE (read-only dev notes display)
 
@@ -182,8 +180,8 @@ def run_self_test():
     # Test 1: Dependencies
     total += 1
     try:
-        from cli.apps.modules import console  # noqa: F811
-        from prax.apps.modules.logger import system_logger  # noqa: F811
+        from aipass.cli.apps.modules import console  # noqa: F811
+        from aipass.prax.apps.modules.logger import system_logger  # noqa: F811
         console.print("  ✅ Dependencies imported")
         passed += 1
     except ImportError as e:
@@ -252,7 +250,7 @@ Drone should NOT intercept or inject universal flags. Reasons:
 
 1. **Transparency** — branches own their own behavior
 2. **Simplicity** — drone is a router, not a preprocessor
-3. **Consistency** — `python3 apps/seed.py --version` and `drone @seed --version` behave identically
+3. **Consistency** — `python3 apps/seedgo.py --version` and `drone @seedgo --version` behave identically
 
 Drone already passes `--help` through to branches correctly. The same pattern applies to all universal flags.
 
@@ -278,7 +276,7 @@ This standard does not require immediate system-wide changes. Recommended rollou
 - Can be done branch-by-branch
 
 **Phase 2: Add `--test` to core branches**
-- SEED, DRONE, FLOW, AI_MAIL, PRAX, CORTEX first
+- SEEDGO, DRONE, FLOW, AI_MAIL, PRAX, SPAWN first
 - Each branch defines what "self-test" means for them
 - Enables automated health checking
 
@@ -286,34 +284,28 @@ This standard does not require immediate system-wide changes. Recommended rollou
 - Branches that already have these: verify they follow the convention
 - Branches that need them: add as part of normal development
 
-**No big-bang migration.** New branches get these flags from the Cortex template. Existing branches adopt them naturally.
+**No big-bang migration.** New branches get these flags from the Spawn template. Existing branches adopt them naturally.
 
 ---
 
 ## Survey Results (2026-02-21)
 
-Current flag support across 16 branch entry points:
+Current flag support across 10 branch entry points:
 
 | Branch | --help | --version | --verbose | --dry-run | --test | Parsing |
 |--------|--------|-----------|-----------|-----------|--------|---------|
-| SEED | ✅ | ❌ | ❌ | ❌ | ❌ | sys.argv |
+| SEEDGO | ✅ | ❌ | ❌ | ❌ | ❌ | sys.argv |
 | DRONE | ✅ | ❌ | ❌ | ❌ | ❌ | sys.argv |
 | FLOW | ✅ | ❌ | ❌ | ❌ | ❌ | sys.argv |
 | AI_MAIL | ✅ | ❌ | ❌ | ❌ | ❌ | sys.argv |
 | PRAX | ✅ | ❌ | ✅ | ❌ | ❌ | argparse |
-| CORTEX | ✅ | ❌ | ✅ | ✅ | ❌ | argparse |
-| BACKUP_SYSTEM | ✅ | ❌ | ✅ | ✅ | ✅ | argparse |
+| SPAWN | ✅ | ❌ | ✅ | ✅ | ❌ | argparse |
 | CLI | ✅ | ❌ | ❌ | ❌ | ❌ | sys.argv |
 | TRIGGER | ✅ | ❌ | ❌ | ❌ | ❌ | sys.argv |
-| MEMORY_BANK | ✅ | ❌ | ❌ | ✅ | ❌ | sys.argv |
-| THE_COMMONS | ✅ | ❌ | ❌ | ❌ | ❌ | sys.argv |
 | DEVPULSE | ✅ | ❌ | ❌ | ❌ | ❌ | sys.argv |
-| SCHEDULER | ✅ | ❌ | ❌ | ❌ | ❌ | none |
-| NEXUS | ✅ | ❌ | ❌ | ❌ | ❌ | argparse |
-| SPEAKEASY | ✅ | ❌ | ❌ | ❌ | ❌ | sys.argv |
 | API | ✅ | ❌ | ❌ | ❌ | ❌ | sys.argv |
 
-**Summary:** --help is 16/16. Everything else is 0-3/16. Significant opportunity for standardization.
+**Summary:** --help is 10/10. Everything else is 0-2/10. Significant opportunity for standardization.
 
 ---
 

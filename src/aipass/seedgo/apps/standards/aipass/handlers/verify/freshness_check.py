@@ -32,7 +32,7 @@ def check_file_freshness() -> Dict:
     # Check if standards_audit.py exists
     audit_file = seed_path / "apps" / "modules" / "standards_audit.py"
     readme_file = seed_path / "README.md"
-    local_json = seed_path / "SEED.local.json"
+    local_json = seed_path / ".trinity" / "local.json"
 
     if not audit_file.exists():
         issues.append("standards_audit.py not found")
@@ -59,23 +59,23 @@ def check_file_freshness() -> Dict:
     else:
         issues.append("README.md not found")
 
-    # Check if SEED.local.json was updated today
+    # Check if .trinity/local.json was updated today
     if local_json.exists():
         local_mtime = datetime.fromtimestamp(local_json.stat().st_mtime)
         if local_mtime.date() != datetime.now().date():
             issues.append(
-                f"SEED.local.json last updated {local_mtime.date()} "
+                f".trinity/local.json last updated {local_mtime.date()} "
                 f"(not today)"
             )
     else:
-        issues.append("SEED.local.json not found")
+        issues.append(".trinity/local.json not found")
 
     return {
         'name': 'File Freshness',
         'passed': len(issues) == 0,
         'issues': issues,
         'checked': [
-            f"SEED.local.json updated: {local_mtime.date()}" if local_json.exists() else "SEED.local.json: not found",
+            f".trinity/local.json updated: {local_mtime.date()}" if local_json.exists() else ".trinity/local.json: not found",
             f"README.md updated: {readme_mtime.date()}" if readme_file.exists() else "README.md: not found"
         ],
         'score': 100 if len(issues) == 0 else max(0, 100 - (len(issues) * 30))

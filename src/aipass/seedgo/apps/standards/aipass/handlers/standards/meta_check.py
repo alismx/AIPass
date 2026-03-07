@@ -2,7 +2,7 @@
 META Block Standards Checker Handler
 
 Validates library-profile META blocks in Python files.
-Library META is lighter than Dev-Pass META - focuses on identity
+Library META is lighter than full META - focuses on identity
 and traceability without branch-specific fields.
 
 Required META format:
@@ -74,7 +74,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     if is_bypassed(module_path, 'meta', bypass_rules=bypass_rules):
         return {
             'passed': True,
-            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seed/bypass.json'}],
+            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seedgo/bypass.json'}],
             'score': 100,
             'standard': 'META'
         }

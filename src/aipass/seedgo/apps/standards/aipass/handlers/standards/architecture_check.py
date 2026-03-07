@@ -81,7 +81,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     if is_bypassed(module_path, 'architecture', bypass_rules=bypass_rules):
         return {
             'passed': True,
-            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seed/bypass.json'}],
+            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seedgo/bypass.json'}],
             'score': 100,
             'standard': 'ARCHITECTURE'
         }
@@ -392,7 +392,7 @@ def _should_ignore(path: Path, template_path: Path, ignore_config: Dict) -> bool
 
 def check_template_baseline(module_path: str, bypass_rules: list | None = None) -> List[Dict]:
     """
-    Verify branch structure against Cortex template registry (source of truth)
+    Verify branch structure against spawn template registry (source of truth)
 
     Loads the template registry, transforms paths for the branch ({{BRANCH}}, FILE_RENAMES),
     and checks if all template items exist in the branch.
@@ -456,7 +456,7 @@ def check_template_baseline(module_path: str, bypass_rules: list | None = None) 
             'message': f'Error reading template registry: {e} (skipped)'
         }]
 
-    # FILE_RENAMES mapping (from Cortex create_branch.py)
+    # FILE_RENAMES mapping (from spawn create_branch.py)
     # Entry point filename strips leading dots (e.g., .VSCODE -> vscode.py)
     entry_point_name = branch_name.lstrip('.').lower()
     FILE_RENAMES = {

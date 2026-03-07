@@ -42,7 +42,7 @@ def get_log_structure_standards() -> List[str]:
         "  [dim]  log_path = LOG_DIR / 'module_name.log'[/dim]",
         "",
         "  [red]WRONG:[/red]",
-        "  [dim]  log_path = '/home/aipass/system_logs/module.log'[/dim]",
+        "  [dim]  log_path = '/absolute/path/system_logs/module.log'[/dim]",
         "  [dim]  log_path = Path.home() / 'logs' / 'module.log'[/dim]",
         "",
         "[bold cyan]REFERENCE:[/bold cyan]",

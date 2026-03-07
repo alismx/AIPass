@@ -121,7 +121,7 @@ Same operation should have same name everywhere:
 cli/apps/handlers/error/decorators.py     # Path: error domain, name: what it does
 cli/apps/handlers/error/formatters.py     # Path: error domain, name: what it does
 prax/apps/handlers/config/load_config.py  # Path: config domain, name: action
-seed/apps/handlers/domain1/ops.py         # Path: domain1, name: operations
+seedgo/apps/handlers/domain1/ops.py        # Path: domain1, name: operations
 ```
 
 **Bad (real violations):**
@@ -163,9 +163,9 @@ prax/apps/handlers/
     └── prompts.py      # CLI prompt handlers
 ```
 
-**Real Examples from seed:**
+**Real Examples from seedgo:**
 ```
-seed/apps/handlers/
+seedgo/apps/handlers/
 ├── domain1/
 │   └── ops.py          # Domain operations (showroom)
 ├── standards/

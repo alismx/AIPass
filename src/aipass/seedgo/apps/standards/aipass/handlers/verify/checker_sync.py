@@ -176,18 +176,18 @@ def check_checker_sync() -> Dict:
         if missing_in_doc:
             issues.append(f"docs/checkers.md missing: {missing_in_doc}")
 
-    # Check SEED.id.json standards count
-    seed_id_path = PACK_ROOT / "SEED.id.json"
-    if seed_id_path.exists() and checkers_dir.exists():
-        seed_id_content = seed_id_path.read_text()
+    # Check .trinity/passport.json standards count
+    passport_path = PACK_ROOT / ".trinity" / "passport.json"
+    if passport_path.exists() and checkers_dir.exists():
+        passport_content = passport_path.read_text()
         actual_checkers = len([f for f in checkers_dir.glob("*_check.py")])
 
         # Find any "N standards" or "N core standards" mentions
-        id_counts = re.findall(r'(\d+)\s*(?:core\s*)?(?:AIPass\s*)?(?:code\s*)?standards?', seed_id_content, re.IGNORECASE)
+        id_counts = re.findall(r'(\d+)\s*(?:core\s*)?(?:AIPass\s*)?(?:code\s*)?standards?', passport_content, re.IGNORECASE)
         for count_str in set(id_counts):
             count = int(count_str)
             if count != actual_checkers:
-                issues.append(f"SEED.id.json says {count} standards but {actual_checkers} checkers exist")
+                issues.append(f".trinity/passport.json says {count} standards but {actual_checkers} checkers exist")
 
     # Check seedgo.py --help for consistent standards count
     seed_entry_path = PACK_ROOT / "apps/seedgo.py"

@@ -28,15 +28,15 @@ apps/handlers/ (Implementation Layer)
 
 **Result:** 25 files at 200-400 lines = AI processes fast, maintains context, makes fewer errors. Humans can scan any file in under a minute.
 
-**Note:** All branches use `apps/` subdirectory for their code (e.g., `cortex/apps/`, `seed/apps/`, `flow/apps/`).
+**Note:** All branches use `apps/` subdirectory for their code (e.g., `spawn/apps/`, `seedgo/apps/`, `flow/apps/`).
 
 ---
 
 ## Template Baseline Compliance
 
-**Rule:** All branches must match the Cortex template structure.
+**Rule:** All branches must match the Spawn template structure.
 
-**Source of Truth:** `<project_root>/cortex/templates/branch_template/.template_registry.json`
+**Source of Truth:** `<project_root>/spawn/templates/agent.template/.template_registry.json`
 
 **What it checks:**
 - All required files from template exist in branch (with proper name transformations)
@@ -44,21 +44,21 @@ apps/handlers/ (Implementation Layer)
 - Template defines 30 files + 20 directories = 50 structural requirements
 
 **Name transformations applied:**
-- `{{BRANCH}}` placeholder → Branch name in uppercase (e.g., `SEED`, `API`, `CORTEX`)
-- `BRANCH.ID.json` → `{BRANCHNAME}.id.json` (e.g., `SEED.id.json`)
-- `LOCAL.json` → `{BRANCHNAME}.local.json` (e.g., `SEED.local.json`)
+- `{{BRANCH}}` placeholder → Branch name in uppercase (e.g., `SEEDGO`, `API`, `SPAWN`)
+- `BRANCH.ID.json` → `.trinity/passport.json` (identity file for every branch)
+- `LOCAL.json` → `{BRANCHNAME}.local.json` (e.g., `SEEDGO.local.json`)
 - `OBSERVATIONS.json` → `{BRANCHNAME}.observations.json`
 - `AI_MAIL.json` → `{BRANCHNAME}.ai_mail.json`
-- `BRANCH.py` → `{branchname}.py` (e.g., `seed.py`)
+- `BRANCH.py` → `{branchname}.py` (e.g., `seedgo.py`)
 - `README.md` → `README.json` (template uses .md, branches use .json)
 
-**WHY:** Cortex creates branches from template. If branches drift from template structure (missing files/directories), updates break and branch becomes non-standard. Template is the contract - all branches must honor it.
+**WHY:** Spawn creates branches from template. If branches drift from template structure (missing files/directories), updates break and branch becomes non-standard. Template is the contract - all branches must honor it.
 
 **Verification:** Standards checker compares each branch against template registry, reports missing items.
 
 **Example compliance scores:**
-- BACKUP_SYSTEM: 98% (missing 1 directory)
-- SEED: 98% (missing 1 directory)
+- TRIGGER: 98% (missing 1 directory)
+- SEEDGO: 98% (missing 1 directory)
 - FLOW: 94% (missing 3 items)
 - API: 86% (missing 7 items)
 
@@ -117,7 +117,7 @@ Result: ImportError on all drone commands, system broken
 - Foundation services must be independent building blocks
 
 **What CAN import foundation services:**
-- Higher-level modules (Seed, Cortex, Flow, API, etc.) can import BOTH CLI and Prax
+- Higher-level modules (Seedgo, Spawn, Flow, API, etc.) can import BOTH CLI and Prax
 - Business logic can use both services together
 - This is the correct pattern
 
@@ -141,9 +141,9 @@ Result: ImportError on all drone commands, system broken
 ## File Size Guidelines
 
 - **Under 300 lines:** Perfect - AI quick scan, full comprehension, few errors
-- **300-500 lines:** Good - manageable for AI and humans (most Cortex modules here)
+- **300-500 lines:** Good - manageable for AI and humans (most Spawn modules here)
 - **500-700 lines:** Getting heavy - watch it
-- **700+ lines:** Consider splitting - AI context degrades, humans struggle (example: `cortex/apps/modules/update_branch.py` at 916 lines)
+- **700+ lines:** Consider splitting - AI context degrades, humans struggle (example: `spawn/apps/modules/update_branch.py` at 916 lines)
 
 **WHY:** AI comprehension drops with file size. Small files mean faster processing, cleaner context, fewer errors. Read a summary in seconds vs spending minutes processing a massive file.
 
@@ -166,7 +166,7 @@ apps/handlers/
   └── cli/        → Everything about user interaction
 ```
 
-**Verified from:** `<project_root>/cortex/apps/handlers/` - These are actual domains from Cortex.
+**Verified from:** `<project_root>/spawn/apps/handlers/` - These are actual domains from Spawn.
 
 **Note:** Actual domain names will vary by branch purpose. See naming.md for domain naming standards.
 
@@ -311,7 +311,7 @@ Run 'python3 create_plan.py --help' for usage
 - Remove module → automatically gone
 - Zero maintenance overhead
 
-**Implementation:** See `/home/aipass/seed/apps/seed.py` and `/home/aipass/seed/apps/modules/architecture_standard.py` for reference pattern.
+**Implementation:** See `<project_root>/seedgo/apps/seedgo.py` and `<project_root>/seedgo/apps/modules/architecture_standard.py` for reference pattern.
 
 ---
 
@@ -323,32 +323,32 @@ Run 'python3 create_plan.py --help' for usage
 
 Drone handles TWO critical responsibilities:
 
-1. **@ Resolution:** Converts branch handles (@flow, @seed, @cortex) to absolute paths (/home/aipass/flow, /home/aipass/seed, <project_root>/cortex)
+1. **@ Resolution:** Converts branch handles (@flow, @seedgo, @spawn) to absolute paths via AIPASS_REGISTRY.json
 2. **Command Routing:** Routes the resolved command to the target branch's entry point
 
 ### How @ Resolution Works
 
 **User types:**
 ```bash
-drone @flow create @seed "plan_name" "description"
+drone @flow create @seedgo "plan_name" "description"
 ```
 
 **Drone resolves @ symbols BEFORE passing to Flow:**
 ```bash
 # What Drone does internally:
 # 1. Sees target branch: @flow
-# 2. Resolves @flow → /home/aipass/flow
-# 3. Resolves @seed → /home/aipass/seed
-# 4. Routes to: python3 /home/aipass/flow/apps/flow.py create /home/aipass/seed "plan_name" "description"
+# 2. Resolves @flow → <project_root>/flow
+# 3. Resolves @seedgo → <project_root>/seedgo
+# 4. Routes to: python3 <project_root>/flow/apps/flow.py create <project_root>/seedgo "plan_name" "description"
 ```
 
 **What Flow receives:**
 ```python
 # Flow's sys.argv:
-['flow.py', 'create', '/home/aipass/seed', 'plan_name', 'description']
+['flow.py', 'create', '<project_root>/seedgo', 'plan_name', 'description']
 
 # Flow receives the RESOLVED PATH, not the @ symbol
-# Flow NEVER sees '@seed' - it sees '/home/aipass/seed'
+# Flow NEVER sees '@seedgo' - it sees '<project_root>/seedgo'
 ```
 
 ### The Architecture Boundary
@@ -373,14 +373,14 @@ Handlers
 **WRONG:**
 ```python
 # DON'T DO THIS - Drone is NOT a library
-from drone.apps.modules import resolve_branch
-path = resolve_branch("@seed")
+from aipass.drone.apps.modules import resolve_branch
+path = resolve_branch("@seedgo")
 ```
 
 **RIGHT:**
 ```bash
 # Drone is a CLI tool - use it via command line
-drone @seed architecture-standard
+drone @seedgo architecture-standard
 ```
 
 **WHY:** Drone is a CLI router, not a service provider. It sits OUTSIDE the branch ecosystem, routing commands TO branches. Branches receive commands that have ALREADY been processed by Drone.
@@ -401,7 +401,7 @@ def handle_command(command, args):
 ```python
 # GOOD - Branch receives resolved path from Drone
 def handle_command(command, args):
-    target = args[0]  # Already a path like '/home/aipass/seed'
+    target = args[0]  # Already a path like '<project_root>/seedgo'
     if not os.path.exists(target):
         print(f"Error: Path does not exist: {target}")
         return False
@@ -436,7 +436,7 @@ def handle_command(command: str, args: List[str]) -> bool:
 
 **NO ALIASES:** Session 14 removed all command aliases system-wide. One command per module.
 
-**Note on args:** If command was routed through Drone, args will contain RESOLVED PATHS (like `/home/aipass/seed`), not @ symbols (like `@seed`).
+**Note on args:** If command was routed through Drone, args will contain RESOLVED PATHS (like `<project_root>/seedgo`), not @ symbols (like `@seedgo`).
 
 ---
 
@@ -462,6 +462,6 @@ This pattern optimizes for CONSTRAINTS:
 
 **Why agents matter:** Agents handle exploration/analysis separately (their own 200k context). Your main context stays clean. Process massive amounts of information in seconds without context pollution.
 
-**Speed example:** 480k tokens of agent work in 5 minutes = what would take a full day of back-and-forth coding. Cortex builds a branch in less than a second. Updates entire system in ~10 seconds.
+**Speed example:** 480k tokens of agent work in 5 minutes = what would take a full day of back-and-forth coding. Spawn builds a branch in less than a second. Updates entire system in ~10 seconds.
 
 **Ignore these constraints at your peril.** System will slow down, become unreliable, eventually unmaintainable.

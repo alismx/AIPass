@@ -5,7 +5,7 @@
 # Date: 2025-11-30
 # Version: 0.3.0
 # Category: flow/handlers/plan
-# CODE STANDARDS: Seed v3.0
+# CODE STANDARDS: Seedgo v3.0
 #
 # CHANGELOG (Max 5 entries):
 #   - v0.3.0 (2026-01-30): Accept PLAN-XXXX and PLANXXXX prefixes (not just FPLAN-)

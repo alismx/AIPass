@@ -40,7 +40,7 @@ def run_verification() -> Dict:
         Dict with all check results
     """
     console.print()
-    header("SEED SYNC VERIFICATION")
+    header("SEEDGO SYNC VERIFICATION")
     console.print()
 
     checks = [

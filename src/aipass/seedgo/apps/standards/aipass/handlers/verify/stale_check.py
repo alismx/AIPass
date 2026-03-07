@@ -1,7 +1,7 @@
 """
 Stale Patterns Checker Handler
 
-Checks for deprecated patterns in the seed codebase.
+Checks for deprecated patterns in the seedgo codebase.
 Returns violations found during grep search.
 """
 
@@ -29,7 +29,7 @@ def check_stale_patterns() -> Dict:
     Returns:
         Dict with check results
     """
-    seed_path = Path(__file__).resolve().parents[5]  # -> seedgo root
+    seedgo_path = Path(__file__).resolve().parents[5]  # -> seedgo root
     deprecated_patterns = ignore_handler.get_deprecated_patterns()
 
     violations = []
@@ -38,7 +38,7 @@ def check_stale_patterns() -> Dict:
         try:
             # Use grep to search for pattern
             result = subprocess.run(
-                ["grep", "-rn", pattern, str(seed_path),
+                ["grep", "-rn", pattern, str(seedgo_path),
                  "--include=*.py", "--include=*.md"],
                 capture_output=True,
                 text=True,
@@ -53,8 +53,8 @@ def check_stale_patterns() -> Dict:
                         if len(parts) >= 2:
                             file_path = parts[0]
                             line_num = parts[1]
-                            # Make path relative to seed for readability
-                            rel_path = Path(file_path).relative_to(seed_path)
+                            # Make path relative to seedgo for readability
+                            rel_path = Path(file_path).relative_to(seedgo_path)
                             violations.append({
                                 'pattern': pattern,
                                 'reason': reason,

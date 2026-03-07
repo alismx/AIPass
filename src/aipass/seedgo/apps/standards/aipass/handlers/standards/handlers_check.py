@@ -70,7 +70,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     if is_bypassed(module_path, 'handlers', bypass_rules=bypass_rules):
         return {
             'passed': True,
-            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seed/bypass.json'}],
+            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seedgo/bypass.json'}],
             'score': 100,
             'standard': 'HANDLERS'
         }
@@ -142,9 +142,9 @@ def check_handler_independence(content: str, lines: List[str], module_path: str)
     Check handler independence - no cross-handler imports except defaults
 
     Rules:
-    - ✅ ALLOWED: from seed.apps.handlers.json import json_handler (default handler)
-    - ✅ ALLOWED: from .decorators import catch_errors (same package)
-    - ❌ FORBIDDEN: from seed.apps.handlers.error import error_handler (cross-handler)
+    - ALLOWED: from aipass.seedgo.apps.handlers.json import json_handler (default handler)
+    - ALLOWED: from .decorators import catch_errors (same package)
+    - FORBIDDEN: from aipass.seedgo.apps.handlers.error import error_handler (cross-handler)
     """
     forbidden_imports = []
 
@@ -255,7 +255,7 @@ def check_no_orchestration(content: str, lines: List[str]) -> Optional[Dict]:
     Check that handler doesn't import/call modules (orchestration)
 
     Handlers should be pure implementation, not orchestration.
-    ❌ FORBIDDEN: from seed.apps.modules import some_module
+    FORBIDDEN: from aipass.seedgo.apps.modules import some_module
     """
     module_imports = []
 

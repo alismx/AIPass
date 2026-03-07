@@ -69,7 +69,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     if is_bypassed(module_path, 'readme', bypass_rules=bypass_rules):
         return {
             'passed': True,
-            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seed/bypass.json'}],
+            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seedgo/bypass.json'}],
             'score': 100,
             'standard': 'README'
         }
@@ -331,7 +331,7 @@ def check_directory_tree(lines: List[str], branch_root: Path, file_path: str, by
 
     # Extract directory names from tree block, line by line
     # Strip inline comments (text after #) to avoid false positives
-    # Skip the first non-empty line (root label, e.g., "seed/" or "src/aipass/.../cortex/")
+    # Skip the first non-empty line (root label, e.g., "seedgo/" or "src/aipass/.../spawn/")
     # Common tree formats: "apps/", "├── apps/", "│   ├── handlers/", "  apps/"
     dir_pattern = re.compile(r'[\w\-_.]+/')
     branch_name = branch_root.name.lower()
@@ -350,7 +350,7 @@ def check_directory_tree(lines: List[str], branch_root: Path, file_path: str, by
         for match in dir_pattern.finditer(tree_line):
             dir_name = match.group().rstrip('/')
             # Skip the branch root name itself
-            # (trees typically start with the branch name, e.g., "seed/")
+            # (trees typically start with the branch name, e.g., "seedgo/")
             if dir_name.lower() == branch_name:
                 continue
             if dir_name in ('__pycache__', '.git', 'node_modules'):

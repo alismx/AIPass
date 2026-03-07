@@ -187,7 +187,7 @@ class BranchDetector:
 
             # Strategy 4: AI_CENTRAL files - {BRANCH}.central.json or {BRANCH}_central.json
             # Path: .../AI_CENTRAL/AI_MAIL.central.json -> AI_MAIL
-            if 'AI_CENTRAL' in path_str or 'ai_central' in path_str.lower():
+            if 'AI_CENTRAL' in path_str or '.ai_central' in path_str or 'ai_central' in path_str.lower():
                 name = path.name
                 # Extract branch from filename patterns
                 branch_candidate = None

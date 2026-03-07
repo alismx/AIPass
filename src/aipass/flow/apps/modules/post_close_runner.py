@@ -11,7 +11,7 @@
 #   - v1.0.0 (2026-02-14): Created - runs summary generation and mbank archival in background
 #
 # CODE STANDARDS:
-#   - Seed v3.0 compliant (imports, architecture, error handling)
+#   - Seedgo v3.0 compliant (imports, architecture, error handling)
 # ==============================================
 
 """
