@@ -1,0 +1,553 @@
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: google_drive_sync.py - Google Drive Integration for AIPass Backup System
+# Date: 2025-10-30
+# Version: 2.6.0
+# Category: backup_system/modules
+#
+# CHANGELOG (Max 5 entries - remove oldest when adding new):
+#   - v2.6.0 (2026-03-06): Adapted for AIPass public repo
+#     * Removed shebang, sys.path manipulation, prax/cli imports
+#     * Uses standard logging and rich console
+#     * Relative handler imports, Google API deps wrapped in try/except
+#   - v2.5.0 (2026-02-22): Rich progress bar for drive-sync uploads, per-file progress callback
+#   - v2.4.0 (2026-02-21): Two-phase sync (prepare+upload), CLI visibility, dedup fix, --test mode
+#   - v2.3.2 (2026-02-10): Fixed deepcopy RuntimeError in _save_data during concurrent uploads
+#   - v2.2.0 (2026-02-10): Fixed SSL concurrency bug - per-thread credentials, retry with backoff, folder cache lock
+#
+# CODE STANDARDS:
+#   - Module orchestrates, handlers implement
+#   - CLI display (console.print) belongs here, not in handlers
+#   - Google API calls delegated to drive_sync_client handler
+# =============================================
+
+"""
+Google Drive Sync Module - Orchestrates Drive backup operations.
+
+Routes drive-sync commands, displays CLI output, delegates to
+drive_sync_client handler for API operations.
+"""
+
+# =============================================
+# IMPORTS
+# =============================================
+
+import sys
+import logging
+from pathlib import Path
+from datetime import datetime
+
+from rich.console import Console
+from rich.progress import Progress, BarColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
+
+logger = logging.getLogger(__name__)
+console = Console()
+
+_BACKUP_ROOT = Path(__file__).resolve().parents[2]  # src/aipass/backup/
+
+# =============================================
+# CONSTANTS & CONFIG
+# =============================================
+
+# OAuth scopes for Drive access
+SCOPES = ['https://www.googleapis.com/auth/drive.file']
+
+# Module configuration
+MODULE_NAME = "google_drive_sync"
+JSON_DIR = _BACKUP_ROOT / "backup_json"
+CONFIG_FILE = JSON_DIR / f"{MODULE_NAME}_config.json"
+DATA_FILE = JSON_DIR / f"{MODULE_NAME}_data.json"
+LOG_FILE = JSON_DIR / f"{MODULE_NAME}_log.json"
+
+# =============================================
+# CLIENT CLASS (delegated to handler)
+# =============================================
+
+try:
+    from ..handlers.operations.drive_sync_client import (
+        GoogleDriveSync,
+    )
+    from ..handlers.json.drive_sync_json import (
+        load_config as _load_config_fn,
+        load_data as _load_data_fn,
+    )
+    DRIVE_AVAILABLE = True
+except ImportError:
+    GoogleDriveSync = None  # type: ignore
+    _load_config_fn = None  # type: ignore
+    _load_data_fn = None  # type: ignore
+    DRIVE_AVAILABLE = False
+    logger.info("[google_drive_sync] Google Drive dependencies not available")
+
+def _load_config():
+    """Load config using module JSON paths."""
+    return _load_config_fn(CONFIG_FILE)
+
+def _load_data():
+    """Load data using module JSON paths."""
+    return _load_data_fn(DATA_FILE)
+
+
+# =============================================
+# BUSINESS OPERATIONS (delegated to handlers)
+# =============================================
+
+try:
+    from ..handlers.operations.drive_sync_ops import (
+        clear_file_tracker as _clear_file_tracker_handler,
+        get_file_tracker_stats,
+        test_drive_connection as _test_drive_connection,
+    )
+except ImportError:
+    _clear_file_tracker_handler = None  # type: ignore
+    get_file_tracker_stats = None  # type: ignore
+    _test_drive_connection = None  # type: ignore
+
+
+def _show_file_tracker_stats() -> bool:
+    """Display file tracker statistics."""
+    try:
+        stats = get_file_tracker_stats()
+        console.print(f"File Tracker Statistics:")
+        console.print(f"  - Total tracked files: {stats['total']}")
+        if stats['sample']:
+            console.print(f"  - Sample entries:")
+            for i, entry in enumerate(stats['sample']):
+                console.print(f"    {i+1}. {entry['file']} (last sync: {entry['last_sync']})")
+            if stats['truncated']:
+                remaining = stats['total'] - len(stats['sample'])
+                console.print(f"    ... and {remaining} more files")
+        return True
+    except Exception as e:
+        console.print(f"Error showing tracker stats: {e}")
+        logger.error(f"Error showing tracker stats: {e}")
+        return False
+
+
+def _clear_file_tracker() -> bool:
+    """Clear the file tracker cache for fresh sync."""
+    try:
+        data = _load_data()
+        tracker_count = len(data.get("runtime_state", {}).get("file_tracker", {}))
+        success = _clear_file_tracker_handler()
+        if success:
+            console.print(f"Cleared {tracker_count} entries from file tracker")
+            logger.info(f"Cleared {tracker_count} entries from file tracker")
+        else:
+            console.print("File tracker already empty or clear failed")
+        return success
+    except Exception as e:
+        console.print(f"Error clearing file tracker: {e}")
+        logger.error(f"Error clearing file tracker: {e}")
+        return False
+
+
+def _test_drive_sync() -> bool:
+    """Test Drive integration."""
+    try:
+        sync = GoogleDriveSync()
+        if not sync.authenticate():
+            return False
+        console.print("Testing folder creation...")
+        result = _test_drive_connection(sync)
+        if result:
+            folder_id = sync.get_or_create_backup_folder()
+            console.print(f"Backup folder ready: {folder_id}")
+        else:
+            console.print("Failed to create backup folder")
+        return result
+    except Exception as e:
+        console.print(f"Test failed: {e}")
+        logger.error(f"Test failed: {e}")
+        return False
+
+def _run_sync_test() -> bool:
+    """Run a small test sync to verify Drive integration."""
+    import shutil
+
+    console.print("[bold cyan]Drive Sync Test[/bold cyan]")
+    console.print()
+
+    # Create test files
+    test_dir = _BACKUP_ROOT / "backups" / "_sync_test"
+    test_dir.mkdir(parents=True, exist_ok=True)
+
+    test_files = {
+        "test_file_1.txt": "Hello from AIPass backup test",
+        "test_file_2.json": '{"test": true, "timestamp": "' + datetime.now().isoformat() + '"}',
+        "subdir/nested_file.txt": "Nested directory test",
+        "subdir/deep/deeper_file.md": "# Deep nested test\nVerifying folder structure",
+    }
+
+    for name, content in test_files.items():
+        path = test_dir / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(content)
+
+    console.print(f"  Created {len(test_files)} test files in {test_dir}")
+
+    # Run sync
+    sync = GoogleDriveSync()
+    if not sync.authenticate():
+        console.print("[red]Auth failed[/red]")
+        shutil.rmtree(test_dir, ignore_errors=True)
+        return False
+
+    console.print(f"\nScanning...")
+    files_to_upload, skipped, total = sync.prepare_sync(test_dir, force_sync=True)
+    upload_count = len(files_to_upload)
+
+    console.print(f"  Files: {total} total, {upload_count} to upload")
+
+    # Verify Drive folder before uploading
+    console.print(f"\nVerifying Drive folder: AIPass_Test...")
+    folder_id = sync.get_or_create_project_folder("AIPass_Test")
+    if not folder_id:
+        error_msg = sync.last_error or "Unknown error"
+        console.print(f"[red]FAILED: {error_msg}[/red]")
+        shutil.rmtree(test_dir, ignore_errors=True)
+        return False
+    console.print(f"  Drive folder ready: AIPass_Test")
+
+    console.print(f"Uploading...")
+
+    def show_test_progress(completed, total_upload, _successes):
+        """Display test upload progress to console."""
+        console.print(f"  {completed}/{total_upload}")
+
+    result = sync.sync_backup_files(
+        test_dir, "AIPass_Test", "sync test", True,
+        prepared_files=files_to_upload,
+        skipped_count=skipped,
+        total_count=total,
+        progress_fn=show_test_progress
+    )
+
+    if result.get("error"):
+        console.print(f"\n[red]FAILED: {result['error']}[/red]")
+        shutil.rmtree(test_dir, ignore_errors=True)
+        return False
+
+    console.print()
+    if result["success"]:
+        console.print(f"[green]Test passed: {result['uploaded']}/{result['total']} files synced[/green]")
+    else:
+        console.print(f"[red]Test failed: {result['uploaded']} OK, {result['failed']} failed[/red]")
+
+    # Run it again to verify no duplicates
+    console.print(f"\nRe-running sync (should show 0 to upload)...")
+    files_to_upload2, _, _ = sync.prepare_sync(test_dir, force_sync=False)
+
+    if len(files_to_upload2) == 0:
+        console.print(f"[green]Dedup check passed: 0 files need re-upload[/green]")
+    else:
+        console.print(f"[red]Dedup check failed: {len(files_to_upload2)} files flagged for re-upload[/red]")
+
+    # Cleanup local test dir
+    shutil.rmtree(test_dir, ignore_errors=True)
+    console.print(f"\nCleaned up local test files")
+    console.print(f"[dim]Test Drive folder 'AIPass_Test' left on Drive for inspection[/dim]")
+
+    return result["success"]
+
+
+# =============================================
+# HANDLE_COMMAND (Drone Integration)
+# =============================================
+
+def handle_command(args) -> bool:
+    """Route Google Drive sync commands from backup_system orchestrator.
+
+    Args:
+        args: Command-line arguments from CLI parser
+
+    Returns:
+        bool: True if command was handled, False if not a drive sync command
+    """
+    if not hasattr(args, 'command'):
+        return False
+
+    command = args.command
+
+    if command in ['--help', '-h', 'help']:
+        console.print()
+        console.print("[bold cyan]google_drive_sync - Google Drive Integration[/bold cyan]")
+        console.print()
+        console.print("Syncs AIPass backups to Google Drive using OAuth2.")
+        console.print()
+        console.print("[yellow]Commands:[/yellow]")
+        console.print("  drive-test          - Test Google Drive connectivity")
+        console.print("  drive-sync          - Sync backup directory to Google Drive")
+        console.print("  drive-sync --test   - Run a small test sync to verify integration")
+        console.print("  drive-clear-tracker - Clear file tracker cache")
+        console.print("  drive-stats         - Show file tracker statistics")
+        console.print()
+        console.print("[yellow]Options:[/yellow]")
+        console.print("  --project  Project name (default: AIPass)")
+        console.print("  --note     Sync note (default: Manual sync)")
+        console.print("  --force    Force upload all files")
+        console.print()
+        return True
+
+    if command == 'drive-test':
+        return _test_drive_sync()
+
+    elif command == 'drive-sync':
+        # --test flag routes to test mode
+        if getattr(args, 'test', False):
+            return _run_sync_test()
+
+        raw_path = getattr(args, 'path', None)
+        if raw_path:
+            backup_path = Path(raw_path)
+        else:
+            # Default to snapshot backup directory
+            backup_path = _BACKUP_ROOT / "backups" / "system_snapshot"
+        if not backup_path.exists():
+            console.print(f"Error: Backup directory not found: {backup_path}")
+            return False
+
+        project = getattr(args, 'project', 'AIPass') or 'AIPass'
+        note = getattr(args, 'note', 'Manual sync') or 'Manual sync'
+        force = getattr(args, 'force', False)
+
+        sync = GoogleDriveSync()
+        if not sync.authenticate():
+            console.print("[red]FAILED: Could not authenticate with Google Drive[/red]")
+            return False
+
+        limit = getattr(args, 'limit', 0) or 0
+
+        # Show last backup timestamps for all modes
+        from ..handlers.utils.backup_timestamps import get_timestamps, format_age
+        ts = get_timestamps()
+        console.print()
+        console.print("[dim]Last backups:[/dim]")
+        console.print(f"  [dim]Snapshot:   {format_age(ts.get('snapshot'))}[/dim]")
+        console.print(f"  [dim]Versioned:  {format_age(ts.get('versioned'))}[/dim]")
+        console.print(f"  [dim]Drive sync: {format_age(ts.get('drive_sync'))}[/dim]")
+        console.print()
+
+        # Pre-flight: verify Drive folder FIRST (may reset tracker)
+        console.print(f"Verifying Drive folder (project: {project})...")
+        folder_id = sync.get_or_create_project_folder(project)
+        if not folder_id:
+            error_msg = sync.last_error or "Unknown error"
+            console.print(f"[red]FAILED: {error_msg}[/red]")
+            console.print("[red]Sync aborted - no files uploaded[/red]")
+            return False
+        console.print(f"  Drive folder ready: {project}")
+
+        if sync.tracker_was_reset:
+            console.print(f"[yellow]  Drive folder is new - tracker reset, full re-sync needed[/yellow]")
+
+        # Phase 1: Scan (local only, fast) - runs AFTER folder check so tracker is accurate
+        console.print(f"\nScanning {backup_path}...")
+        files_to_upload, skipped, total = sync.prepare_sync(backup_path, force, limit)
+        upload_count = len(files_to_upload)
+
+        # Display plan
+        console.print(f"  Files considered: {total}{f' (limited to {limit})' if limit > 0 else ''}")
+        console.print(f"  To upload:       {upload_count} ({'forced' if force else 'changed/new'})")
+        console.print(f"  Unchanged:       {skipped}")
+
+        if upload_count == 0:
+            console.print("[green]All files up to date - nothing to sync[/green]")
+            return True
+
+        console.print()
+
+        # Phase 2: Upload with progress bar
+        with Progress(
+            TextColumn("{task.description}"),
+            BarColumn(bar_width=40),
+            TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+            TextColumn("{task.completed}/{task.total}"),
+            TextColumn("[green]{task.fields[ok]} OK[/green]"),
+            TimeElapsedColumn(),
+            TimeRemainingColumn(),
+            console=console,
+        ) as progress:
+            task_id = progress.add_task("Uploading...", total=upload_count, ok=0)
+
+            def show_progress(completed, total_upload, successes):
+                """Update progress bar."""
+                progress.update(task_id, completed=completed, ok=successes)
+
+            result = sync.sync_backup_files(
+                backup_path, project, note, force,
+                prepared_files=files_to_upload,
+                skipped_count=skipped,
+                total_count=total,
+                progress_fn=show_progress
+            )
+
+            # Update label when complete
+            progress.update(task_id, description="Uploaded  ")
+
+        # Check for errors
+        if result.get("error"):
+            console.print(f"\n[red]FAILED: {result['error']}[/red]")
+            console.print("[red]Sync aborted - no files uploaded[/red]")
+            return False
+
+        # Summary
+        console.print()
+        if result["success"]:
+            from ..handlers.utils.backup_timestamps import update_timestamp, get_timestamps, format_age
+            update_timestamp("drive_sync")
+            ts = get_timestamps()
+            console.print(f"[green]Sync complete: {result['uploaded']} uploaded, {result['skipped']} unchanged[/green]")
+            console.print()
+            console.print(f"[dim]Backups now:[/dim]")
+            console.print(f"  [dim]Snapshot:   {format_age(ts.get('snapshot'))}[/dim]")
+            console.print(f"  [dim]Versioned:  {format_age(ts.get('versioned'))}[/dim]")
+            console.print(f"  [dim]Drive sync: {format_age(ts.get('drive_sync'))}[/dim]")
+        else:
+            console.print(f"[red]Sync failed: {result['uploaded']} uploaded, {result['failed']} failed, {result['skipped']} unchanged[/red]")
+
+        return result["success"]
+
+    elif command == 'drive-sync-test':
+        return _run_sync_test()
+
+    elif command == 'drive-clear-tracker':
+        return _clear_file_tracker()
+
+    elif command == 'drive-stats':
+        return _show_file_tracker_stats()
+
+    return False
+
+# =============================================
+# CLI/EXECUTION
+# =============================================
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description="Google Drive Sync for AIPass Backup System",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+COMMANDS:
+  Commands: test, sync, sync-test, clear-tracker, show-stats
+
+  test          - Test Google Drive connectivity
+  sync          - Sync backup directory to Google Drive
+  sync-test     - Run a small test sync to verify integration
+  clear-tracker - Clear file tracker cache
+  show-stats    - Show file tracker statistics
+
+OPTIONS:
+  --project     - Project name for sync (default: AIPass)
+  --note        - Note for sync operation (default: Manual sync)
+  --force       - Force sync all files (ignore tracker)
+
+EXAMPLES:
+  python3 google_drive_sync.py test
+  python3 google_drive_sync.py sync /path/to/backups
+  python3 google_drive_sync.py sync /path/to/backups --project "MyProject" --note "Daily backup"
+  python3 google_drive_sync.py sync /path/to/backups --force
+  python3 google_drive_sync.py clear-tracker
+  python3 google_drive_sync.py show-stats
+        """
+    )
+
+    parser.add_argument("command",
+                       choices=['test', 'sync', 'sync-test', 'clear-tracker', 'show-stats'],
+                       help="Command to execute")
+    parser.add_argument("path", nargs='?', help="Backup directory path (required for sync command)")
+    parser.add_argument("--project", type=str, default="AIPass", help="Project name for sync")
+    parser.add_argument("--note", type=str, default="Manual sync", help="Note for sync operation")
+    parser.add_argument("--force", action="store_true", help="Force sync all files (ignore tracker)")
+
+    args = parser.parse_args()
+
+    # Check if module is enabled
+    config = _load_config()
+    if not config.get("config", {}).get("enabled", True):
+        console.print("Warning: Google Drive sync is disabled")
+        sys.exit(0)
+
+    if args.command == 'clear-tracker':
+        if _clear_file_tracker():
+            console.print("File tracker cleared successfully")
+            sys.exit(0)
+        else:
+            console.print("Failed to clear file tracker")
+            sys.exit(1)
+
+    elif args.command == 'show-stats':
+        if _show_file_tracker_stats():
+            sys.exit(0)
+        else:
+            sys.exit(1)
+
+    elif args.command == 'sync':
+        if not args.path:
+            console.print("Error: sync command requires a path argument")
+            console.print("Usage: python3 google_drive_sync.py sync /path/to/backups")
+            sys.exit(1)
+
+        backup_path = Path(args.path)
+
+        if not backup_path.exists():
+            console.print(f"Error: Backup directory not found: {backup_path}")
+            sys.exit(1)
+
+        sync = GoogleDriveSync()
+        if not sync.authenticate():
+            console.print("[red]Failed to authenticate with Google Drive[/red]")
+            sys.exit(1)
+
+        # Phase 1: Scan
+        console.print(f"Scanning {backup_path}...")
+        files_to_upload, skipped, total = sync.prepare_sync(backup_path, args.force)
+        upload_count = len(files_to_upload)
+
+        console.print(f"  Files scanned: {total}")
+        console.print(f"  To upload:     {upload_count} ({'forced' if args.force else 'changed/new'})")
+        console.print(f"  Unchanged:     {skipped}")
+
+        if upload_count == 0:
+            console.print("[green]All files up to date - nothing to sync[/green]")
+            sys.exit(0)
+
+        console.print(f"\nSyncing to Google Drive (project: {args.project})...")
+
+        def cli_progress(completed, total_upload, successes):
+            """Display CLI upload progress."""
+            console.print(f"  Progress: {completed}/{total_upload} ({successes} OK)")
+
+        # Phase 2: Upload
+        result = sync.sync_backup_files(
+            backup_path, args.project, args.note, args.force,
+            prepared_files=files_to_upload,
+            skipped_count=skipped,
+            total_count=total,
+            progress_fn=cli_progress
+        )
+
+        console.print()
+        if result["success"]:
+            console.print(f"[green]Sync complete: {result['uploaded']} uploaded, {result['skipped']} unchanged[/green]")
+            sys.exit(0)
+        else:
+            console.print(f"[yellow]Sync finished: {result['uploaded']} uploaded, {result['failed']} failed, {result['skipped']} unchanged[/yellow]")
+            sys.exit(1)
+
+    elif args.command == 'sync-test':
+        # Create a minimal args namespace for the test function
+        if _run_sync_test():
+            sys.exit(0)
+        else:
+            sys.exit(1)
+
+    elif args.command == 'test':
+        if _test_drive_sync():
+            console.print("Google Drive sync test successful")
+            sys.exit(0)
+        else:
+            console.print("Google Drive sync test failed")
+            sys.exit(1)

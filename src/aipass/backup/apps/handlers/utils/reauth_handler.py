@@ -1,0 +1,87 @@
+
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: reauth_handler.py - Google Drive Re-Authentication Handler
+# Date: 2026-02-20
+# Version: 1.0.0
+# Category: backup_system/handlers/utils
+#
+# CHANGELOG (Max 5 entries):
+#   - v1.0.0 (2026-02-20): Extracted from reauth_drive.py module
+#     * Moved reauth() implementation to handler layer
+#     * Follows seed 3-layer architecture standards
+#
+# CODE STANDARDS:
+#   - Handlers must be independent and transportable
+#   - No prax imports (handler tier)
+#   - No cross-handler imports except within same domain
+# =============================================
+
+"""
+Google Drive Re-Authentication Handler
+
+Implementation logic for re-authenticating with Google Drive via console OAuth flow.
+Called by the reauth_drive module orchestrator.
+"""
+
+from pathlib import Path
+
+SCOPES = ['https://www.googleapis.com/auth/drive.file']
+CREDS_PATH = Path.home() / '.aipass' / 'drive_creds.json'
+
+
+def reauth(client_secrets_path: Path) -> bool:
+    """Perform Google Drive re-authentication via console OAuth flow.
+
+    Args:
+        client_secrets_path: Path to the OAuth client secrets JSON file
+
+    Returns:
+        bool: True if authentication succeeded, False otherwise
+    """
+    try:
+        from google_auth_oauthlib.flow import InstalledAppFlow
+        from google.oauth2.credentials import Credentials
+        from google.auth.transport.requests import Request
+        from googleapiclient.discovery import build
+    except ImportError as e:
+        return False
+
+    # Step 1: Try refreshing existing token first
+    if CREDS_PATH.exists():
+        try:
+            creds = Credentials.from_authorized_user_file(str(CREDS_PATH), SCOPES)
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+                with open(CREDS_PATH, 'w', encoding='utf-8') as f:
+                    f.write(creds.to_json())
+                # Test connection
+                service = build('drive', 'v3', credentials=creds)
+                about = service.about().get(fields="user").execute()
+                return True
+        except Exception:
+            pass  # Proceed with full re-authentication
+
+    # Step 2: Full OAuth flow via console
+    if not client_secrets_path.exists():
+        return False
+
+    flow = InstalledAppFlow.from_client_secrets_file(str(client_secrets_path), SCOPES)
+
+    try:
+        creds = flow.run_local_server(port=8085, open_browser=False)
+    except Exception:
+        return False
+
+    # Save new credentials
+    CREDS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(CREDS_PATH, 'w', encoding='utf-8') as f:
+        f.write(creds.to_json())
+
+    # Test connection
+    try:
+        service = build('drive', 'v3', credentials=creds)
+        about = service.about().get(fields="user,storageQuota").execute()
+        return True
+    except Exception:
+        return False
