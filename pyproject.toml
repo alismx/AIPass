@@ -44,6 +44,7 @@ dev = [
     "pytest",
     "pytest-cov",
     "ruff",
+    "coverage",
 ]
 
 [project.scripts]
@@ -54,7 +55,21 @@ seedgo = "aipass.seedgo.apps.seedgo:main"
 packages = ["src/aipass"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests"]
+testpaths = ["tests", "src"]
+norecursedirs = ["templates", "*.egg-info", ".git", ".venv", "__pycache__"]
+
+[tool.coverage.run]
+source = ["src/aipass"]
+omit = ["*/tests/*", "*/templates/*"]
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 70
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.",
+    "if TYPE_CHECKING:",
+]
 
 [tool.ruff]
 line-length = 120

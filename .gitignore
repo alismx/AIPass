@@ -24,9 +24,8 @@ site/
 .vscode/
 *.swp
 
-# AIPass global config (secrets live here)
-.aipass/
-!.aipass/aipass_global_prompt.md
+# AIPass global config — ignore secrets, track prompts
+.aipass/platform_keys.env
 
 .archive
 
@@ -38,6 +37,15 @@ flow.local.md
 artifacts/
 tools/
 aipass_json/
+
+# JSON — runtime data, constantly changing
+*.json
+
+# JSON exceptions — source templates and configs that ship with the package
+!**/json_templates/**
+!**/pack.json
+!.claude/settings.json
+!pyrightconfig.json
 
 # Spawn templates MUST be tracked (agents need these files to build from)
 !src/aipass/spawn/templates/**/.trinity/
@@ -54,17 +62,43 @@ aipass_json/
 !src/aipass/spawn/templates/**/tools/**
 !src/aipass/spawn/templates/**/DASHBOARD.local.json
 !src/aipass/spawn/templates/**/flow.local.md
+!src/aipass/spawn/templates/**/.seed/
+!src/aipass/spawn/templates/**/.seed/**
+!src/aipass/spawn/templates/**/.standards/
+!src/aipass/spawn/templates/**/.standards/**
+!src/aipass/spawn/templates/**/.backup/
+!src/aipass/spawn/templates/**/.backup/**
+!src/aipass/spawn/templates/**/.ai_mail.local/
+!src/aipass/spawn/templates/**/.ai_mail.local/**
+!src/aipass/spawn/templates/**/.claude/
+!src/aipass/spawn/templates/**/.claude/**
+!src/aipass/spawn/templates/**/*.json
 
 # Seedgo runtime artifacts (created by seedgo audit)
 .seed/
 .standards/
-# AIPASS_REGISTRY.json — NOT ignored. Ships with core modules pre-registered.
 
 # Runtime log files (created by prax logging)
 **/logs
 
-# Claude local settings (per-branch, not source code)
-.claude/
+# Claude — ignore runtime dirs, track config + hooks + sounds
+.claude/file-history/
+.claude/debug/
+.claude/downloads/
+.claude/ide/
+.claude/paste-cache/
+.claude/projects/
+.claude/session-env/
+.claude/shell-snapshots/
+.claude/statsig/
+.claude/tasks/
+.claude/todos/
+.claude/user_data/
+.claude/.credentials.json
+.claude/history.jsonl
+.claude/hooks/__pycache__/
+.claude/hooks/.last_diagnostics_file
+.claude/hooks/.pre_compact_log
 
 # setup-workspace.sh — tracked, needed for Docker build
 src/aipass/trigger/trigger_json/trigger_data.json

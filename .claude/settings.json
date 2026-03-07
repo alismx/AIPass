@@ -27,6 +27,22 @@
             "command": "python3 .claude/hooks/branch_prompt_loader.py"
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/identity_injector.py"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/email_notification.py"
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -36,6 +52,17 @@
           {
             "type": "command",
             "command": "python3 .claude/hooks/tool_use_sound.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|MultiEdit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/auto_fix_diagnostics.py"
           }
         ]
       }
@@ -56,6 +83,28 @@
           {
             "type": "command",
             "command": "python3 .claude/hooks/notification_sound.py"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": "manual",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/pre_compact.py",
+            "timeout": 60
+          }
+        ]
+      },
+      {
+        "matcher": "auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 .claude/hooks/pre_compact.py",
+            "timeout": 60
           }
         ]
       }
