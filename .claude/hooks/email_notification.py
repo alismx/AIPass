@@ -30,11 +30,12 @@ def find_branch_root() -> Path | None:
 
     search_path = cwd
     for _ in range(10):
+        has_trinity = (search_path / ".trinity").is_dir()
         has_id = list(search_path.glob("*.id.json"))
         has_apps = (search_path / "apps").is_dir()
-        has_mail = (search_path / "ai_mail.local").is_dir()
+        has_mail = (search_path / ".ai_mail.local").is_dir() or (search_path / "ai_mail.local").is_dir()
 
-        if (has_id or has_apps or has_mail) and search_path != repo_root:
+        if (has_trinity or has_id or has_apps or has_mail) and search_path != repo_root:
             return search_path
 
         if search_path == repo_root:
@@ -50,7 +51,10 @@ def find_branch_root() -> Path | None:
 
 def count_new_emails(branch_root: Path) -> int:
     """Count new (unread) emails in the branch's inbox."""
-    inbox_path = branch_root / "ai_mail.local" / "inbox.json"
+    # Check both patterns: .ai_mail.local (canonical) and ai_mail.local (legacy)
+    inbox_path = branch_root / ".ai_mail.local" / "inbox.json"
+    if not inbox_path.exists():
+        inbox_path = branch_root / "ai_mail.local" / "inbox.json"
 
     if not inbox_path.exists():
         return 0
@@ -59,7 +63,8 @@ def count_new_emails(branch_root: Path) -> int:
         with open(inbox_path, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        messages = data.get("messages", [])
+        # Handle both formats: {"messages": [...]} and bare [...]
+        messages = data if isinstance(data, list) else data.get("messages", [])
         count = 0
         for msg in messages:
             if msg.get("status") == "new":

@@ -31,9 +31,10 @@ def find_branch_root() -> Path | None:
     search_path = cwd
     while search_path >= repo_root:
         has_apps = (search_path / "apps").is_dir()
+        has_trinity = (search_path / ".trinity").is_dir()
         has_id = list(search_path.glob("*.id.json"))
 
-        if has_apps or has_id:
+        if has_apps and (has_trinity or has_id):
             return search_path
 
         if search_path == repo_root:
@@ -44,7 +45,12 @@ def find_branch_root() -> Path | None:
 
 
 def find_id_file(branch_root: Path) -> Path | None:
-    """Find the id.json file for a branch."""
+    """Find the identity file for a branch (.trinity/passport.json or *.id.json)."""
+    # AIPass pattern: .trinity/passport.json
+    passport = branch_root / ".trinity" / "passport.json"
+    if passport.exists():
+        return passport
+    # Dev-Pass fallback: *.id.json
     id_files = list(branch_root.glob("*.id.json"))
     if id_files:
         return id_files[0]

@@ -118,3 +118,4 @@ dropbox
 system_logs
 AIPASS_REGISTRY.json
 docker.md
+*.json
