@@ -144,18 +144,18 @@ def regenerate_template_registry(target_dir):
     """
     Regenerate .template_registry.json with fresh SHA-256 hashes.
 
-    Scans all files in the agent directory and builds a new registry
+    Scans all files in the spawn directory and builds a new registry
     with accurate content hashes.
 
     Args:
-        target_dir: Path to the spawned agent directory
+        target_dir: Path to the spawned branch directory
     """
     target_dir = Path(target_dir)
-    agent_dir = target_dir / ".agent"
-    if not agent_dir.exists():
+    spawn_dir = target_dir / ".spawn"
+    if not spawn_dir.exists():
         return
 
-    registry_file = agent_dir / ".template_registry.json"
+    registry_file = spawn_dir / ".template_registry.json"
 
     files = {}
     directories = {}
@@ -165,8 +165,8 @@ def regenerate_template_registry(target_dir):
     for item in sorted(target_dir.rglob("*")):
         rel = item.relative_to(target_dir)
 
-        # Skip .agent internal files and __pycache__
-        if ".agent" in rel.parts or "__pycache__" in rel.parts:
+        # Skip .spawn internal files and __pycache__
+        if ".spawn" in rel.parts or "__pycache__" in rel.parts:
             continue
 
         if item.is_dir():

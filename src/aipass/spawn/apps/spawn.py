@@ -34,7 +34,12 @@ def print_help():
     console.print()
     console.print("[bold cyan]COMMANDS:[/bold cyan]")
     console.print()
-    console.print("  [green]create[/green]    Create a new agent from template")
+    console.print("  [green]create[/green]               Create a new branch from template")
+    console.print("  [dim]update <@branch|--all>[/dim]  Update branch(es) from template  [dim][not yet implemented][/dim]")
+    console.print("  [dim]delete <@branch>[/dim]        Archive and deregister branch     [dim][not yet implemented][/dim]")
+    console.print("  [dim]sync-registry[/dim]           Repair registry against filesystem [dim][not yet implemented][/dim]")
+    console.print("  [dim]sync-templates[/dim]          Pull managed files from source     [dim][not yet implemented][/dim]")
+    console.print("  [dim]regenerate-registry[/dim]     Regenerate template registry hashes [dim][not yet implemented][/dim]")
     console.print()
     console.print("[bold cyan]OPTIONS:[/bold cyan]")
     console.print()
@@ -106,6 +111,20 @@ def main():
 
     if command == "create":
         return handle_create(remaining)
+
+    # Stub commands — planned but not yet implemented
+    stub_commands = {
+        "update": "Update branch(es) from template",
+        "delete": "Archive and deregister branch",
+        "sync-registry": "Repair registry against filesystem",
+        "sync-templates": "Pull managed files from source branches",
+        "regenerate-registry": "Regenerate template registry hashes",
+    }
+
+    if command in stub_commands:
+        console.print(f"[yellow]'{command}' is not yet implemented.[/yellow]")
+        console.print(f"[dim]Planned: {stub_commands[command]}[/dim]")
+        return 1
 
     console.print(f"[red]Unknown command: {command}[/red]")
     console.print("[dim]Run 'drone @spawn --help' for available commands[/dim]")

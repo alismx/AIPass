@@ -2,9 +2,29 @@
   "service": "ai_mail",
   "last_updated": "2026-03-07",
   "branch_stats": {
+    "API": {
+      "unread": 0,
+      "total": 0
+    },
+    "TRIGGER": {
+      "unread": 0,
+      "total": 0
+    },
+    "DRONE": {
+      "unread": 0,
+      "total": 0
+    },
+    "CLI": {
+      "unread": 0,
+      "total": 0
+    },
+    "PRAX": {
+      "unread": 0,
+      "total": 0
+    },
     "SPAWN": {
-      "unread": 2,
-      "total": 2
+      "unread": 4,
+      "total": 4
     },
     "DEVPULSE": {
       "unread": 1,
@@ -13,10 +33,18 @@
     "AI_MAIL": {
       "unread": 0,
       "total": 3
+    },
+    "FLOW": {
+      "unread": 0,
+      "total": 0
+    },
+    "SEEDGO": {
+      "unread": 0,
+      "total": 0
     }
   },
   "system_totals": {
-    "total_unread": 3,
-    "total_messages": 6
+    "total_unread": 5,
+    "total_messages": 8
   }
 }

@@ -126,7 +126,7 @@ class TestSpawnAgent:
 
     def test_template_registry_regenerated(self, tmp_agent, tmp_registry):
         spawn_agent(str(tmp_agent), registry_path=str(tmp_registry))
-        reg_file = tmp_agent / ".agent" / ".template_registry.json"
+        reg_file = tmp_agent / ".spawn" / ".template_registry.json"
         assert reg_file.exists()
         data = json.loads(reg_file.read_text())
         assert data["metadata"]["generated"] is True

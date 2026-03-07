@@ -509,6 +509,7 @@ def audit_branch(branch: Dict[str, str], bypass_rules: list) -> Dict:
         'cli_flags_violations': [],
         'json_structure_violations': json_structure_violations,
         'shebang_violations': shebang_violations,
+        'log_structure_violations': log_structure_violations,
         'deprecated_patterns': deprecated_patterns,
         'files_checked': len(all_file_results),
         'type_errors': type_errors,

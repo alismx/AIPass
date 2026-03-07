@@ -184,6 +184,26 @@ def print_branch_summary(audit_result: Dict, system_averages: Dict[str, int] | N
             for issue in violation.get('issues', []):
                 console.print(f"      [dim]• {issue}[/dim]")
 
+    # Show SHEBANG violations (no #!/... in pip packages)
+    shebang_violations = audit_result.get('shebang_violations', [])
+    if shebang_violations:
+        console.print()
+        console.print(f"  [bold red]SHEBANG VIOLATIONS ({len(shebang_violations)} files):[/bold red]")
+        for violation in shebang_violations:
+            console.print(f"    [red]✗[/red] {violation['path']} [dim](score: {violation['score']}%)[/dim]")
+            for issue in violation.get('issues', []):
+                console.print(f"      [dim]• {issue}[/dim]")
+
+    # Show LOG_STRUCTURE violations (log directory/file structure)
+    log_structure_violations = audit_result.get('log_structure_violations', [])
+    if log_structure_violations:
+        console.print()
+        console.print(f"  [bold red]LOG_STRUCTURE VIOLATIONS ({len(log_structure_violations)} files):[/bold red]")
+        for violation in log_structure_violations:
+            console.print(f"    [red]✗[/red] {violation['path']} [dim](score: {violation['score']}%)[/dim]")
+            for issue in violation.get('issues', []):
+                console.print(f"      [dim]• {issue}[/dim]")
+
     # Show TYPE ERRORS (pyright diagnostics)
     type_errors = audit_result.get('type_errors', 0)
     type_error_files = audit_result.get('type_error_files', [])

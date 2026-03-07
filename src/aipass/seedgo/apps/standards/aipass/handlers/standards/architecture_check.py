@@ -24,10 +24,10 @@ from aipass.seedgo.apps.standards.aipass.handlers.config.ignore_handler import g
 
 PACK_ROOT = Path(__file__).resolve().parent.parent.parent  # standards/ -> handlers/ -> aipass/
 
-# Template registry path - configurable for environments where Cortex is not available
-# In production AIPass, this points to cortex/templates/branch_template/.template_registry.json
+# Template registry path - generated from spawn/templates/agent.template via template_scanner
+# Points to the registry in seedgo's json_templates directory
 # Set to None to skip template baseline checks
-TEMPLATE_REGISTRY_PATH: Optional[Path] = None
+TEMPLATE_REGISTRY_PATH: Optional[Path] = PACK_ROOT / "json_templates" / ".template_registry.json"
 
 
 def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:

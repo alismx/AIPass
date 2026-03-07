@@ -285,7 +285,7 @@ def extract_content_from_plan(plan_path: Path) -> str:
             "## Issues Log", "## Master Plan Notes", "## Final Completion Checklist",
             # Proposal template
             "## What I Want to Work On", "## Why This Matters", "## What I'd Need",
-            "## My Approach", "## Current State", "## Questions for DEV_CENTRAL",
+            "## My Approach", "## Current State", "## Questions for Devpulse",
             # Legacy section names (backward compatibility)
             "## Work Log", "## Objectives",
         }

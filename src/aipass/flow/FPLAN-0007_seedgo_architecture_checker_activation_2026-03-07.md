@@ -1,7 +1,7 @@
-# FPLAN-{number} - {subject}
+# FPLAN-0007 - Seedgo Architecture Checker Activation
 
-**Created**: {today}
-**Branch**: {location}
+**Created**: 2026-03-07
+**Branch**: flow
 **Status**: Active
 **Type**: Standard Plan
 
@@ -200,8 +200,8 @@ WHEN COMPLETE:
 
 ## Execution Log
 
-### {today}
-- [ ] Created FPLAN-{number}
+### 2026-03-07
+- [ ] Created FPLAN-0007
 - [ ] Agent deployed for: [task]
 - [ ] Agent completed: [outcome]
 - [ ] Seed checklist passed: [file]
@@ -211,7 +211,7 @@ WHEN COMPLETE:
 
 **If production stops (critical blocker):**
 ```bash
-drone @ai_mail send @devpulse "PRODUCTION STOPPED: FPLAN-{number}" "Issue: [description]. Attempted: [what was tried]. Awaiting guidance."
+drone @ai_mail send @devpulse "PRODUCTION STOPPED: FPLAN-0007" "Issue: [description]. Attempted: [what was tried]. Awaiting guidance."
 ```
 
 ---
@@ -235,7 +235,7 @@ drone @ai_mail send @devpulse "PRODUCTION STOPPED: FPLAN-{number}" "Issue: [desc
 - [ ] README.md updated (if build changed status/capabilities)
 - [ ] Status email sent to @devpulse:
   ```bash
-  drone @ai_mail send @devpulse "FPLAN-{number} Complete" "Summary of what was done, any issues, outcomes"
+  drone @ai_mail send @devpulse "FPLAN-0007 Complete" "Summary of what was done, any issues, outcomes"
   ```
 
 **Completion Order:** Memories → README → Email (README before email - don't report complete with stale docs)
@@ -249,5 +249,5 @@ drone @ai_mail send @devpulse "PRODUCTION STOPPED: FPLAN-{number}" "Issue: [desc
 
 When all boxes checked:
 ```bash
-drone @flow close FPLAN-{number}
+drone @flow close FPLAN-0007
 ```

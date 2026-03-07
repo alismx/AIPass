@@ -1,7 +1,7 @@
-# FPLAN-{number} - {subject}
+# FPLAN-0005 - Spawn Branch Scaffold Audit
 
-**Created**: {today}
-**Branch**: {location}
+**Created**: 2026-03-07
+**Branch**: flow
 **Status**: Active
 **Type**: Standard Plan
 
@@ -131,13 +131,39 @@ drone list @branch                     # Commands for branch
 ## Planning Phase
 
 ### Goal
-[What do you want to achieve? Specific end state.]
+All 10 branches are fully scaffolded citizens — each has `.trinity/` identity, `.aipass/` prompt, `.ai_mail.local/` mailbox, and all standard dirs from the spawn template. No code is overwritten — only missing pieces are added.
+
+### Current State (Audit)
+
+| Branch | .trinity/ | .aipass/ | .ai_mail.local/ | logs/ | Status |
+|--------|:---------:|:--------:|:---------------:|:-----:|--------|
+| **spawn** | YES | YES | YES | YES | COMPLETE |
+| **devpulse** | YES | YES | YES | YES | COMPLETE |
+| **ai_mail** | YES | MISSING | MISSING | YES | PARTIAL |
+| **flow** | MISSING | MISSING | MISSING | YES | NEEDS SCAFFOLD |
+| **prax** | MISSING | MISSING | MISSING | YES | NEEDS SCAFFOLD |
+| **seedgo** | MISSING | MISSING | MISSING | YES | NEEDS SCAFFOLD |
+| **trigger** | MISSING | MISSING | MISSING | YES | NEEDS SCAFFOLD |
+| **api** | MISSING | MISSING | MISSING | MISSING | NEEDS SCAFFOLD |
+| **cli** | MISSING | MISSING | MISSING | MISSING | NEEDS SCAFFOLD |
+| **drone** | MISSING | MISSING | MISSING | MISSING | NEEDS SCAFFOLD |
 
 ### Approach
-[How will agents tackle this? What instructions will they need?]
+Deploy agents (one or more per branch) to add missing scaffold. Each agent:
+1. Reads spawn's template (`src/aipass/spawn/templates/agent.template/`) to understand the standard
+2. Reads the target branch to see what already exists
+3. Adds ONLY what's missing — never overwrites existing files
+4. Fills `.trinity/passport.json` with correct branch name, role, email (@name)
+5. Creates stub `.aipass/branch_system_prompt.md` with branch-specific context
+6. Sets up `.ai_mail.local/` mailbox structure
+
+**Critical:** Existing code in `apps/`, `README.md`, etc. must NOT be touched. This is additive only.
 
 ### Reference Documents
-[List any planning docs, specs, or examples to reference]
+- Template source: `src/aipass/spawn/templates/agent.template/`
+- Mock example: `src/aipass/spawn/templates/agent_mock_branch/`
+- Registry: `AIPASS_REGISTRY.json` (branch emails, paths, roles)
+- Completed examples: `src/aipass/spawn/` and `src/aipass/devpulse/` (reference citizens)
 
 ---
 
@@ -200,8 +226,8 @@ WHEN COMPLETE:
 
 ## Execution Log
 
-### {today}
-- [ ] Created FPLAN-{number}
+### 2026-03-07
+- [ ] Created FPLAN-0005
 - [ ] Agent deployed for: [task]
 - [ ] Agent completed: [outcome]
 - [ ] Seed checklist passed: [file]
@@ -211,7 +237,7 @@ WHEN COMPLETE:
 
 **If production stops (critical blocker):**
 ```bash
-drone @ai_mail send @devpulse "PRODUCTION STOPPED: FPLAN-{number}" "Issue: [description]. Attempted: [what was tried]. Awaiting guidance."
+drone @ai_mail send @devpulse "PRODUCTION STOPPED: FPLAN-0005" "Issue: [description]. Attempted: [what was tried]. Awaiting guidance."
 ```
 
 ---
@@ -235,13 +261,13 @@ drone @ai_mail send @devpulse "PRODUCTION STOPPED: FPLAN-{number}" "Issue: [desc
 - [ ] README.md updated (if build changed status/capabilities)
 - [ ] Status email sent to @devpulse:
   ```bash
-  drone @ai_mail send @devpulse "FPLAN-{number} Complete" "Summary of what was done, any issues, outcomes"
+  drone @ai_mail send @devpulse "FPLAN-0005 Complete" "Summary of what was done, any issues, outcomes"
   ```
 
 **Completion Order:** Memories → README → Email (README before email - don't report complete with stale docs)
 
 ### Definition of Done
-[What specifically defines complete for this plan?]
+All 10 branches have: `.trinity/passport.json`, `.trinity/local.json`, `.trinity/observations.json`, `.aipass/branch_system_prompt.md`, `.ai_mail.local/inbox.json`, `logs/` directory. No existing code was overwritten. `drone @seedgo audit aipass` shows improvement across the board.
 
 ---
 
@@ -249,5 +275,5 @@ drone @ai_mail send @devpulse "PRODUCTION STOPPED: FPLAN-{number}" "Issue: [desc
 
 When all boxes checked:
 ```bash
-drone @flow close FPLAN-{number}
+drone @flow close FPLAN-0005
 ```

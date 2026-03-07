@@ -59,15 +59,20 @@ def get_current_user() -> Dict:
     if not branch_info:
         raise RuntimeError(
             "BRANCH DETECTION FAILED: Could not detect branch from current directory.\n"
-            "AI_MAIL must be called from within a branch directory (with [BRANCH].id.json).\n"
+            "AI_MAIL must be called from within a branch directory (with .trinity/passport.json).\n"
             f"Current directory: {Path.cwd()}\n"
             "No fallback configured - this is intentional to catch bugs."
         )
 
     # Extract info from branch_info (from BRANCH_REGISTRY.json)
+    from .branch_detection import BRANCH_REGISTRY_PATH
+    _repo_root = BRANCH_REGISTRY_PATH.parent
+
     branch_name = branch_info.get("name")
     path_str = branch_info.get("path")
     branch_path = Path(path_str) if path_str else None
+    if branch_path and not branch_path.is_absolute():
+        branch_path = (_repo_root / branch_path).resolve()
     email = branch_info.get("email")
 
     if not all([branch_name, branch_path, email]):

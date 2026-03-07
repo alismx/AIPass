@@ -50,8 +50,8 @@ def handle_ping(verbose: bool = False) -> bool:
     """Execute ping command - orchestrate health check"""
     try:
         branch_name, cwd = get_branch_context()
-        local_file = cwd / f"{branch_name}.local.json"
-        obs_file = cwd / f"{branch_name}.observations.json"
+        local_file = cwd / ".trinity" / "local.json"
+        obs_file = cwd / ".trinity" / "observations.json"
 
         local_count = count_file_lines(local_file)
         obs_count = count_file_lines(obs_file)
@@ -69,8 +69,8 @@ def handle_ping(verbose: bool = False) -> bool:
 
         if verbose:
             console.print(f"Ping successful for {branch_name}")
-            console.print(f"  local.json: {local_count} lines ({local_status_code})")
-            console.print(f"  observations.json: {obs_count} lines ({obs_status_code})")
+            console.print(f"  .trinity/local.json: {local_count} lines ({local_status_code})")
+            console.print(f"  .trinity/observations.json: {obs_count} lines ({obs_status_code})")
         return True
     except Exception as e:
         logger.error(f"Ping failed: {e}")
@@ -83,8 +83,8 @@ def handle_status() -> bool:
     """Show current memory health status"""
     try:
         branch_name, cwd = get_branch_context()
-        local_file = cwd / f"{branch_name}.local.json"
-        obs_file = cwd / f"{branch_name}.observations.json"
+        local_file = cwd / ".trinity" / "local.json"
+        obs_file = cwd / ".trinity" / "observations.json"
 
         local_count = count_file_lines(local_file)
         obs_count = count_file_lines(obs_file)
@@ -93,8 +93,8 @@ def handle_status() -> bool:
 
         console.print(f"\nBranch: {branch_name}\nDirectory: {cwd}")
         console.print(f"\nMemory Health Status:")
-        console.print(f"  local.json:        {local_count} lines ({local_status})")
-        console.print(f"  observations.json: {obs_count} lines ({obs_status})\n")
+        console.print(f"  .trinity/local.json:        {local_count} lines ({local_status})")
+        console.print(f"  .trinity/observations.json: {obs_count} lines ({obs_status})\n")
         return True
     except Exception as e:
         logger.error(f"Status check failed: {e}")

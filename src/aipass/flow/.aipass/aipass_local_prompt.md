@@ -1,5 +1,5 @@
 # FLOW Branch-Local Context
-<!-- Source: /home/aipass/aipass_business/AIPass/src/aipass/flow/.aipass/branch_system_prompt.md -->
+<!-- Source: src/aipass/flow/.aipass/aipass_local_prompt.md -->
 
 > Auto-created by aipass init. Customize for your branch.
 

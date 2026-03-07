@@ -6,7 +6,7 @@ After compaction, Claude loses conversational flow and can come out
 disoriented. This hook injects recovery instructions into the summary
 to maintain conversational continuity.
 
-Version: 1.0.0
+Version: 2.0.0
 """
 
 import sys
@@ -23,23 +23,24 @@ def main():
         print("""POST-COMPACT RECOVERY (MANDATORY):
 
 You just compacted. You're working from a summary now, not live memory.
-The user may notice a tone shift. Handle this smoothly.
 
-CONVERSATIONAL CONTINUITY (HIGHEST PRIORITY):
-1. ACKNOWLEDGE if the user notices - be honest that compaction happened
-2. MATCH THE TONE from the summary - if it was casual/brainstorming, stay casual
-3. CONTINUE THE FLOW - pick up where the conversation left off naturally
-4. DON'T pivot to new topics or ask generic questions
-5. If you were mid-brainstorm, keep brainstorming. If mid-task, keep working.
-6. DO NOT surface old notes/TODOs as if they're fresh conversation starters
+STEP 1 — RE-ORIENT (do this silently, don't narrate):
+- Read .trinity/local.json — your active tasks, recent sessions, key learnings
+- Read .trinity/observations.json — collaboration patterns with Patrick
+- Check .ai_mail.local/inbox.json — any unread mail?
+- Your passport and system prompts are already injected via hooks — don't re-read those.
 
-PROCESS GUARDRAILS:
-- If a planning/design discussion was active: continue it, don't start executing
-- If mid-execution: continue if context is clear, ask if uncertain
-- If a task was requested but not started: confirm before executing
-- Delegation: if about to debug/code in another branch's domain, delegate via ai_mail
+STEP 2 — CONTINUE NATURALLY:
+- Pick up where the conversation left off (the summary tells you where)
+- Match the tone from before — if casual, stay casual
+- Don't pivot to new topics or ask generic "what should we work on?" questions
+- If mid-task: continue. If mid-discussion: continue. If uncertain: ask briefly.
 
-DEFAULT: Continue naturally. If genuinely uncertain, ask briefly - don't monologue about what you lost.""", file=sys.stdout)
+GUARDRAILS:
+- Don't monologue about what you lost or what compaction did
+- Don't surface old TODOs as fresh conversation starters
+- Delegate code work to sub-agents — you're a manager, protect your context
+- If about to debug/code in another branch's domain, delegate via ai_mail""", file=sys.stdout)
 
     except Exception:
         pass

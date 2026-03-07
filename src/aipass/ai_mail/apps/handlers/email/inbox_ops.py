@@ -114,7 +114,7 @@ if __name__ == "__main__":
     console.print("  ✗ CANNOT import parent modules")
     console.print()
     console.print("USAGE FROM MODULES:")
-    console.print("  from ai_mail.apps.handlers.email.inbox_ops import load_inbox")
+    console.print("  from aipass.ai_mail.apps.handlers.email.inbox_ops import load_inbox")
     console.print("  inbox_data = load_inbox(Path('/path/to/inbox.json'))")
     console.print()
     console.print("="*70 + "\n")

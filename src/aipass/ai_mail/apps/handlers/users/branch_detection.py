@@ -19,7 +19,7 @@
 Branch Auto-Detection Handler
 
 Detects which branch is calling AI_MAIL based on PWD/CWD.
-Walks up directory tree to find branch root (has [BRANCH].id.json file).
+Walks up directory tree to find branch root (has .trinity/passport.json).
 """
 
 # =============================================
@@ -52,7 +52,7 @@ def detect_branch_from_pwd() -> Dict | None:
     """
     Detect which branch is calling based on current working directory.
 
-    Walks up directory tree from PWD to find branch root (directory with [BRANCH].id.json).
+    Walks up directory tree from PWD to find branch root (directory with .trinity/passport.json).
     Then looks up branch info in BRANCH_REGISTRY.json.
 
     Returns:
@@ -91,8 +91,8 @@ def find_branch_root(start_path: Path) -> Path | None:
     """
     Walk up directory tree to find branch root.
 
-    Branch root = directory containing a [BRANCH_NAME].id.json file.
-    Example: src/aipass/seedgo/ contains SEED.id.json
+    Branch root = directory containing .trinity/passport.json.
+    Example: src/aipass/seedgo/ contains .trinity/passport.json
 
     Args:
         start_path: Directory to start searching from (usually PWD)
@@ -104,11 +104,7 @@ def find_branch_root(start_path: Path) -> Path | None:
 
     # Walk up directory tree (max 10 levels to prevent infinite loop)
     for _ in range(10):
-        # Check for dev-pass pattern: [BRANCH].id.json
-        for _ in current.glob("*.id.json"):
-            return current
-
-        # Check for public/trinity pattern: .trinity/passport.json
+        # Check for .trinity/passport.json (AIPass identity pattern)
         if (current / ".trinity" / "passport.json").exists():
             return current
 
@@ -219,7 +215,7 @@ if __name__ == "__main__":
     console.print()
     console.print("DETECTION FLOW:")
     console.print("  1. Get current working directory (PWD)")
-    console.print("  2. Walk up tree to find [BRANCH].id.json file")
+    console.print("  2. Walk up tree to find .trinity/passport.json")
     console.print("  3. Look up branch path in BRANCH_REGISTRY.json")
     console.print("  4. Return branch info (name, email, path, etc.)")
     console.print()

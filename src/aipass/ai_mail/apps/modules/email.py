@@ -40,6 +40,7 @@ from typing import List
 
 # Infrastructure (package-relative)
 _AI_MAIL_DIR = Path(__file__).resolve().parents[2]  # ai_mail/
+_REPO_ROOT = _AI_MAIL_DIR.parents[1]  # repo root (contains AIPASS_REGISTRY.json)
 
 from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.cli.apps.modules import console
@@ -454,6 +455,8 @@ def send_email_direct(to_branch: str, subject: str, message: str, auto_execute: 
             branch_info = get_branch_by_email(email_addr)
             if branch_info:
                 branch_path = Path(branch_info["path"])
+                if not branch_path.is_absolute():
+                    branch_path = (_REPO_ROOT / branch_path).resolve()
                 user_info = {
                     "email_address": email_addr,
                     "display_name": branch_info["name"],

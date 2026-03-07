@@ -281,7 +281,10 @@ def deliver_email_to_branch(
     if _is_private_branch_email(to_branch) and sender_email != to_branch:
         return False, f"Cannot deliver to private branch: {to_branch}"
 
-    branch_path = Path(branches[to_branch])
+    raw_path = branches[to_branch]
+    branch_path = Path(raw_path)
+    if not branch_path.is_absolute():
+        branch_path = (_REPO_ROOT / branch_path).resolve()
 
     # Find the branch's .ai_mail.local/inbox.json file
     if branch_path == Path("/") or branch_path == _REPO_ROOT:
@@ -517,7 +520,7 @@ if __name__ == "__main__":
     console.print("  - CANNOT import parent modules")
     console.print()
     console.print("USAGE FROM MODULES:")
-    console.print("  from ai_mail.apps.handlers.email.delivery import deliver_email_to_branch")
-    console.print("  from ai_mail.apps.handlers.email.delivery import get_all_branches")
+    console.print("  from aipass.ai_mail.apps.handlers.email.delivery import deliver_email_to_branch")
+    console.print("  from aipass.ai_mail.apps.handlers.email.delivery import get_all_branches")
     console.print()
     console.print("="*70 + "\n")

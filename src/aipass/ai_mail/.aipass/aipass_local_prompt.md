@@ -1,5 +1,5 @@
 # AI_MAIL Branch-Local Context
-<!-- Source: /home/aipass/aipass_business/AIPass/src/aipass/ai_mail/.aipass/branch_system_prompt.md -->
+<!-- Source: src/aipass/ai_mail/.aipass/aipass_local_prompt.md -->
 
 > Auto-created by aipass init. Customize for your branch.
 
