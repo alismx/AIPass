@@ -27,7 +27,7 @@ from aipass.prax.apps.modules.logger import system_logger as logger
 
 # Path to the agent template directory (relative to this file)
 _SPAWN_ROOT = Path(__file__).parents[2]  # spawn/
-_TEMPLATE_DIR = _SPAWN_ROOT / "templates" / "agent.template"
+_TEMPLATE_DIR = _SPAWN_ROOT / "templates" / "builder"
 
 _BRANCH_META_DIR = ".spawn"
 _BRANCH_META_FILE = ".branch_meta.json"
@@ -38,9 +38,17 @@ _TEMPLATE_REGISTRY_FILE = ".template_registry.json"
 # PATH HELPERS
 # =============================================================================
 
-def get_template_dir() -> Path:
-    """Return path to the agent template directory (spawn/templates/agent.template/)."""
-    return _TEMPLATE_DIR
+def get_template_dir(citizen_class: str = "builder") -> Path:
+    """Return path to template directory for a citizen class.
+
+    Args:
+        citizen_class: Name of the citizen class. Defaults to "builder".
+
+    Returns:
+        Path to the template directory.
+    """
+    from aipass.spawn.apps.handlers.class_registry import get_template_dir as _class_get_template_dir
+    return _class_get_template_dir(citizen_class)
 
 
 # =============================================================================
@@ -79,7 +87,7 @@ def load_template_registry(template_dir: Path) -> Optional[dict]:
     """Load .spawn/.template_registry.json from a template directory.
 
     Args:
-        template_dir: Path to the template directory (e.g. agent.template/).
+        template_dir: Path to the template directory (e.g. builder/).
 
     Returns:
         Parsed dict of the template registry, or None if missing/unreadable.

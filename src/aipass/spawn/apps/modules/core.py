@@ -29,7 +29,7 @@ from aipass.spawn.apps.handlers.file_ops import copy_template, rename_placeholde
 from aipass.spawn.apps.handlers.registry import find_registry, add_to_registry, get_next_citizen_number
 
 # Default template location (relative to spawn package root)
-DEFAULT_TEMPLATE = Path(__file__).parents[2] / "templates" / "agent.template"
+DEFAULT_TEMPLATE = Path(__file__).parents[2] / "templates" / "builder"
 
 
 def handle_command(command: str, args: List[str]) -> bool:
@@ -76,7 +76,7 @@ def handle_command(command: str, args: List[str]) -> bool:
 
 
 def _spawn_agent(target_path, role="", traits="", purpose="", profile=None,
-                 template_dir=None, registry_path=None):
+                 template_dir=None, registry_path=None, citizen_class="builder"):
     """
     Create a new AIPass agent from template.
 
@@ -86,8 +86,9 @@ def _spawn_agent(target_path, role="", traits="", purpose="", profile=None,
         traits: Agent's personality traits
         purpose: Agent's purpose (brief description)
         profile: AIPass profile override (default: auto-detect)
-        template_dir: Custom template directory (default: built-in agent.template)
+        template_dir: Custom template directory (default: class-based lookup)
         registry_path: Path to AIPASS_REGISTRY.json (default: auto-discover)
+        citizen_class: Citizen class name (default: "builder")
 
     Returns:
         Dict with creation results:
@@ -100,7 +101,11 @@ def _spawn_agent(target_path, role="", traits="", purpose="", profile=None,
             - error: str (only if success=False)
     """
     target = Path(target_path).resolve()
-    template = Path(template_dir) if template_dir else DEFAULT_TEMPLATE
+    if template_dir:
+        template = Path(template_dir)
+    else:
+        from aipass.spawn.apps.handlers.class_registry import get_template_dir as _class_get_template_dir
+        template = _class_get_template_dir(citizen_class)
 
     # Validate
     if target.exists():

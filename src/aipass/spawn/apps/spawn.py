@@ -23,23 +23,32 @@ from aipass.cli.apps.modules import console, header
 def print_help():
     """Display Rich-formatted help."""
     console.print()
-    header("SPAWN - Agent Creation System")
+    header("SPAWN - Branch Lifecycle Manager")
     console.print()
-    console.print("[dim]Create new AIPass agents from templates[/dim]")
+    console.print("[dim]Create, update, and manage AIPass branches with class-scoped templates[/dim]")
     console.print()
     console.print("[bold cyan]USAGE:[/bold cyan]")
     console.print()
-    console.print("  [dim]drone @spawn create <target_path> [options][/dim]")
+    console.print("  [dim]drone @spawn create [class] <target_path> [options][/dim]")
+    console.print("  [dim]drone @spawn passport <@dirname> [--role ...] [--purpose ...][/dim]")
+    console.print("  [dim]drone @spawn update <@branch | class --all> [--dry-run][/dim]")
     console.print("  [dim]drone @spawn --help[/dim]")
     console.print()
     console.print("[bold cyan]COMMANDS:[/bold cyan]")
     console.print()
-    console.print("  [green]create[/green]               Create a new branch from template")
-    console.print("  [green]update[/green] <@branch|--all>  Update branch(es) from template")
-    console.print("  [green]delete[/green] <@branch>        Archive and deregister branch")
-    console.print("  [green]sync-registry[/green]           Repair registry against filesystem")
-    console.print("  [green]sync-templates[/green]          Pull managed files from source")
-    console.print("  [dim]regenerate-registry[/dim]     Regenerate template registry hashes [dim][not yet implemented][/dim]")
+    console.print("  [green]create[/green] [class] <path>         Create a new branch from template")
+    console.print("  [green]passport[/green] <@dirname>           Grant birthright citizenship (minimal)")
+    console.print("  [green]update[/green] <@branch>              Update single branch (uses its class)")
+    console.print("  [green]update[/green] <class> --all          Update all branches of a class")
+    console.print("  [green]delete[/green] <@branch>              Archive and deregister branch")
+    console.print("  [green]sync-registry[/green]                 Repair registry against filesystem")
+    console.print("  [green]sync-templates[/green]                Pull managed files from source")
+    console.print("  [dim]regenerate-registry[/dim]           Regenerate template registry hashes [dim][not yet implemented][/dim]")
+    console.print()
+    console.print("[bold cyan]CITIZEN CLASSES:[/bold cyan]")
+    console.print()
+    console.print("  [green]builder[/green]      Full 3-layer scaffold (apps/, modules/, handlers/) [dim][default][/dim]")
+    console.print("  [green]birthright[/green]   Minimal citizenship (.trinity/, .aipass/, README.md)")
     console.print()
     console.print("[bold cyan]OPTIONS:[/bold cyan]")
     console.print()
@@ -48,17 +57,30 @@ def print_help():
     console.print("  [yellow]--purpose[/yellow]     Agent purpose (brief)")
     console.print("  [yellow]--template[/yellow]    Custom template directory")
     console.print("  [yellow]--registry[/yellow]    Path to AIPASS_REGISTRY.json")
+    console.print("  [yellow]--dry-run[/yellow]     Preview changes without modifying files")
+    console.print("  [yellow]--trace[/yellow]       Enable verbose logging")
     console.print()
 
 
 def handle_create(args):
-    """Handle the create command."""
+    """Handle the create command with optional citizen class."""
     from aipass.spawn.apps.modules.core import _spawn_agent as spawn_agent
+    from aipass.spawn.apps.handlers.class_registry import validate_class, get_default_class
 
     if not args:
         console.print("[red]Error: target path required[/red]")
-        console.print("[dim]Usage: drone @spawn create <target_path> [--role ...][/dim]")
+        console.print("[dim]Usage: drone @spawn create [class] <target_path> [--role ...][/dim]")
         return 1
+
+    # Check if first arg is a citizen class
+    citizen_class = get_default_class()
+    remaining_args = args
+    if validate_class(args[0]):
+        citizen_class = args[0]
+        remaining_args = args[1:]
+        if not remaining_args:
+            console.print("[red]Error: target path required after class name[/red]")
+            return 1
 
     parser = argparse.ArgumentParser(prog="spawn create", add_help=False)
     parser.add_argument("target_path")
@@ -68,7 +90,7 @@ def handle_create(args):
     parser.add_argument("--template", default=None)
     parser.add_argument("--registry", default=None)
 
-    parsed = parser.parse_args(args)
+    parsed = parser.parse_args(remaining_args)
 
     result = spawn_agent(
         target_path=parsed.target_path,
@@ -77,11 +99,13 @@ def handle_create(args):
         purpose=parsed.purpose,
         template_dir=parsed.template,
         registry_path=parsed.registry,
+        citizen_class=citizen_class,
     )
 
     if result["success"]:
         console.print()
         console.print(f"[green]Agent created: {result['branch_name']}[/green]")
+        console.print(f"  Class: {citizen_class}")
         console.print(f"  Path: {result['path']}")
         console.print(f"  Files: {result['files_copied']}")
         console.print(f"  Registry: {'updated' if result['registry_updated'] else 'not updated'}")
@@ -127,6 +151,10 @@ def main():
     if command == "sync-templates":
         from aipass.spawn.apps.modules.sync_templates import handle_sync_templates
         return handle_sync_templates(remaining)
+
+    if command == "passport":
+        from aipass.spawn.apps.modules.passport import handle_passport
+        return handle_passport(remaining)
 
     # Stub commands — planned but not yet implemented
     stub_commands = {

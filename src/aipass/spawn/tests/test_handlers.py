@@ -204,12 +204,12 @@ class TestGetTemplateDir:
     """Tests for get_template_dir()."""
 
     def test_returns_path(self):
-        """Should return a Path object pointing to agent.template."""
+        """Should return a Path object pointing to builder template."""
         from aipass.spawn.apps.handlers.meta_ops import get_template_dir
 
         result = get_template_dir()
         assert isinstance(result, Path)
-        assert result.name == "agent.template"
+        assert result.name == "builder"
 
 
 # =============================================================================

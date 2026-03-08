@@ -84,9 +84,16 @@ def update_branch(branch_name: str, dry_run: bool = False, trace: bool = False) 
         logger.info(f"[update] Resolved {branch_name} -> {branch_dir}")
 
     # ------------------------------------------------------------------
+    # 1b. Read citizen_class from passport
+    # ------------------------------------------------------------------
+    citizen_class = _read_citizen_class(branch_dir)
+    if trace:
+        logger.info(f"[update] Citizen class: {citizen_class}")
+
+    # ------------------------------------------------------------------
     # 2. Load template registry
     # ------------------------------------------------------------------
-    template_dir = get_template_dir()
+    template_dir = get_template_dir(citizen_class)
     template_registry = load_template_registry(template_dir)
     if template_registry is None:
         return _result(branch_name, False, counts, ["Failed to load template registry"], dry_run)
@@ -237,11 +244,12 @@ def update_branch(branch_name: str, dry_run: bool = False, trace: bool = False) 
     return _result(branch_name, success, counts, errors, dry_run)
 
 
-def update_all(dry_run: bool = False, trace: bool = False) -> list[dict]:
+def update_all(dry_run: bool = False, trace: bool = False, citizen_class: str | None = None) -> list[dict]:
     """Update all branches from AIPASS_REGISTRY.json.
 
     Iterates through all registered branches, calls update_branch() for each.
     Skips spawn itself (can't update yourself).
+    When citizen_class is specified, only updates branches of that class.
     Returns list of result dicts.
     """
     registry_path = find_registry()
@@ -262,6 +270,16 @@ def update_all(dry_run: bool = False, trace: bool = False) -> list[dict]:
             if trace:
                 logger.info("[update] Skipping spawn (self)")
             continue
+
+        # Check class filter if specified
+        if citizen_class:
+            branch_dir = _resolve_branch_path(lower_name)
+            if branch_dir and branch_dir.is_dir():
+                actual_class = _read_citizen_class(branch_dir)
+                if actual_class != citizen_class:
+                    if trace:
+                        logger.info(f"[update] Skipping {name} (class={actual_class}, filter={citizen_class})")
+                    continue
 
         if trace:
             logger.info(f"[update] Processing branch: {name}")
@@ -289,6 +307,22 @@ def update_all(dry_run: bool = False, trace: bool = False) -> list[dict]:
 # =============================================================================
 # INTERNAL EXECUTION FUNCTIONS
 # =============================================================================
+
+def _read_citizen_class(branch_dir: Path) -> str:
+    """Read citizen_class from a branch's passport.json.
+
+    Falls back to "builder" if passport doesn't exist or doesn't have
+    the citizen_class field (backward compatibility for pre-class branches).
+    """
+    passport_path = branch_dir / ".trinity" / "passport.json"
+    if not passport_path.exists():
+        return "builder"
+    try:
+        data = json.loads(passport_path.read_text(encoding="utf-8"))
+        return data.get("identity", {}).get("citizen_class", "builder")
+    except (json.JSONDecodeError, IOError):
+        return "builder"
+
 
 def _resolve_branch_path(branch_name: str) -> Path | None:
     """Resolve a branch name to its absolute directory path via the registry.

@@ -5,14 +5,6 @@
 # Date: 2025-11-08
 # Version: 1.0.0
 # Category: ai_mail/orchestrator
-#
-# CHANGELOG (Max 5 entries):
-#   - v1.0.0 (2025-11-08): Initial version - modular architecture
-#
-# CODE STANDARDS:
-#   - Entry point orchestrator pattern
-#   - Auto-discovers modules from modules/
-#   - Module interface: handle_command(command, args) -> bool
 # =============================================
 
 """

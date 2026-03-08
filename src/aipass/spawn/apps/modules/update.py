@@ -30,37 +30,56 @@ def handle_update(args: list[str]) -> int:
     """Parse args and dispatch to update_branch or update_all.
 
     Args patterns:
-        ["@branch"]              -> update single branch
-        ["--all"]                -> update all branches
-        ["--dry-run", "@branch"] -> preview mode
-        ["--dry-run", "--all"]   -> preview all
-        ["--trace", "@branch"]   -> verbose logging
+        ["@branch"]                -> update single branch (uses passport's class)
+        ["builder", "--all"]       -> update all builder-class branches
+        ["birthright", "--all"]    -> update all birthright-class branches
+        ["--all"]                  -> BLOCKED (must specify class)
+        ["--dry-run", "@branch"]   -> preview mode
+        ["--dry-run", "--all"]     -> BLOCKED
+        ["--trace", "@branch"]     -> verbose logging
 
     Returns exit code (0=success, 1=failure).
     """
     if not args:
-        console.print("[yellow]Usage: drone @spawn update <@branch|--all> [--dry-run] [--trace][/yellow]")
+        console.print("[yellow]Usage: drone @spawn update <@branch|class --all> [--dry-run] [--trace][/yellow]")
         console.print()
-        console.print("  [green]@branch[/green]    Update a single branch")
-        console.print("  [green]--all[/green]      Update all registered branches")
-        console.print("  [green]--dry-run[/green]  Preview changes without modifying files")
-        console.print("  [green]--trace[/green]    Enable verbose logging")
+        console.print("  [green]@branch[/green]           Update a single branch (uses its own class)")
+        console.print("  [green]builder --all[/green]     Update all builder-class branches")
+        console.print("  [green]birthright --all[/green]  Update all birthright-class branches")
+        console.print("  [green]--dry-run[/green]         Preview changes without modifying files")
+        console.print("  [green]--trace[/green]           Enable verbose logging")
         return 1
+
+    from aipass.spawn.apps.handlers.class_registry import validate_class, get_available_classes
 
     dry_run = "--dry-run" in args
     trace = "--trace" in args
 
-    # Filter out flags to find the target
-    targets = [a for a in args if not a.startswith("--")]
+    # Filter out flags to find positional args
+    positional = [a for a in args if not a.startswith("--")]
 
+    # Detect citizen class argument
+    citizen_class = None
+    targets = positional
+    if positional and validate_class(positional[0]):
+        citizen_class = positional[0]
+        targets = positional[1:]
+
+    # Handle --all
     if "--all" in args:
-        results = update_all(dry_run=dry_run, trace=trace)
+        if citizen_class is None:
+            classes = ", ".join(get_available_classes())
+            console.print(f"[red]Error: --all requires a citizen class[/red]")
+            console.print(f"[dim]Specify a class: drone @spawn update <class> --all[/dim]")
+            console.print(f"[dim]Available classes: {classes}[/dim]")
+            return 1
+
+        results = update_all(dry_run=dry_run, trace=trace, citizen_class=citizen_class)
         _print_all_summary(results, dry_run)
-        # Return 0 if all succeeded, 1 if any failed
         return 0 if all(r.get("success") for r in results) else 1
 
     if not targets:
-        console.print("[red]Error: specify a branch name (e.g. @prax) or --all[/red]")
+        console.print("[red]Error: specify a branch name (e.g. @prax) or use <class> --all[/red]")
         return 1
 
     # Take the first target, strip leading @

@@ -481,14 +481,21 @@ class TestHandleUpdate:
         meta_path = branch_dir / ".spawn" / ".branch_meta.json"
         assert not meta_path.exists()
 
-    def test_all_flag(self, tmp_path, template_dir, branch_dir, mock_registry):
-        """--all flag should trigger update_all."""
+    def test_all_flag_requires_class(self, tmp_path, template_dir, branch_dir, mock_registry):
+        """--all without a citizen class should be blocked."""
+        from aipass.spawn.apps.modules.update import handle_update
+
+        result = handle_update(["--all"])
+        assert result == 1
+
+    def test_all_flag_with_class(self, tmp_path, template_dir, branch_dir, mock_registry):
+        """--all with a citizen class should trigger update_all."""
         from aipass.spawn.apps.modules.update import handle_update
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
              patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
              patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
 
-            result = handle_update(["--all"])
+            result = handle_update(["builder", "--all"])
 
         assert result == 0

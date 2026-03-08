@@ -1,0 +1,7 @@
+{
+  "metadata": {
+    "description": "Maps template files to their authoritative source branches",
+    "note": "Source branch owns the canonical version. Template syncs from source."
+  },
+  "managed_files": {}
+}

@@ -19,7 +19,31 @@ DevPulse is the central coordination branch for AIPass. It plans, delegates, and
 
 ---
 
-## Architecture
+## Managed Directory — `src/aipass/`
+
+DevPulse orchestrates all branches under `src/aipass/`:
+
+```
+src/aipass/
+├── drone/          # Command routing — @ resolution, branch dispatch
+├── seedgo/         # Standards & compliance — audits, checkers, packs
+├── prax/           # Logging system — stack introspection, dual routing
+├── cli/            # CLI framework — argument parsing, command registry
+├── flow/           # Plan management — FPLANs, templates, tracking
+├── ai_mail/        # Inter-branch comms — inbox, dispatch, wake
+├── api/            # API layer — external interfaces
+├── trigger/        # Event system — log watchers, event handlers
+├── spawn/          # Branch lifecycle — create, update, delete, passport
+├── devpulse/       # Orchestration hub (you are here)
+├── daemon/         # Background scheduler — cron, plugins, monitoring
+├── backup/         # Backup utilities
+├── memory/         # Memory bank (planned)
+└── __init__.py
+```
+
+**10 registered branches:** drone, seedgo, prax, cli, flow, ai_mail, api, trigger, spawn, devpulse
+
+## DevPulse Architecture
 
 ```
 devpulse/

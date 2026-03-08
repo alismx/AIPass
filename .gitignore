@@ -1,106 +1,44 @@
-# Python
-__pycache__/
-*.py[cod]
-*.egg-info/
-dist/
-build/
-*.egg
-
-# Virtual environments
-venv/
+# Virtual environment
 .venv/
 
-# Environment
-.env
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
 
-# Tools
-.ruff_cache/
-
-# Docs
-site/
-
-# IDE
-.idea/
-.vscode/
-*.swp
-
-# AIPass global config — ignore secrets, track prompts
-.aipass/platform_keys.env
-
-.archive
-
-# Dev-Pass spawn artifacts (generated post-install, not source code)
+# AIPass runtime state (local to each installation)
+AIPASS_REGISTRY.json
 .trinity/
-.agent/
+.ai_mail.local/
+ai_mail.local/
 DASHBOARD.local.json
 flow.local.md
+.ai_central/
+system_logs/
+
+# Branch local directories
+logs/
 artifacts/
+dropbox/
 tools/
-aipass_json/
-
-# JSON — runtime data, constantly changing
-*.json
-
-# JSON exceptions — source templates and configs that ship with the package
-!**/json_templates/**
-!**/pack.json
-!.claude/settings.json
-!pyrightconfig.json
-
-# Spawn templates MUST be tracked (agents need these files to build from)
-!src/aipass/spawn/templates/**/.trinity/
-!src/aipass/spawn/templates/**/.trinity/**
-!src/aipass/spawn/templates/**/.agent/
-!src/aipass/spawn/templates/**/.agent/**
-!src/aipass/spawn/templates/**/.aipass/
-!src/aipass/spawn/templates/**/.aipass/**
-!src/aipass/spawn/templates/**/.archive
-!src/aipass/spawn/templates/**/.archive/**
-!src/aipass/spawn/templates/**/artifacts/
-!src/aipass/spawn/templates/**/artifacts/**
-!src/aipass/spawn/templates/**/tools/
-!src/aipass/spawn/templates/**/tools/**
-!src/aipass/spawn/templates/**/DASHBOARD.local.json
-!src/aipass/spawn/templates/**/flow.local.md
-!src/aipass/spawn/templates/**/.seed/
-!src/aipass/spawn/templates/**/.seed/**
-!src/aipass/spawn/templates/**/.standards/
-!src/aipass/spawn/templates/**/.standards/**
-!src/aipass/spawn/templates/**/.backup/
-!src/aipass/spawn/templates/**/.backup/**
-!src/aipass/spawn/templates/**/.ai_mail.local/
-!src/aipass/spawn/templates/**/.ai_mail.local/**
-!src/aipass/spawn/templates/**/.claude/
-!src/aipass/spawn/templates/**/.claude/**
-!src/aipass/spawn/templates/**/*.json
-
-# Seedgo runtime artifacts (created by seedgo audit)
+.archive/
+.backup/
 .seed/
-.standards/
+.seedgo/
+.spawn/
 
-# Runtime log files (created by prax logging)
-**/logs
+# Module runtime JSON (config/data/log per command)
+**/*_json/
 
+# Claude Code local state
+.claude/hooks/__pycache__/
+.claude/hooks/.last_diagnostics_file
 
-# Runtime mail/data/logs
-.ai_mail.local
-ai_mail.local
-dropbox
-system_logs
-docker.md
-notepad.md
+# Disabled files (AIPass convention: rename with (disabled) instead of delete)
+*(disabled)
 
-# Module JSON exceptions — these are source configs, must be tracked
-!AIPASS_REGISTRY.json
-!.ai_central/**/*.json
-!src/aipass/api/api_json/**
-!src/aipass/flow/flow_json/**
-!src/aipass/trigger/trigger_json/**
-!src/commons/apps/json_templates/**
+# OS
+.DS_Store
 
-# Commons handler exceptions — artifacts/ is a handler dir, not spawn artifacts
-!src/commons/apps/handlers/artifacts/
-!src/commons/apps/handlers/artifacts/*.py
-
-.backup
-*.json
+# Test artifacts
+test/
