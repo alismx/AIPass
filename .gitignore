@@ -103,3 +103,4 @@ notepad.md
 !src/commons/apps/handlers/artifacts/*.py
 
 .backup
+*.json

@@ -64,8 +64,8 @@ _system_logs_dir_cache: Path | None = None
 def get_system_logs_dir() -> Path:
     """Lazily resolve and create system_logs directory (package-relative).
 
-    DEPRECATED: Use get_module_logs_dir(module_name) for per-module logging.
-    Kept for monitoring code that scans a central directory.
+    Central aggregation: all branches log here for system-wide monitoring.
+    Per-module logs use get_module_logs_dir() for local debugging.
     """
     global _system_logs_dir_cache
     if _system_logs_dir_cache is None:

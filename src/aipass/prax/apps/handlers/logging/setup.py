@@ -24,6 +24,7 @@ from logging.handlers import RotatingFileHandler
 
 # Import from prax config
 from aipass.prax.apps.handlers.config.load import (
+    get_system_logs_dir,
     get_module_logs_dir,
     DEFAULT_LOG_LEVEL,
     load_log_config,
@@ -57,6 +58,7 @@ def setup_individual_logger(module_name: str) -> logging.Logger:
     """Setup individual logger for a specific module with dual logging support
 
     Creates:
+    - System-wide log: {repo_root}/system_logs/{branch}_{module_name}.log
     - Module-local log: src/aipass/{branch}/logs/{module_name}.log
     - Terminal handler (if enabled)
 
@@ -99,22 +101,35 @@ def setup_individual_logger(module_name: str) -> logging.Logger:
         log_config['date_format']
     )
 
-    # Module-local log: each module logs to <module>/logs/
-    logs_dir = get_module_logs_dir(branch_name)
-    log_file = logs_dir / f"{module_name}.log"
-    limits = log_config['system_logs']
-    max_bytes = lines_to_bytes(limits['max_lines'])
-    handler = RotatingFileHandler(
-        log_file,
-        maxBytes=max_bytes,
-        backupCount=limits['backup_count'],
+    # HANDLER 1: System-wide log (central aggregation)
+    system_log_file = get_system_logs_dir() / f"{branch_name}_{module_name}.log"
+    system_limits = log_config['system_logs']
+    system_max_bytes = lines_to_bytes(system_limits['max_lines'])
+    system_handler = RotatingFileHandler(
+        system_log_file,
+        maxBytes=system_max_bytes,
+        backupCount=system_limits['backup_count'],
         encoding='utf-8'
     )
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    system_handler.setFormatter(formatter)
+    logger.addHandler(system_handler)
+
+    # HANDLER 2: Module-local log (local debugging)
+    module_logs_dir = get_module_logs_dir(branch_name)
+    module_log_file = module_logs_dir / f"{module_name}.log"
+    local_limits = log_config['local_logs']
+    local_max_bytes = lines_to_bytes(local_limits['max_lines'])
+    local_handler = RotatingFileHandler(
+        module_log_file,
+        maxBytes=local_max_bytes,
+        backupCount=local_limits['backup_count'],
+        encoding='utf-8'
+    )
+    local_handler.setFormatter(formatter)
+    logger.addHandler(local_handler)
 
     if _system_logger:
-        _system_logger.info(f"Logger created for {module_name} → {log_file} ({limits['max_lines']} lines)")
+        _system_logger.info(f"Logger created for {module_name} → system: {system_log_file} ({system_limits['max_lines']} lines), local: {module_log_file} ({local_limits['max_lines']} lines)")
 
     # HANDLER 3: Terminal output (if enabled)
     if _terminal_output_enabled and _terminal_module_available:
@@ -148,30 +163,41 @@ def setup_system_logger() -> logging.Logger:
     _system_logger.setLevel(DEFAULT_LOG_LEVEL)
     _system_logger.handlers.clear()
 
-    # Create prax_logger's own log file (in prax/logs/)
-    log_file = get_module_logs_dir("prax") / "prax_logger.log"
+    # Formatter shared by both handlers
+    log_config_fmt = logging.Formatter(
+        log_config['log_format'],
+        log_config['date_format']
+    )
 
-    # Create rotating file handler with config-driven limits
+    # HANDLER 1: System-wide log (central aggregation)
+    system_log_file = get_system_logs_dir() / "prax_logger.log"
     system_limits = log_config['system_logs']
     system_max_bytes = lines_to_bytes(system_limits['max_lines'])
-    handler = RotatingFileHandler(
-        log_file,
+    system_handler = RotatingFileHandler(
+        system_log_file,
         maxBytes=system_max_bytes,
         backupCount=system_limits['backup_count'],
         encoding='utf-8'
     )
+    system_handler.setFormatter(log_config_fmt)
+    _system_logger.addHandler(system_handler)
 
-    # Set formatter
-    formatter = logging.Formatter(
-        log_config['log_format'],
-        log_config['date_format']
+    # HANDLER 2: Module-local log (local debugging)
+    local_log_file = get_module_logs_dir("prax") / "prax_logger.log"
+    local_limits = log_config['local_logs']
+    local_max_bytes = lines_to_bytes(local_limits['max_lines'])
+    local_handler = RotatingFileHandler(
+        local_log_file,
+        maxBytes=local_max_bytes,
+        backupCount=local_limits['backup_count'],
+        encoding='utf-8'
     )
-    handler.setFormatter(formatter)
-    _system_logger.addHandler(handler)
+    local_handler.setFormatter(log_config_fmt)
+    _system_logger.addHandler(local_handler)
 
     # Log system logger creation
     _system_logger.info("Prax system logger initialized successfully")
-    _system_logger.info(f"System logger writing to: {log_file} ({system_limits['max_lines']} lines max)")
+    _system_logger.info(f"System logger writing to: {system_log_file} + {local_log_file}")
 
     return _system_logger
 

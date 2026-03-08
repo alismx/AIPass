@@ -65,6 +65,7 @@ def handle_command(command: str, args: List[str]) -> bool:
     console.print("=" * 60)
     console.print(f"Total Modules: {status['total_modules']}")
     console.print(f"Active Loggers: {status['individual_loggers']}")
+    console.print(f"System Logs Dir: {status['system_logs_dir']}")
     console.print(f"Module Logs Dir: {status['module_logs_dir']}")
     console.print(f"Registry File: {status['registry_file']}")
     console.print(f"File Watcher: {'🟢 Active' if status['file_watcher_active'] else '🔴 Inactive'}")

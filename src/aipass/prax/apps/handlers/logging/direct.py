@@ -49,6 +49,7 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 from aipass.prax.apps.handlers.config.load import (
+    get_system_logs_dir,
     get_module_logs_dir,
     DEFAULT_LOG_LEVEL,
     load_log_config,
@@ -98,9 +99,9 @@ def _create_direct_logger(
     branch_name: str,
     branch_path: Optional[str]
 ) -> logging.Logger:
-    """Create a standalone logger with a RotatingFileHandler.
+    """Create a standalone logger with dual RotatingFileHandlers.
 
-    Same logging setup as setup_individual_logger but with NO
+    Same dual-logging setup as setup_individual_logger but with NO
     connection to the event pipeline. Uses logging.Logger internally
     only for RotatingFileHandler management - no root logger propagation.
 
@@ -110,7 +111,7 @@ def _create_direct_logger(
         branch_path: Module/branch name (e.g., 'prax') or None
 
     Returns:
-        Configured logger with file handler and no propagation.
+        Configured logger with dual file handlers and no propagation.
     """
     logger_key = f"direct_{branch_name}_{module_name}"
     logger = logging.getLogger(logger_key)
@@ -124,19 +125,31 @@ def _create_direct_logger(
         config['date_format']
     )
 
-    # Module-local log: each module logs to <module>/logs/
     target = branch_name if branch_path else "prax"
-    logs_dir = get_module_logs_dir(target)
-    log_file = logs_dir / f"{module_name}.log"
-    limits = config['system_logs']
-    handler = RotatingFileHandler(
-        log_file,
-        maxBytes=lines_to_bytes(limits['max_lines']),
-        backupCount=limits['backup_count'],
+
+    # Handler 1: System-wide log (central aggregation)
+    sys_log_file = get_system_logs_dir() / f"{target}_{module_name}.log"
+    sys_limits = config['system_logs']
+    sys_handler = RotatingFileHandler(
+        sys_log_file,
+        maxBytes=lines_to_bytes(sys_limits['max_lines']),
+        backupCount=sys_limits['backup_count'],
         encoding='utf-8'
     )
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
+    sys_handler.setFormatter(formatter)
+    logger.addHandler(sys_handler)
+
+    # Handler 2: Module-local log (local debugging)
+    local_log_file = get_module_logs_dir(target) / f"{module_name}.log"
+    local_limits = config['local_logs']
+    local_handler = RotatingFileHandler(
+        local_log_file,
+        maxBytes=lines_to_bytes(local_limits['max_lines']),
+        backupCount=local_limits['backup_count'],
+        encoding='utf-8'
+    )
+    local_handler.setFormatter(formatter)
+    logger.addHandler(local_handler)
 
     return logger
 
