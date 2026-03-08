@@ -1,0 +1,147 @@
+# ===================AIPASS====================
+# META DATA HEADER
+# Name: notification_module.py - Notification Preferences Module
+# Date: 2026-03-07
+# Version: 1.0.0
+# Category: commons/apps/modules
+#
+# CHANGELOG (Max 5 entries):
+#   - v1.0.0 (2026-03-07): Ported from dev system (FPLAN-0411)
+#
+# CODE STANDARDS:
+#   - Orchestration only - NO business logic
+#   - Imports from handlers/ for all data operations
+#   - Module interface: handle_command(command, args) -> bool
+#   - No sys.path manipulation
+# =============================================
+
+"""
+Notification Preferences Module
+
+Thin router for notification preference commands. Delegates all
+implementation to handlers/notifications/notification_ops.py
+and renders results with Rich.
+
+Handles: watch, mute, track, preferences commands.
+"""
+
+import logging
+from typing import List
+
+try:
+    from aipass.prax.apps.modules.logger import system_logger as logger
+except ImportError:
+    logger = logging.getLogger("commons.notification_module")
+
+try:
+    from aipass.cli.apps.modules import console
+except ImportError:
+    from rich.console import Console
+    console = Console()
+
+from commons.apps.handlers.notifications.notification_ops import (
+    set_watch,
+    set_mute,
+    set_track,
+    show_preferences,
+)
+
+
+# =============================================================================
+# COMMAND ROUTING
+# =============================================================================
+
+def handle_command(command: str, args: List[str]) -> bool:
+    """
+    Handle notification preference commands.
+
+    Args:
+        command: Command name (watch, mute, track, preferences)
+        args: Command arguments
+
+    Returns:
+        True if command handled, False otherwise
+    """
+    if command not in ("watch", "mute", "track", "preferences"):
+        return False
+
+    if command == "watch":
+        return _handle_level(set_watch(args), "watch")
+    elif command == "mute":
+        return _handle_level(set_mute(args), "mute")
+    elif command == "track":
+        return _handle_level(set_track(args), "track")
+    elif command == "preferences":
+        return _handle_preferences(args)
+
+    return False
+
+
+# =============================================================================
+# DISPLAY HANDLERS
+# =============================================================================
+
+LEVEL_LABELS = {
+    "watch": ("watching", "cyan", "All activity notifications"),
+    "track": ("tracking", "green", "Mentions and replies only"),
+    "mute": ("muted", "red", "No notifications"),
+}
+
+
+def _handle_level(result: dict, level: str) -> bool:
+    """Display the result of setting a notification level."""
+    if not result["success"]:
+        console.print(f"[red]{result['error']}[/red]")
+        return True
+
+    label, color, description = LEVEL_LABELS[level]
+    console.print()
+    console.print(
+        f"[{color}]Now {label} {result['target_type']} "
+        f"'{result['target_id']}'[/{color}]"
+    )
+    console.print(f"  [dim]{description}[/dim]")
+    console.print()
+
+    return True
+
+
+def _handle_preferences(args: List[str]) -> bool:
+    """Display all notification preferences for the caller."""
+    result = show_preferences(args)
+
+    if not result["success"]:
+        console.print(f"[red]{result['error']}[/red]")
+        return True
+
+    prefs = result["preferences"]
+    agent_name = result["agent"]
+
+    console.print()
+    console.print(f"[bold cyan]Notification Preferences for {agent_name}[/bold cyan]")
+    console.print()
+
+    if not prefs:
+        console.print("  [dim]No custom preferences set. All targets use default (track).[/dim]")
+        console.print("  [dim]Track = notified of @mentions and direct replies only.[/dim]")
+    else:
+        level_colors = {
+            "watch": "cyan",
+            "track": "green",
+            "mute": "red",
+        }
+        for pref in prefs:
+            pref_level = pref["level"]
+            color = level_colors.get(pref_level, "white")
+            console.print(
+                f"  [{color}]{pref_level.upper()}[/{color}] "
+                f"{pref['target_type']} '{pref['target_id']}' "
+                f"[dim](since {pref['created_at']})[/dim]"
+            )
+
+    console.print()
+    console.print("[dim]Levels: watch (all activity) | track (mentions/replies) | mute (nothing)[/dim]")
+    console.print("[dim]Default for all targets: track[/dim]")
+    console.print()
+
+    return True

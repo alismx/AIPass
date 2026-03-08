@@ -96,5 +96,10 @@ notepad.md
 !src/aipass/api/api_json/**
 !src/aipass/flow/flow_json/**
 !src/aipass/trigger/trigger_json/**
-*.json
+!src/commons/apps/json_templates/**
+
+# Commons handler exceptions — artifacts/ is a handler dir, not spawn artifacts
+!src/commons/apps/handlers/artifacts/
+!src/commons/apps/handlers/artifacts/*.py
+
 .backup
