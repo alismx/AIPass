@@ -16,13 +16,9 @@ Standard branch entry point (apps/drone.py pattern).
 import sys
 from typing import List
 
-from rich.console import Console
-
 from aipass.prax import logger
-from aipass.cli.apps.modules import console
-
-err_console = Console(stderr=True)
-from aipass.drone.apps.modules import BranchNotFoundError, CommandExecutionError
+from aipass.cli.apps.modules import console, err_console
+from aipass.drone.apps.modules import BranchNotFoundError, CommandExecutionError, RegistryError
 from aipass.drone.apps.modules.discovery import get_help
 from aipass.drone.apps.modules.resolver import list_branches
 from aipass.drone.apps.modules.router import route_command
@@ -187,10 +183,7 @@ def _handle_target(args: List[str]) -> int:
     if not rest:
         try:
             result = route_command(target)
-        except BranchNotFoundError as exc:
-            err_console.print(f"drone: {exc}")
-            return 1
-        except CommandExecutionError as exc:
+        except (BranchNotFoundError, CommandExecutionError, RegistryError) as exc:
             err_console.print(f"drone: {exc}")
             return 1
         if result.stdout:
@@ -207,10 +200,7 @@ def _handle_target(args: List[str]) -> int:
                 console.print(result.text, end="", highlight=False)
             else:
                 console.print(f"No help available for {target}.")
-        except BranchNotFoundError as exc:
-            err_console.print(f"drone: {exc}")
-            return 1
-        except CommandExecutionError as exc:
+        except (BranchNotFoundError, CommandExecutionError, RegistryError) as exc:
             err_console.print(f"drone: {exc}")
             return 1
         return 0
@@ -228,10 +218,7 @@ def _handle_target(args: List[str]) -> int:
             args=cmd_args if cmd_args else None,
             interactive=interactive,
         )
-    except BranchNotFoundError as exc:
-        err_console.print(f"drone: {exc}")
-        return 1
-    except CommandExecutionError as exc:
+    except (BranchNotFoundError, CommandExecutionError, RegistryError) as exc:
         err_console.print(f"drone: {exc}")
         return 1
 
@@ -252,7 +239,11 @@ def main() -> int:
 
     # No args -> introspection
     if not args:
-        show_introspection()
+        try:
+            show_introspection()
+        except RegistryError as exc:
+            err_console.print(f"drone: {exc}")
+            return 1
         return 0
 
     # --version
@@ -269,7 +260,11 @@ def main() -> int:
 
     # systems — list branches and modules
     if command == "systems":
-        return _handle_systems()
+        try:
+            return _handle_systems()
+        except RegistryError as exc:
+            err_console.print(f"drone: {exc}")
+            return 1
 
     # @target — route to branch or module
     if command.startswith("@"):

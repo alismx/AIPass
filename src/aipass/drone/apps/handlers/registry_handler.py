@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 from aipass.prax import logger
 from .exceptions import (
     RegistryCorruptError,
+    RegistryMismatchError,
     RegistryNotFoundError,
     RegistryPermissionError,
 )
@@ -133,12 +134,12 @@ def _verify_registry_credential(registry_path: Path, registry_data: Dict[str, An
             return
 
         if passport_id != registry_id:
-            raise RegistryNotFoundError(
+            raise RegistryMismatchError(
                 f"Registry mismatch: citizen belongs to registry "
                 f"'{passport_id}' but found registry '{registry_id}' "
                 f"at {registry_path}"
             )
-    except RegistryNotFoundError:
+    except RegistryMismatchError:
         raise
     except Exception:
         pass  # Verification should never crash drone

@@ -43,6 +43,15 @@ class RegistryNotFoundError(RegistryError):
     pass
 
 
+class RegistryMismatchError(RegistryError):
+    """Raised when registry credential doesn't match caller's passport.
+
+    NOT recoverable — unlike RegistryNotFoundError (no file, use fallback),
+    a mismatch means the wrong registry was found. Must error, not fall back.
+    """
+    pass
+
+
 class RegistryCorruptError(RegistryError):
     """Raised when the registry file is corrupted or invalid JSON."""
     pass

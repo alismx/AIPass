@@ -35,6 +35,7 @@ from rich.columns import Columns
 # Initialize Rich console (lowercase follows service instance pattern)
 CONSOLE = Console()  # Internal constant
 console = CONSOLE  # Primary export (lowercase service instance pattern)
+err_console = Console(stderr=True)  # Stderr console for error/warning output
 
 # Trigger loaded lazily to avoid circular import
 _trigger = None
@@ -325,9 +326,9 @@ def error(message: str, suggestion: str | None = None) -> None:
     Example:
         error('Branch not found', suggestion='Check branch name spelling')
     """
-    CONSOLE.print(f"❌ [red bold]{message}[/red bold]")
+    err_console.print(f"❌ [red bold]{message}[/red bold]")
     if suggestion:
-        CONSOLE.print(f"   [yellow]→ Try: {suggestion}[/yellow]")
+        err_console.print(f"   [yellow]→ Try: {suggestion}[/yellow]")
 
 
 def warning(message: str, details: str | None = None) -> None:
@@ -341,9 +342,28 @@ def warning(message: str, details: str | None = None) -> None:
     Example:
         warning('Branch already exists, skipping')
     """
-    CONSOLE.print(f"⚠️  [yellow]{message}[/yellow]")
+    err_console.print(f"⚠️  [yellow]{message}[/yellow]")
     if details:
-        CONSOLE.print(f"   [dim]{details}[/dim]")
+        err_console.print(f"   [dim]{details}[/dim]")
+
+
+def fatal(message: str, suggestion: str | None = None) -> None:
+    """
+    Display error message with Rich styling and exit with code 1
+
+    Like error() but terminates the process. Use for unrecoverable failures.
+
+    Args:
+        message: Error message
+        suggestion: Optional suggestion for fixing
+
+    Example:
+        fatal('Config file missing', suggestion='Run aipass init first')
+    """
+    err_console.print(f"❌ [red bold]{message}[/red bold]")
+    if suggestion:
+        err_console.print(f"   [yellow]→ Try: {suggestion}[/yellow]")
+    sys.exit(1)
 
 
 def section(title: str) -> None:
@@ -369,10 +389,12 @@ def section(title: str) -> None:
 __all__ = [
     'console',  # Primary export (service instance pattern)
     'CONSOLE',  # Internal constant (kept for backward compatibility)
+    'err_console',  # Stderr console for error/warning output
     'header',
     'success',
     'error',
     'warning',
+    'fatal',
     'section',
 ]
 
