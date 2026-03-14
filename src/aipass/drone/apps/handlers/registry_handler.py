@@ -101,6 +101,49 @@ def get_registry_path() -> Path:
     return find_registry()
 
 
+def _verify_registry_credential(registry_path: Path, registry_data: Dict[str, Any]) -> None:
+    """Verify that the registry matches the caller's passport credential.
+
+    Compares registry metadata.id against the nearest passport's
+    citizenship.registry_id.  Only raises when BOTH sides have an ID
+    and they don't match — silent pass otherwise.
+    """
+    try:
+        registry_id = registry_data.get("metadata", {}).get("id")
+        if not registry_id:
+            return
+
+        # Walk up from CWD looking for .trinity/passport.json
+        cwd = Path.cwd()
+        passport_path = None
+        for parent in [cwd] + list(cwd.parents):
+            candidate = parent / ".trinity" / "passport.json"
+            if candidate.is_file():
+                passport_path = candidate
+                break
+
+        if passport_path is None:
+            return
+
+        with open(passport_path, "r", encoding="utf-8") as f:
+            passport = json.load(f)
+
+        passport_id = passport.get("citizenship", {}).get("registry_id")
+        if not passport_id:
+            return
+
+        if passport_id != registry_id:
+            raise RegistryNotFoundError(
+                f"Registry mismatch: citizen belongs to registry "
+                f"'{passport_id}' but found registry '{registry_id}' "
+                f"at {registry_path}"
+            )
+    except RegistryNotFoundError:
+        raise
+    except Exception:
+        pass  # Verification should never crash drone
+
+
 def set_registry_path(path: str | Path) -> None:
     """Set a custom registry path."""
     global _registry_path
@@ -173,6 +216,8 @@ def load_registry() -> Dict[str, Any]:
         data["branches"] = branches_dict
     elif not isinstance(branches_raw, dict):
         raise RegistryCorruptError("Registry 'branches' must be a list or dict")
+
+    _verify_registry_credential(registry_path, data)
 
     return data
 
