@@ -44,7 +44,7 @@ from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.flow.apps.handlers.json import json_handler
 
 # CLI services for display
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, warning
 
 # Registry handlers (cross-domain - OK for modules)
 from aipass.flow.apps.handlers.registry.load_registry import load_registry
@@ -195,7 +195,7 @@ def create_plan(
             if msg_type == "dim":
                 console.print(f"[dim]{msg['text']}[/dim]")
             elif msg_type == "warning":
-                console.print(f"[yellow]{msg['text']}[/yellow]")
+                warning(msg['text'])
             elif msg_type == "display":
                 console.print(msg["text"])
         return ok, num, loc, tmpl, error

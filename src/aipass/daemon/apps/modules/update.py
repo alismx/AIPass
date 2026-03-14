@@ -19,7 +19,7 @@ from typing import Dict, Any, List
 
 from aipass.prax import logger
 
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error
 
 def _header(text):
     console.print(f"\n[bold cyan]{'='*70}[/bold cyan]")
@@ -163,7 +163,7 @@ def handle_command(command: str, args: list) -> bool:
 
     except Exception as e:
         logger.error(f"[DAEMON] Error generating update digest: {e}", exc_info=True)
-        console.print(f"[red]Error: {e}[/red]")
+        error(f"Error: {e}")
         return True
 
 

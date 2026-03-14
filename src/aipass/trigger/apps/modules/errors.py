@@ -147,7 +147,7 @@ def handle_command(command: str, args: list) -> bool:
     Returns:
         True if command was handled, False otherwise
     """
-    from aipass.cli.apps.modules import console
+    from aipass.cli.apps.modules import console, error
 
     if command != "errors":
         return False
@@ -170,8 +170,7 @@ def handle_command(command: str, args: list) -> bool:
     if sub in routes:
         return routes[sub](console, rest)
 
-    console.print(f"[red]Unknown subcommand: {sub}[/red]")
-    console.print("Run [dim]drone @trigger errors help[/dim] for available commands")
+    error(f"Unknown subcommand: {sub}", suggestion="Run 'drone @trigger errors help' for available commands")
     return True
 
 
@@ -229,16 +228,15 @@ def _cmd_list(console, args: list) -> bool:
 def _cmd_detail(console, args: list) -> bool:
     """Show full error details for a fingerprint or ID."""
     from rich.panel import Panel
+    from aipass.cli.apps.modules import error
 
     if not args:
-        console.print("[red]Missing error ID or fingerprint[/red]")
-        console.print("Usage: drone @trigger errors detail <id_or_fingerprint>")
+        error("Missing error ID or fingerprint", suggestion="Usage: drone @trigger errors detail <id_or_fingerprint>")
         return True
 
     entry = _find_by_id_or_fp(args[0])
     if not entry:
-        console.print(f"[red]Error not found:[/red] {args[0]}")
-        console.print("  [dim]Try a fingerprint prefix, full fingerprint, or short ID[/dim]")
+        error(f"Error not found: {args[0]}", suggestion="Try a fingerprint prefix, full fingerprint, or short ID")
         return True
 
     st = entry.get("status", "?")

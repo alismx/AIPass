@@ -14,7 +14,7 @@ All implementation logic lives in apps/handlers/update_ops.py.
 
 from aipass.prax import logger
 # CLI service: from cli.apps.modules import console (via aipass namespace)
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 
 from aipass.spawn.apps.handlers.update_ops import (
     update_branch,
@@ -72,7 +72,7 @@ def handle_update(args: list[str]) -> int:
     Returns exit code (0=success, 1=failure).
     """
     if not args:
-        console.print("[yellow]Usage: drone @spawn update <@branch|class --all> [--dry-run] [--trace][/yellow]")
+        warning("Usage: drone @spawn update <@branch|class --all> [--dry-run] [--trace]")
         console.print()
         console.print("  [green]@branch[/green]           Update a single branch (uses its own class)")
         console.print("  [green]builder --all[/green]     Update all builder-class branches")
@@ -100,9 +100,7 @@ def handle_update(args: list[str]) -> int:
     if "--all" in args:
         if citizen_class is None:
             classes = ", ".join(get_available_classes())
-            console.print(f"[red]Error: --all requires a citizen class[/red]")
-            console.print(f"[dim]Specify a class: drone @spawn update <class> --all[/dim]")
-            console.print(f"[dim]Available classes: {classes}[/dim]")
+            error("--all requires a citizen class", suggestion=f"drone @spawn update <class> --all (available: {classes})")
             return 1
 
         results = update_all(dry_run=dry_run, trace=trace, citizen_class=citizen_class)
@@ -110,7 +108,7 @@ def handle_update(args: list[str]) -> int:
         return 0 if all(r.get("success") for r in results) else 1
 
     if not targets:
-        console.print("[red]Error: specify a branch name (e.g. @prax) or use <class> --all[/red]")
+        error("specify a branch name (e.g. @prax) or use <class> --all")
         return 1
 
     # Take the first target, strip leading @
@@ -120,7 +118,7 @@ def handle_update(args: list[str]) -> int:
         result = update_branch(branch_name, dry_run=dry_run, trace=trace)
     except Exception as exc:
         logger.error(f"[update] Unexpected error updating {branch_name}: {exc}")
-        console.print(f"[red]Error updating {branch_name}: {exc}[/red]")
+        error(f"Error updating {branch_name}: {exc}")
         return 1
 
     _print_branch_summary(result, dry_run)
@@ -141,7 +139,7 @@ def _print_branch_summary(result: dict, dry_run: bool) -> None:
     if success:
         console.print(f"[green]Update {mode}{branch}[/green]")
     else:
-        console.print(f"[red]Update FAILED {mode}{branch}[/red]")
+        error(f"Update FAILED {mode}{branch}")
 
     console.print(f"  Additions:  {result.get('additions', 0)}")
     console.print(f"  Renames:    {result.get('renames', 0)}")
@@ -151,7 +149,7 @@ def _print_branch_summary(result: dict, dry_run: bool) -> None:
 
     errs = result.get("errors", [])
     if errs:
-        console.print(f"  [red]Errors: {len(errs)}[/red]")
+        error(f"Errors: {len(errs)}")
         for e in errs:
             console.print(f"    - {e}")
 
@@ -223,5 +221,5 @@ def _print_all_summary(results: list[dict], dry_run: bool) -> None:
                   f"!{total_skip} py-skipped")
 
     if total_err:
-        console.print(f"  [red]{total_err} errors across all branches[/red]")
+        error(f"{total_err} errors across all branches")
     console.print()

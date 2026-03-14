@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Dict, List
 
 from aipass.prax.apps.modules.logger import system_logger as logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 
 # Import handlers
 from aipass.prax.apps.handlers.dashboard.operations import (
@@ -192,7 +192,7 @@ def print_status():
     try:
         branches = get_branch_paths()
     except Exception as e:
-        console.print(f"[red]Error loading branches: {e}[/red]")
+        error(f"Error loading branches: {e}")
         return
 
     console.print()
@@ -254,13 +254,13 @@ def _handle_refresh(args: List[str]) -> None:
         if result["status"] == "success":
             console.print(f"[green]Refreshed {result['branches_updated']} branches[/green]")
         elif result["status"] == "partial":
-            console.print(f"[yellow]Refreshed {result['branches_updated']} branches, {result['branches_failed']} failed[/yellow]")
+            warning(f"Refreshed {result['branches_updated']} branches, {result['branches_failed']} failed")
             for err in result.get("errors", []):
-                console.print(f"  [red]{err}[/red]")
+                error(str(err))
         else:
-            console.print(f"[red]Refresh failed[/red]")
+            error("Refresh failed")
             for err in result.get("errors", []):
-                console.print(f"  [red]{err}[/red]")
+                error(str(err))
         return
 
     # @branch arg: refresh specific branch
@@ -268,14 +268,14 @@ def _handle_refresh(args: List[str]) -> None:
         try:
             branch_path = _resolve_branch_path(args[0])
         except FileNotFoundError as e:
-            console.print(f"[red]{e}[/red]")
+            error(str(e))
             return
         console.print(f"[dim]Refreshing {branch_path.name.upper()} dashboard...[/dim]")
         result = refresh_single_dashboard(branch_path)
         if result["status"] == "success":
             console.print(f"[green]Refreshed {result['branch']}[/green]")
         else:
-            console.print(f"[red]Failed: {result.get('error', 'unknown')}[/red]")
+            error(f"Failed: {result.get('error', 'unknown')}")
         return
 
     # No args: refresh current branch (detect from CWD)
@@ -296,7 +296,7 @@ def _handle_refresh(args: List[str]) -> None:
     if result["status"] == "success":
         console.print(f"[green]Refreshed {result['branch']}[/green]")
     else:
-        console.print(f"[red]Failed: {result.get('error', 'unknown')}[/red]")
+        error(f"Failed: {result.get('error', 'unknown')}")
 
 
 def _handle_push_template(args: List[str]) -> None:
@@ -334,9 +334,9 @@ def _handle_push_template(args: List[str]) -> None:
 
     if result["errors"]:
         console.print()
-        console.print(f"[red]Errors ({len(result['errors'])}):[/red]")
+        error(f"Errors ({len(result['errors'])})")
         for err in result["errors"]:
-            console.print(f"  [red]! {err}[/red]")
+            error(f"! {err}")
 
     if not result["changes"] and not result["errors"]:
         console.print()
@@ -362,13 +362,13 @@ def _handle_diff_template(args: List[str]) -> None:
         if idx + 1 < len(args):
             branch_name = args[idx + 1]
         else:
-            console.print("[red]--branch requires a branch name[/red]")
+            error("--branch requires a branch name")
             return
 
     result = diff_dashboard_template(branch_name=branch_name)
 
     if "error" in result:
-        console.print(f"[red]Error: {result['error']}[/red]")
+        error(result['error'])
         return
 
     summary = result.get("summary", {})
@@ -491,7 +491,7 @@ def main():
     remaining_args = args[1:]
 
     if not handle_command(command, remaining_args):
-        console.print(f"[red]Unknown command: {command}[/red]")
+        error(f"Unknown command: {command}")
         print_help()
 
 

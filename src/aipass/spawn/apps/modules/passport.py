@@ -15,7 +15,7 @@ All implementation logic lives in apps/handlers/passport_ops.py.
 import argparse
 
 from aipass.prax import logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 
 from aipass.spawn.apps.handlers.passport_ops import grant_passport
 
@@ -58,13 +58,13 @@ def handle_passport(args: list[str]) -> int:
     Returns exit code (0=success, 1=failure).
     """
     if not args:
-        console.print("[yellow]Usage: drone @spawn passport <@dirname> [--role ...] [--purpose ...][/yellow]")
+        warning("Usage: drone @spawn passport <@dirname> [--role ...] [--purpose ...]")
         console.print()
         console.print("  [dim]Grant birthright citizenship to a directory[/dim]")
         console.print()
         console.print("  [green]@dirname[/green]     Directory to grant citizenship (created if needed)")
-        console.print("  [yellow]--role[/yellow]       Role description for the passport")
-        console.print("  [yellow]--purpose[/yellow]    Purpose description")
+        warning("--role", details="Role description for the passport")
+        warning("--purpose", details="Purpose description")
         return 1
 
     parser = argparse.ArgumentParser(prog="spawn passport", add_help=False)
@@ -96,9 +96,9 @@ def handle_passport(args: list[str]) -> int:
         console.print(f"  Files: {result['files_copied']}")
         console.print(f"  Registry: {'updated' if result['registry_updated'] else 'not updated'}")
         if result["validation_issues"]:
-            console.print(f"  [yellow]Warnings: {len(result['validation_issues'])} unreplaced placeholders[/yellow]")
+            warning(f"{len(result['validation_issues'])} unreplaced placeholders")
         console.print()
         return 0
     else:
-        console.print(f"[red]Error: {result['error']}[/red]")
+        error(result['error'])
         return 1

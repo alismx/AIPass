@@ -34,7 +34,7 @@ from aipass.prax import logger
 from aipass.flow.apps.handlers.json import json_handler
 
 # CLI services for display and error handling
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 
 # Internal: Registry handlers
 from aipass.flow.apps.handlers.registry.load_registry import load_registry
@@ -90,7 +90,7 @@ def _display_messages(messages: List[Dict[str, Any]]):
             console.print(format_plan_error(error_text, plan_num, details=details))
 
         elif msg_type == "warning":
-            console.print(f"[yellow]{msg['text']}[/yellow]")
+            warning(msg['text'])
 
         elif msg_type == "dim":
             console.print(f"[dim]{msg['text']}[/dim]")
@@ -102,7 +102,7 @@ def _display_messages(messages: List[Dict[str, Any]]):
             console.print(f"[green]{msg['text']}[/green]")
 
         elif msg_type == "error_text":
-            console.print(f"[red]{msg['text']}[/red]")
+            error(msg['text'])
 
         elif msg_type == "header":
             console.print(format_plan_deletion_header(msg["plan_key"], msg["plan_info"]))
@@ -119,7 +119,7 @@ def _display_messages(messages: List[Dict[str, Any]]):
                 console.print(f"  * FPLAN-{plan['plan_num']}: {plan['subject']}")
 
         elif msg_type == "confirm_warning":
-            console.print(f"\n[bold red]WARNING: This will close all {msg['count']} plans![/bold red]")
+            error(f"WARNING: This will close all {msg['count']} plans!")
 
         elif msg_type == "closing_all":
             console.print(f"\n[bold]Closing all {msg['count']} plan(s)...[/bold]")

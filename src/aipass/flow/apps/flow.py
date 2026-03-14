@@ -32,7 +32,7 @@ signal.signal(signal.SIGPIPE, signal.SIG_DFL)
 from aipass.prax.apps.modules.logger import system_logger as logger
 
 # CLI services for formatted output
-from aipass.cli.apps.modules import console, header, success, error
+from aipass.cli.apps.modules import console, header, success, error, warning
 
 # =============================================================================
 # MODULE DISCOVERY
@@ -151,7 +151,7 @@ def main():
         return 0
     else:
         console.print()
-        console.print(f"[red]Unknown command: {command}[/red]")
+        error(f"Unknown command: {command}")
         console.print()
         console.print("Run [dim]drone @flow --help[/dim] for available commands")
         console.print()
@@ -287,7 +287,7 @@ def print_module_help(command: str, modules: List[Any]):
 
     if not target_module:
         console.print()
-        console.print(f"[red]Unknown command: {command}[/red]")
+        error(f"Unknown command: {command}")
         console.print()
         console.print("Run [dim]drone @flow --help[/dim] for available commands")
         console.print()

@@ -14,7 +14,7 @@ All implementation logic lives in apps/handlers/delete_ops.py.
 
 from aipass.prax import logger
 # CLI service: from cli.apps.modules import console (via aipass namespace)
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 
 from aipass.spawn.apps.handlers.delete_ops import delete_branch
 
@@ -65,7 +65,7 @@ def handle_delete(args: list[str]) -> int:
     Returns exit code (0=success, 1=failure).
     """
     if not args:
-        console.print("[yellow]Usage: drone @spawn delete <@branch> [--yes] [--dry-run][/yellow]")
+        warning("Usage: drone @spawn delete <@branch> [--yes] [--dry-run]")
         console.print()
         console.print("  [green]@branch[/green]    Branch to archive and deregister")
         console.print("  [green]--yes[/green]      Skip confirmation prompt")
@@ -79,7 +79,7 @@ def handle_delete(args: list[str]) -> int:
     targets = [a for a in args if not a.startswith("--")]
 
     if not targets:
-        console.print("[red]Error: specify a branch name (e.g. @api)[/red]")
+        error("specify a branch name (e.g. @api)")
         return 1
 
     branch_name = targets[0].lstrip("@").lower()
@@ -92,7 +92,7 @@ def handle_delete(args: list[str]) -> int:
         )
     except Exception as exc:
         logger.error(f"[delete] Unexpected error deleting {branch_name}: {exc}")
-        console.print(f"[red]Error deleting {branch_name}: {exc}[/red]")
+        error(f"Error deleting {branch_name}: {exc}")
         return 1
 
     _print_summary(result, dry_run)
@@ -113,7 +113,7 @@ def _print_summary(result: dict, dry_run: bool) -> None:
     if success:
         console.print(f"[green]Delete {mode}{branch}[/green]")
     else:
-        console.print(f"[red]Delete FAILED {mode}{branch}[/red]")
+        error(f"Delete FAILED {mode}{branch}")
 
     archive_path = result.get("archive_path", "")
     if archive_path:
@@ -121,8 +121,8 @@ def _print_summary(result: dict, dry_run: bool) -> None:
 
     console.print(f"  Registry updated: {result.get('registry_updated', False)}")
 
-    error = result.get("error", "")
-    if error:
-        console.print(f"  [red]Error: {error}[/red]")
+    err_msg = result.get("error", "")
+    if err_msg:
+        error(err_msg)
 
     console.print()

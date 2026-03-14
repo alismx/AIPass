@@ -27,7 +27,7 @@ from typing import List, Any
 from aipass.prax.apps.modules.logger import system_logger as logger
 
 # CLI services for formatted output
-from aipass.cli.apps.modules import console, header
+from aipass.cli.apps.modules import console, header, error
 
 # =============================================================================
 # MODULE DISCOVERY
@@ -209,9 +209,7 @@ def main():
         return 0
     else:
         console.print()
-        console.print(f"[red]Unknown command: {command}[/red]")
-        console.print()
-        console.print("Run [dim]python3 trigger.py --help[/dim] for available commands")
+        error(f"Unknown command: {command}", suggestion="Run 'python3 trigger.py --help' for available commands")
         console.print()
         return 1
 

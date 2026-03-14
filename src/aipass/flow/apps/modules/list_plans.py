@@ -43,7 +43,7 @@ from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.flow.apps.handlers.json import json_handler
 
 # CLI services for display
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 
 # Registry handlers
 from aipass.flow.apps.handlers.registry.load_registry import load_registry
@@ -149,13 +149,13 @@ def list_plans(filter_type: str = "open") -> bool:
 
     # Module handles display
     if result.get("empty") and result.get("success"):
-        console.print("[yellow]No plans found in registry[/yellow]")
+        warning("No plans found in registry")
         return True
 
     if not result.get("success"):
         error_msg = result.get("error", "Unknown error")
         try:
-            console.print(f"[red]ERROR: {error_msg}[/red]")
+            error(f"ERROR: {error_msg}")
         except BrokenPipeError:
             pass
         return False
@@ -204,7 +204,7 @@ def handle_command(command: str, args: List[str]) -> bool:
         if filter_arg in ["open", "closed", "all"]:
             filter_type = filter_arg
         else:
-            console.print(f"[yellow]Unknown filter '{filter_arg}', defaulting to 'open'[/yellow]")
+            warning(f"Unknown filter '{filter_arg}', defaulting to 'open'")
             console.print("[dim]Valid filters: open, closed, all[/dim]")
 
     # STEP 2: Execute workflow

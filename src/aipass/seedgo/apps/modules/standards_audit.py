@@ -32,6 +32,7 @@ from aipass.prax import logger
 
 # CLI services (display/output formatting)
 from aipass.cli import console, header
+from aipass.cli.apps.modules import error, warning
 
 # JSON handler for tracking
 from aipass.seedgo.apps.handlers.json import json_handler
@@ -204,21 +205,18 @@ def handle_command(command: str, args: List[str]) -> bool:
     # Validate pack name
     packs = _discover_packs()
     if pack_name not in packs:
-        console.print(f"\n[red]Unknown pack:[/red] '{pack_name}'")
-        console.print()
-        console.print("[yellow]Available packs:[/yellow]")
-        for name in packs:
-            console.print(f"  [cyan]{name}[/cyan]")
-        console.print()
-        console.print(f"[dim]Usage: drone @seedgo audit {next(iter(packs), '<pack>')}[/dim]")
-        console.print()
+        available = ", ".join(packs.keys())
+        error(
+            f"Unknown pack: '{pack_name}'",
+            suggestion=f"Available packs: {available}. Usage: drone @seedgo audit {next(iter(packs), '<pack>')}"
+        )
         return True
 
     pack_path = packs[pack_name]
 
     # Handle --show-bypasses mode (placeholder — bypass audit merged into audit per D11)
     if show_bypasses:
-        console.print("[yellow]--show-bypasses not yet implemented in seedgo[/yellow]")
+        warning("--show-bypasses not yet implemented in seedgo")
         return True
 
     # =========================================================================

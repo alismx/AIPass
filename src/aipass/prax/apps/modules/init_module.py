@@ -16,7 +16,7 @@ import sys
 from typing import List
 
 from aipass.prax.apps.modules.logger import initialize_logging_system, system_logger as logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error
 
 
 def print_introspection():
@@ -77,7 +77,7 @@ def handle_command(command: str, args: List[str]) -> bool:
 
     except Exception as e:
         logger.error(f"Error in init command: {e}")
-        console.print(f"[red]❌ ERROR: {e}[/red]")
+        error(str(e))
         return True
 
 

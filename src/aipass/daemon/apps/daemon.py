@@ -22,7 +22,7 @@ from typing import List, Any
 from aipass.prax.apps.modules.logger import system_logger as logger
 
 # Console
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error
 
 def _header(text):
     console.print(f"\n[bold cyan]{'='*70}[/bold cyan]")
@@ -186,9 +186,7 @@ def main():
         return 0
     else:
         console.print()
-        console.print(f"[red]Unknown command: {command}[/red]")
-        console.print()
-        console.print("Run [dim]daemon --help[/dim] for available commands")
+        error(f"Unknown command: {command}", suggestion="Run 'daemon --help' for available commands")
         console.print()
         return 1
 

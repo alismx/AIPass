@@ -53,7 +53,7 @@ from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.flow.apps.handlers.json import json_handler
 
 # CLI services for display
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 
 # Registry handlers
 from aipass.flow.apps.handlers.registry.load_registry import load_registry
@@ -115,11 +115,11 @@ def start_monitoring():
     # Module handles display
     status = result.get("status", "")
     if status == "already_running":
-        console.print("[yellow]Monitor is already running[/yellow]")
+        warning("Monitor is already running")
     elif status == "started":
         console.print(f"[green]OK[/green] {result['message']}")
     elif status == "error":
-        console.print(f"[red]{result['message']}[/red]")
+        error(result['message'])
     return result.get("success", False)
 
 
@@ -135,7 +135,7 @@ def stop_monitoring():
     if status == "stopped":
         console.print("[green]OK[/green] Monitor stopped")
     elif status == "not_running":
-        console.print("[yellow]Monitor is not running[/yellow]")
+        warning("Monitor is not running")
     return result.get("success", False)
 
 
@@ -252,7 +252,7 @@ def handle_command(command: str, args: List[str]) -> bool:
         return True
 
     else:
-        console.print(f"[red]Unknown subcommand: {subcommand}[/red]")
+        error(f"Unknown subcommand: {subcommand}")
         console.print()
         console.print("Available commands:")
         console.print("  • scan    - One-time scan and heal registry")

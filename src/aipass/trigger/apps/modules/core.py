@@ -185,7 +185,7 @@ def handle_command(command: str, args: list) -> bool:
     Returns:
         True if command was handled, False otherwise
     """
-    from aipass.cli.apps.modules import console
+    from aipass.cli.apps.modules import console, error
 
     # Handle module-name routing (drone @trigger core <subcmd>)
     if command == "core":
@@ -203,7 +203,7 @@ def handle_command(command: str, args: list) -> bool:
 
     if command == "fire":
         if not args:
-            console.print("[red]Usage: drone @trigger fire <event> [key=value ...][/red]")
+            error("Usage: drone @trigger fire <event> [key=value ...]")
             return True
         event_name = args[0]
         # Parse key=value pairs from remaining args

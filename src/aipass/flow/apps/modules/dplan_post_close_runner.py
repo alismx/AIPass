@@ -25,7 +25,7 @@ from pathlib import Path
 FLOW_ROOT = Path(__file__).resolve().parents[2]
 
 # External: CLI console (Rich display) and Prax logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 from aipass.prax.apps.modules.logger import system_logger as logger
 
 MODULE_NAME = "dplan_post_close_runner"
@@ -58,7 +58,7 @@ def handle_command(command: str, args: list) -> bool:
 
     # Run the post-close processing directly (foreground)
     if not _acquire_lock():
-        console.print("[yellow]Another instance is already running[/yellow]")
+        warning("Another instance is already running")
         return True
 
     try:
@@ -66,7 +66,7 @@ def handle_command(command: str, args: list) -> bool:
         console.print(f"[green]Processing complete:[/green] {result.get('processed', 0)} processed, {result.get('errors', 0)} errors")
     except Exception as e:
         logger.error(f"[{MODULE_NAME}] Background processing failed: {e}")
-        console.print(f"[red]Processing failed: {e}[/red]")
+        error(f"Processing failed: {e}")
     finally:
         _release_lock()
 

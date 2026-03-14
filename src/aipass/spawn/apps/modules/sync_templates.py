@@ -14,7 +14,7 @@ All implementation logic lives in apps/handlers/sync_templates_ops.py.
 
 from aipass.prax import logger
 # CLI service: from cli.apps.modules import console (via aipass namespace)
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 
 from aipass.spawn.apps.handlers.sync_templates_ops import sync_templates
 
@@ -66,7 +66,7 @@ def handle_sync_templates(args: list[str]) -> int:
     Returns exit code (0=success, 1=failure).
     """
     if args and args[0] in ["--help", "-h"]:
-        console.print("[yellow]Usage: drone @spawn sync-templates [--status|--sync|--dry-run][/yellow]")
+        warning("Usage: drone @spawn sync-templates [--status|--sync|--dry-run]")
         console.print()
         console.print("  [green](no args)[/green]   Report which managed template files are stale")
         console.print("  [green]--status[/green]    Same as no args")
@@ -81,7 +81,7 @@ def handle_sync_templates(args: list[str]) -> int:
         result = sync_templates(sync=sync, dry_run=dry_run)
     except Exception as exc:
         logger.error(f"[sync-templates] Unexpected error: {exc}")
-        console.print(f"[red]Error: {exc}[/red]")
+        error(str(exc))
         return 1
 
     _print_summary(result, dry_run)
@@ -119,7 +119,7 @@ def _print_summary(result: dict, dry_run: bool) -> None:
             console.print(f"    {name}")
 
     if stale:
-        console.print(f"  [yellow]Stale ({len(stale)}):[/yellow]")
+        warning(f"Stale ({len(stale)}):")
         for name in stale:
             console.print(f"    {name}")
 
@@ -129,7 +129,7 @@ def _print_summary(result: dict, dry_run: bool) -> None:
             console.print(f"    {name}")
 
     if errors:
-        console.print(f"  [red]Errors ({len(errors)}):[/red]")
+        error(f"Errors ({len(errors)}):")
         for err in errors:
             console.print(f"    {err}")
 

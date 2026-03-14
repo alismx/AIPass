@@ -17,7 +17,7 @@ import sys
 from typing import List
 
 from aipass.prax.apps.modules.logger import system_logger as logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error
 
 
 def print_introspection():
@@ -102,7 +102,7 @@ def handle_command(command: str, args: List[str]) -> bool:
     if result:
         console.print("[green]✅ Pushed to all branch dashboards[/green]\n")
     else:
-        console.print("[red]❌ Push failed — check logs[/red]\n")
+        error("Push failed — check logs")
 
     return True
 

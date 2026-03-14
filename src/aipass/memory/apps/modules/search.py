@@ -26,7 +26,7 @@ from rich.panel import Panel
 from rich import box
 
 from aipass.prax import logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 
 # =============================================================================
 # INFRASTRUCTURE SETUP
@@ -63,8 +63,7 @@ def handle_command(command: str, args: List[str]) -> bool:
 
     if command == 'search':
         if not args:
-            console.print("[red]Error:[/red] Search query required")
-            console.print("Usage: search <query> [--branch BRANCH] [--type TYPE] [--n N]")
+            error("Search query required", suggestion="Usage: search <query> [--branch BRANCH] [--type TYPE] [--n N]")
             return True
 
         # Parse arguments
@@ -85,7 +84,7 @@ def handle_command(command: str, args: List[str]) -> bool:
                 try:
                     n_results = int(args[i + 1])
                 except ValueError:
-                    console.print(f"[red]Error:[/red] Invalid number: {args[i + 1]}")
+                    error(f"Invalid number: {args[i + 1]}")
                     return True
                 i += 2
             else:
@@ -94,7 +93,7 @@ def handle_command(command: str, args: List[str]) -> bool:
 
         query = ' '.join(query_parts)
         if not query:
-            console.print("[red]Error:[/red] Search query required")
+            error("Search query required")
             return True
 
         show_search_results(query, branch=branch, memory_type=memory_type, n_results=n_results)
@@ -126,7 +125,7 @@ def print_help() -> None:
     console.print()
     console.print("[bold]EXAMPLES:[/bold]")
     console.print("  # Search all branches")
-    console.print("  [dim]drone @memory search \"error handling patterns\"[/dim]")
+    console.print("  [dim]drone @memory search \"performance patterns\"[/dim]")
     console.print()
     console.print("  # Search specific branch")
     console.print("  [dim]drone @memory search \"registry bugs\" --branch SEED[/dim]")
@@ -191,7 +190,7 @@ def show_search_results(
     )
 
     if not result['success']:
-        console.print(f"[red]x[/red] {result.get('error', 'Unknown error')}")
+        error(result.get('error', 'Unknown error'))
         return False
 
     collections_searched = result.get('collections_searched', 0)
@@ -203,19 +202,11 @@ def show_search_results(
     console.print()
 
     if not filtered_results and total_results == 0:
-        console.print("[yellow]No matching memories found[/yellow]")
-        console.print()
-        console.print("[dim]Try:[/dim]")
-        console.print("  * Different search terms")
-        console.print("  * Broader query without filters")
-        console.print("  * Check if memories have been rolled over (drone @memory status)")
+        warning("No matching memories found", details="Try different search terms, broader query without filters, or check if memories have been rolled over (drone @memory status)")
         return True
 
     if not filtered_results:
-        console.print("[yellow]No relevant memories found[/yellow]")
-        console.print()
-        console.print("[dim]The search found some results but none were relevant enough (>40% similarity).[/dim]")
-        console.print("[dim]Try more specific search terms related to your AIPass work.[/dim]")
+        warning("No relevant memories found", details="Results found but none relevant enough (>40% similarity). Try more specific search terms.")
         return True
 
     for i, item in enumerate(filtered_results, 1):

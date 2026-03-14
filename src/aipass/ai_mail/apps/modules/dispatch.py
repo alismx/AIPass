@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import List
 
 from aipass.prax.apps.modules.logger import system_logger as logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error
 from aipass.ai_mail.apps.handlers.dispatch.status import (
     load_dispatch_log,
     check_pid_status,
@@ -93,7 +93,7 @@ def handle_command(command: str, args: List[str]) -> bool:
     elif subcommand == "wake":
         return _orchestrate_wake(args[1:])
     else:
-        console.print(f"[red]Unknown dispatch subcommand: {subcommand}[/red]")
+        error(f"Unknown dispatch subcommand: {subcommand}")
         print_help()
         return False
 
@@ -175,7 +175,7 @@ def _orchestrate_wake(args: List[str]) -> bool:
         i += 1
 
     if not filtered:
-        console.print("[red]Missing branch argument[/red]")
+        error("Missing branch argument")
         return False
 
     branch_email = filtered[0]

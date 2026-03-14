@@ -233,6 +233,16 @@ def print_branch_summary(audit_result: Dict, system_averages: Dict[str, int] | N
             for issue in violation.get('issues', []):
                 console.print(f"      [dim]• {issue}[/dim]")
 
+    # Show STDERR_ROUTING violations (console.print red/yellow → use error()/warning())
+    stderr_routing_violations = audit_result.get('stderr_routing_violations', [])
+    if stderr_routing_violations:
+        console.print()
+        console.print(f"  [bold red]STDERR_ROUTING VIOLATIONS ({len(stderr_routing_violations)} files):[/bold red]")
+        for violation in stderr_routing_violations:
+            console.print(f"    [red]✗[/red] {violation['path']} [dim](score: {violation['score']}%)[/dim]")
+            for issue in violation.get('issues', []):
+                console.print(f"      [dim]• {issue}[/dim]")
+
     # Show SHEBANG violations (no #!/... in pip packages)
     shebang_violations = audit_result.get('shebang_violations', [])
     if shebang_violations:

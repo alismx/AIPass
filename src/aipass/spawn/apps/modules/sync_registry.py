@@ -14,7 +14,7 @@ All implementation logic lives in apps/handlers/sync_registry_ops.py.
 
 from aipass.prax import logger
 # CLI service: from cli.apps.modules import console (via aipass namespace)
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 
 from aipass.spawn.apps.handlers.sync_registry_ops import sync_registry
 
@@ -64,7 +64,7 @@ def handle_sync_registry(args: list[str]) -> int:
     Returns exit code (0=success, 1=failure).
     """
     if args and args[0] in ["--help", "-h"]:
-        console.print("[yellow]Usage: drone @spawn sync-registry [--fix][/yellow]")
+        warning("Usage: drone @spawn sync-registry [--fix]")
         console.print()
         console.print("  [green](no args)[/green]  Report mismatches between registry and filesystem")
         console.print("  [green]--fix[/green]      Auto-repair: remove stale, add unregistered")
@@ -76,7 +76,7 @@ def handle_sync_registry(args: list[str]) -> int:
         result = sync_registry(fix=fix)
     except Exception as exc:
         logger.error(f"[sync-registry] Unexpected error: {exc}")
-        console.print(f"[red]Error: {exc}[/red]")
+        error(str(exc))
         return 1
 
     _print_summary(result)
@@ -106,7 +106,7 @@ def _print_summary(result: dict) -> None:
 
     # Stale
     if stale:
-        console.print(f"  [red]Stale ({len(stale)}):[/red] [dim]registered but missing/invalid[/dim]")
+        error(f"Stale ({len(stale)}): registered but missing/invalid")
         for name in sorted(stale):
             console.print(f"    {name}")
     else:
@@ -114,7 +114,7 @@ def _print_summary(result: dict) -> None:
 
     # Unregistered
     if unregistered:
-        console.print(f"  [yellow]Unregistered ({len(unregistered)}):[/yellow] [dim]on disk but not in registry[/dim]")
+        warning(f"Unregistered ({len(unregistered)}): on disk but not in registry")
         for name in sorted(unregistered):
             console.print(f"    {name}")
     else:
