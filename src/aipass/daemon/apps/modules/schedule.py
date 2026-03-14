@@ -21,7 +21,7 @@ from typing import List
 
 from aipass.prax import logger
 
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error as cli_error
 
 def _header(text):
     console.print(f"\n[bold cyan]{'='*70}[/bold cyan]")
@@ -32,7 +32,7 @@ def _success(text):
     console.print(f"[green]OK:[/green] {text}")
 
 def _error(text):
-    console.print(f"[red]ERROR:[/red] {text}")
+    cli_error(text)
 
 # Handler imports
 from aipass.daemon.apps.handlers.schedule.task_registry import (
@@ -178,7 +178,7 @@ def _handle_create(args: List[str]) -> bool:
     try:
         parsed = parser.parse_args(args)
     except SystemExit:
-        console.print("[red]Usage: schedule create \"task\" --due <date> --to @branch [--message \"details\"][/red]")
+        _error('Usage: schedule create "task" --due <date> --to @branch [--message "details"]')
         return False
 
     if not parsed.task:

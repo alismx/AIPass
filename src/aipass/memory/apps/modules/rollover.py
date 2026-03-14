@@ -27,7 +27,7 @@ from rich.panel import Panel
 from rich import box
 
 from aipass.prax import logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, warning
 
 # =============================================================================
 # INFRASTRUCTURE SETUP
@@ -139,7 +139,7 @@ def run_rollover() -> bool:
     result = _handler_execute_rollover()
 
     if not result.get('success') and result.get('error'):
-        console.print(f"[red]x[/red] {result['error']}")
+        error(result['error'])
         return False
 
     triggers_count = result.get('triggers_count', 0)
@@ -168,9 +168,8 @@ def run_rollover() -> bool:
 
     if failed:
         console.print()
-        console.print("[red]Failed operations:[/red]")
         for fail in failed:
-            console.print(f"  [red]x[/red] {fail['trigger']} - {fail['stage']}: {fail['error']}")
+            error(f"{fail['trigger']} - {fail['stage']}: {fail['error']}")
 
     return success_count > 0
 
@@ -201,11 +200,11 @@ def sync_line_counts() -> None:
     if result['success']:
         console.print(f"[green]>[/green] Updated {result['updated']} files")
         if result['failed'] > 0:
-            console.print(f"[yellow]![/yellow] {result['failed']} files failed:")
-            for branch, mem_type, error in result.get('failures', []):
-                console.print(f"    [red]x[/red] {branch}.{mem_type}: {error}")
+            warning(f"{result['failed']} files failed")
+            for branch, mem_type, err_msg in result.get('failures', []):
+                error(f"{branch}.{mem_type}: {err_msg}")
     else:
-        console.print("[red]x[/red] Failed to sync line counts")
+        error("Failed to sync line counts")
 
     console.print()
 
@@ -235,7 +234,7 @@ def show_status() -> None:
     stats_result = detector.get_rollover_stats()
 
     if not stats_result['success']:
-        console.print(f"[red]x[/red] Failed to get status: {stats_result.get('error', 'Unknown error')}")
+        error(f"Failed to get status: {stats_result.get('error', 'Unknown error')}")
         logger.error(f"[rollover] Failed to get status: {stats_result.get('error')}")
         return
 
@@ -249,7 +248,7 @@ def show_status() -> None:
 
     # Per-branch details
     if stats['branches']:
-        console.print("[yellow]Branch Details:[/yellow]")
+        console.print("[bold cyan]Branch Details:[/bold cyan]")
         console.print()
 
         for branch_name, branch_stats in stats['branches'].items():
@@ -294,7 +293,7 @@ def check_triggers() -> None:
     triggers_result = detector.check_all_branches()
 
     if not triggers_result['success']:
-        console.print(f"[red]x[/red] Failed to check triggers: {triggers_result.get('error', 'Unknown error')}")
+        error(f"Failed to check triggers: {triggers_result.get('error', 'Unknown error')}")
         logger.error(f"[rollover] Failed to check triggers: {triggers_result.get('error')}")
         return
 
@@ -304,7 +303,7 @@ def check_triggers() -> None:
         console.print("[green]>[/green] No files need rollover")
         return
 
-    console.print(f"[yellow]Found {len(triggers)} files ready for rollover:[/yellow]")
+    console.print(f"[bold cyan]Found {len(triggers)} files ready for rollover:[/bold cyan]")
     console.print()
 
     for trigger in triggers:

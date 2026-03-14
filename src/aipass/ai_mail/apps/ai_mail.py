@@ -33,7 +33,7 @@ _UPDATE_SECTION = None  # type: ignore
 from aipass.prax.apps.modules.logger import system_logger as logger
 
 # CLI services for display
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error
 
 # =============================================================================
 # CONSTANTS & CONFIG
@@ -228,14 +228,14 @@ def main():
     remaining_args = args[1:] if len(args) > 1 else []
 
     if not modules:
-        console.print("❌ ERROR: No modules found")
+        error("No modules found")
         return 1
 
     # Route command
     if route_command(command, remaining_args, modules):
         return 0
     else:
-        console.print(f"❌ ERROR: Unknown command: {command}")
+        error(f"Unknown command: {command}")
         return 1
 
 if __name__ == "__main__":

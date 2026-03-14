@@ -17,7 +17,7 @@ import sys
 import argparse
 
 from aipass.prax.apps.modules.logger import system_logger as logger
-from aipass.cli.apps.modules import console, header
+from aipass.cli.apps.modules import console, header, error, warning
 
 
 def print_help():
@@ -52,13 +52,13 @@ def print_help():
     console.print()
     console.print("[bold cyan]OPTIONS:[/bold cyan]")
     console.print()
-    console.print("  [yellow]--role[/yellow]        Agent role description")
-    console.print("  [yellow]--traits[/yellow]      Agent personality traits")
-    console.print("  [yellow]--purpose[/yellow]     Agent purpose (brief)")
-    console.print("  [yellow]--template[/yellow]    Custom template directory")
-    console.print("  [yellow]--registry[/yellow]    Path to AIPASS_REGISTRY.json")
-    console.print("  [yellow]--dry-run[/yellow]     Preview changes without modifying files")
-    console.print("  [yellow]--trace[/yellow]       Enable verbose logging")
+    warning("--role", details="Agent role description")
+    warning("--traits", details="Agent personality traits")
+    warning("--purpose", details="Agent purpose (brief)")
+    warning("--template", details="Custom template directory")
+    warning("--registry", details="Path to AIPASS_REGISTRY.json")
+    warning("--dry-run", details="Preview changes without modifying files")
+    warning("--trace", details="Enable verbose logging")
     console.print()
 
 
@@ -68,8 +68,7 @@ def handle_create(args):
     from aipass.spawn.apps.modules.core import validate_class, get_default_class
 
     if not args:
-        console.print("[red]Error: target path required[/red]")
-        console.print("[dim]Usage: drone @spawn create [class] <target_path> [--role ...][/dim]")
+        error("target path required", suggestion="drone @spawn create [class] <target_path> [--role ...]")
         return 1
 
     # Check if first arg is a citizen class
@@ -79,7 +78,7 @@ def handle_create(args):
         citizen_class = args[0]
         remaining_args = args[1:]
         if not remaining_args:
-            console.print("[red]Error: target path required after class name[/red]")
+            error("target path required after class name")
             return 1
 
     parser = argparse.ArgumentParser(prog="spawn create", add_help=False)
@@ -110,11 +109,11 @@ def handle_create(args):
         console.print(f"  Files: {result['files_copied']}")
         console.print(f"  Registry: {'updated' if result['registry_updated'] else 'not updated'}")
         if result["validation_issues"]:
-            console.print(f"  [yellow]Warnings: {len(result['validation_issues'])} unreplaced placeholders[/yellow]")
+            warning(f"{len(result['validation_issues'])} unreplaced placeholders")
         console.print()
         return 0
     else:
-        console.print(f"[red]Error: {result['error']}[/red]")
+        error(result['error'])
         return 1
 
 
@@ -183,12 +182,10 @@ def main():
     }
 
     if command in stub_commands:
-        console.print(f"[yellow]'{command}' is not yet implemented.[/yellow]")
-        console.print(f"[dim]Planned: {stub_commands[command]}[/dim]")
+        warning(f"'{command}' is not yet implemented.", details=f"Planned: {stub_commands[command]}")
         return 1
 
-    console.print(f"[red]Unknown command: {command}[/red]")
-    console.print("[dim]Run 'drone @spawn --help' for available commands[/dim]")
+    error(f"Unknown command: {command}", suggestion="Run 'drone @spawn --help' for available commands")
     return 1
 
 

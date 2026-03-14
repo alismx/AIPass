@@ -35,6 +35,7 @@ When a task belongs to a specialist, send it there. Don't burn context doing the
 drone @ai_mail send @target "Subject" "Body" --dispatch   # Task email
 drone @ai_mail dispatch wake @target                       # Wake branch
 drone @flow create . "Subject"                             # Create FPLAN
+drone @flow create . "Subject" dplan                       # Create DPLAN (dplan template)
 drone @flow list                                           # Active plans
 drone systems                                              # All branches
 ```

@@ -21,7 +21,7 @@ PATTERN (from Prax):
 """
 
 # Rich console (primary service - like Prax logger)
-from aipass.cli.apps.modules.display import console
+from aipass.cli.apps.modules.display import console, err_console
 
 # Display functions
 from aipass.cli.apps.modules.display import (
@@ -29,6 +29,7 @@ from aipass.cli.apps.modules.display import (
     success,
     error,
     warning,
+    fatal,
     section
 )
 
@@ -41,12 +42,14 @@ from aipass.cli.apps.modules.templates import (
 __all__ = [
     # Rich console (primary service)
     'console',
+    'err_console',
 
     # Display
     'header',
     'success',
     'error',
     'warning',
+    'fatal',
     'section',
 
     # Templates

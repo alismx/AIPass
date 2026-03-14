@@ -8,9 +8,12 @@
 
 """Placeholder replacement engine for agent templates."""
 
+import json
 import re
 from datetime import datetime
 from pathlib import Path
+
+from aipass.spawn.apps.handlers.registry import find_registry
 
 
 def replace_placeholders(content, replacements):
@@ -37,6 +40,16 @@ def build_replacements_dict(target_dir, branch_name, **overrides):
     lower = branch_name.lower().replace("-", "_")
     now = datetime.now()
 
+    # Read registry ID — never crash spawn if registry is missing
+    registry_id = ""
+    try:
+        registry_path = find_registry()
+        if registry_path.exists():
+            data = json.loads(registry_path.read_text(encoding="utf-8"))
+            registry_id = data.get("metadata", {}).get("id", "")
+    except Exception:
+        registry_id = ""
+
     replacements = {
         "BRANCHNAME": upper,
         "branchname": lower,
@@ -50,6 +63,7 @@ def build_replacements_dict(target_dir, branch_name, **overrides):
         "TRAITS": overrides.get("traits", ""),
         "PURPOSE_BRIEF": overrides.get("purpose", "New agent - purpose TBD"),
         "CITIZEN_NUMBER": str(overrides.get("citizen_number", 0)),
+        "REGISTRY_ID": registry_id,
         "KEY_CAPABILITIES": "",
         "DEPENDS_ON": "",
         "PROVIDES_TO": "",

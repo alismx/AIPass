@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import List
 
 from aipass.prax.apps.modules.logger import enable_terminal_output, disable_terminal_output, system_logger as logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error
 
 
 def print_introspection():
@@ -101,7 +101,7 @@ def handle_command(command: str, args: List[str]) -> bool:
 
     except Exception as e:
         logger.error(f"Error in terminal command: {e}")
-        console.print(f"[red]❌ ERROR: {e}[/red]")
+        error(str(e))
         return True
 
 

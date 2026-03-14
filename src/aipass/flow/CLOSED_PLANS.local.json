@@ -27,6 +27,20 @@
       "subject": "Build STATUS board — per-branch STATUS.local.md with Prax-managed central aggregation",
       "date_closed": "2026-03-10",
       "location": "flow"
+    },
+    {
+      "plan_id": "FPLAN-0032",
+      "type": "FPLAN",
+      "subject": "CLI stderr standardization — Phase 1 add err_console to display.py",
+      "date_closed": "2026-03-14",
+      "location": "flow"
+    },
+    {
+      "plan_id": "FPLAN-0031",
+      "type": "FPLAN",
+      "subject": "Drone stderr and error propagation — investigation and long-term fix",
+      "date_closed": "2026-03-14",
+      "location": "flow"
     }
   ]
 }

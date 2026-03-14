@@ -20,7 +20,7 @@ from typing import List
 
 # Infrastructure imports (module does the logging)
 from aipass.prax.apps.modules.logger import system_logger as logger
-from aipass.cli.apps.modules import console, header, success, error
+from aipass.cli.apps.modules import console, header, success, error, warning
 
 # Handler imports (local handlers in handlers/dplan/)
 from aipass.flow.apps.handlers.dplan.create import create_plan
@@ -458,7 +458,7 @@ def _handle_close(args: List[str]) -> bool:
         console.print(f"[dim]  Memory Bank archival running in background[/dim]")
     except Exception as e:
         logger.warning(f"[dev_flow] Failed to spawn background processing: {e}")
-        console.print(f"[yellow]  Background archival failed to start - will retry on next close[/yellow]")
+        warning("Background archival failed to start - will retry on next close")
 
     # Step 3/3: Done
     console.print(f"[dim][3/3][/dim] Finalizing...")
@@ -476,7 +476,7 @@ def _handle_close_all() -> bool:
     open_plans = get_open_plans()
 
     if not open_plans:
-        console.print("\n[yellow]No open plans to close[/yellow]\n")
+        warning("No open plans to close")
         return True
 
     console.print(f"\n[bold yellow]Found {len(open_plans)} open plan(s) to close:[/bold yellow]")
@@ -511,7 +511,7 @@ def _handle_close_all() -> bool:
         else:
             failure_count += 1
             logger.warning(f"[dev_flow] Failed to close DPLAN-{p['number']:03d}: {err}")
-            console.print(f"[red]  Failed: {err}[/red]")
+            error(f"  Failed: {err}")
 
     # Push dashboard
     try:
@@ -530,7 +530,7 @@ def _handle_close_all() -> bool:
             console.print(f"\n[dim]Background processing started for {success_count} plan(s)[/dim]")
         except Exception as e:
             logger.warning(f"[dev_flow] Failed to spawn background processing: {e}")
-            console.print(f"\n[yellow]Background processing failed to start[/yellow]")
+            warning("Background processing failed to start")
 
     console.print("\n" + "=" * 60)
     console.print("[bold green]CLOSE ALL COMPLETE[/bold green]")

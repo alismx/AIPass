@@ -19,7 +19,7 @@ import argparse
 from pathlib import Path
 from typing import Any, List
 
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error
 from aipass.prax import logger
 
 # Explicit module imports (replaces dynamic discover_modules)
@@ -172,7 +172,7 @@ def main():
     modules = get_modules()
 
     if not modules:
-        console.print("❌ ERROR: No modules found")
+        error("No modules found")
         return 1
 
     # 5. Handle 'all' command: snapshot → versioned → drive-sync
@@ -187,7 +187,7 @@ def main():
             force=args.force, test=False, limit=0
         )
         if not route_command(snapshot_args, modules):
-            console.print("[red]Snapshot failed - aborting[/red]")
+            error("Snapshot failed - aborting")
             return 1
 
         console.print()
@@ -201,7 +201,7 @@ def main():
             force=args.force, test=False, limit=0
         )
         if not route_command(versioned_args, modules):
-            console.print("[red]Versioned backup failed - aborting[/red]")
+            error("Versioned backup failed - aborting")
             return 1
 
         console.print()
@@ -215,7 +215,7 @@ def main():
             force=args.force, test=False, limit=args.limit
         )
         if not route_command(sync_args, modules):
-            console.print("[red]Drive sync failed[/red]")
+            error("Drive sync failed")
             return 1
 
         console.print()

@@ -20,7 +20,7 @@ from typing import List
 
 from aipass.prax import logger
 
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error as cli_error
 
 def _header(text):
     console.print(f"\n[bold cyan]{'='*70}[/bold cyan]")
@@ -31,7 +31,7 @@ def _success(text):
     console.print(f"[green]OK:[/green] {text}")
 
 def _error(text):
-    console.print(f"[red]ERROR:[/red] {text}")
+    cli_error(text)
 
 from aipass.daemon.apps.handlers.actions.actions_registry import (
     list_actions,

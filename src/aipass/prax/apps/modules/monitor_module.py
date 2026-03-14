@@ -389,7 +389,7 @@ def _interactive_loop():
             elif cmd == 'status':
                 _print_status()
             else:
-                console.print(f"[red]Unknown command: {cmd}[/red]")
+                error(f"Unknown command: {cmd}")
                 console.print("[dim]Type 'help' for available commands[/dim]")
 
         except KeyboardInterrupt:

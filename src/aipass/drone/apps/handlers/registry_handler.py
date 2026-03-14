@@ -9,7 +9,7 @@
 """
 Handler for registry file operations.
 
-Handles loading, parsing, and normalizing AIPASS_REGISTRY.json.
+Handles loading, parsing, and normalizing *_REGISTRY.json files.
 All file I/O and data transformation for the registry lives here.
 """
 
@@ -21,6 +21,7 @@ from typing import Any, Dict, List, Optional
 from aipass.prax import logger
 from .exceptions import (
     RegistryCorruptError,
+    RegistryMismatchError,
     RegistryNotFoundError,
     RegistryPermissionError,
 )
@@ -33,8 +34,18 @@ from .exceptions import (
 _registry_path: Optional[Path] = None
 
 
+def _first_registry_in(directory: Path) -> Optional[Path]:
+    """Return the first *_REGISTRY.json in *directory*, or None.
+
+    When multiple matches exist, the alphabetically-first name wins
+    so the result is deterministic across platforms.
+    """
+    matches = sorted(directory.glob("*_REGISTRY.json"))
+    return matches[0] if matches else None
+
+
 def find_registry() -> Path:
-    """Find AIPASS_REGISTRY.json by walking up from this file's location.
+    """Find a *_REGISTRY.json by walking up from this file's location.
 
     Search order:
     1. Explicitly set path via set_registry_path()
@@ -42,23 +53,33 @@ def find_registry() -> Path:
     3. Walk up from drone package location
     4. Walk up from cwd
     5. Default: package-relative path
-    """
-    # Walk up from this file (works for pip editable installs)
-    current = Path(__file__).resolve().parent
-    for parent in [current] + list(current.parents):
-        candidate = parent / "AIPASS_REGISTRY.json"
-        if candidate.exists():
-            return candidate
 
-    # Walk up from cwd (works for regular installs)
+    The first directory that contains any *_REGISTRY.json is treated
+    as the project boundary.  If that directory holds more than one
+    match, the alphabetically-first file is returned.
+    """
+    # Walk up from cwd FIRST — this is where the user is working
     cwd = Path.cwd()
     for parent in [cwd] + list(cwd.parents):
-        candidate = parent / "AIPASS_REGISTRY.json"
-        if candidate.exists():
-            return candidate
+        hit = _first_registry_in(parent)
+        if hit is not None:
+            return hit
 
-    # Fallback — use package-relative path (no filesystem assumptions)
-    return Path(__file__).resolve().parents[4] / "AIPASS_REGISTRY.json"
+    # Walk up from this file (fallback for pip editable installs)
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        hit = _first_registry_in(parent)
+        if hit is not None:
+            return hit
+
+    # Fallback — use package-relative path; glob there too
+    fallback_dir = Path(__file__).resolve().parents[4]
+    hit = _first_registry_in(fallback_dir)
+    if hit is not None:
+        return hit
+    # Ultimate fallback: return a conventional name so the caller
+    # gets a clear "not found" path in the error message.
+    return fallback_dir / "AIPASS_REGISTRY.json"
 
 
 def get_registry_path() -> Path:
@@ -79,6 +100,49 @@ def get_registry_path() -> Path:
         return Path(env_path)
 
     return find_registry()
+
+
+def _verify_registry_credential(registry_path: Path, registry_data: Dict[str, Any]) -> None:
+    """Verify that the registry matches the caller's passport credential.
+
+    Compares registry metadata.id against the nearest passport's
+    citizenship.registry_id.  Only raises when BOTH sides have an ID
+    and they don't match — silent pass otherwise.
+    """
+    try:
+        registry_id = registry_data.get("metadata", {}).get("id")
+        if not registry_id:
+            return
+
+        # Walk up from CWD looking for .trinity/passport.json
+        cwd = Path.cwd()
+        passport_path = None
+        for parent in [cwd] + list(cwd.parents):
+            candidate = parent / ".trinity" / "passport.json"
+            if candidate.is_file():
+                passport_path = candidate
+                break
+
+        if passport_path is None:
+            return
+
+        with open(passport_path, "r", encoding="utf-8") as f:
+            passport = json.load(f)
+
+        passport_id = passport.get("citizenship", {}).get("registry_id")
+        if not passport_id:
+            return
+
+        if passport_id != registry_id:
+            raise RegistryMismatchError(
+                f"Registry mismatch: citizen belongs to registry "
+                f"'{passport_id}' but found registry '{registry_id}' "
+                f"at {registry_path}"
+            )
+    except RegistryMismatchError:
+        raise
+    except Exception:
+        pass  # Verification should never crash drone
 
 
 def set_registry_path(path: str | Path) -> None:
@@ -113,7 +177,7 @@ def load_registry() -> Dict[str, Any]:
     if not registry_path.exists():
         raise RegistryNotFoundError(
             f"Registry not found at {registry_path}. "
-            "Create an AIPASS_REGISTRY.json in your project root."
+            "Create a *_REGISTRY.json file in your project root."
         )
 
     try:
@@ -153,6 +217,8 @@ def load_registry() -> Dict[str, Any]:
         data["branches"] = branches_dict
     elif not isinstance(branches_raw, dict):
         raise RegistryCorruptError("Registry 'branches' must be a list or dict")
+
+    _verify_registry_credential(registry_path, data)
 
     return data
 

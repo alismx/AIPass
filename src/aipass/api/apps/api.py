@@ -25,7 +25,7 @@ from typing import Any, List
 from aipass.prax.apps.modules.logger import system_logger as logger
 
 # CLI services for formatted output
-from aipass.cli.apps.modules import console, header
+from aipass.cli.apps.modules import console, header, error
 from rich.panel import Panel
 from rich.table import Table
 from rich.columns import Columns
@@ -102,9 +102,7 @@ def print_introspection():
     modules = discover_modules()
 
     if not modules:
-        console.print("[red]No modules discovered[/red]")
-        console.print()
-        console.print("[dim]Run 'python3 api.py --help' for usage information[/dim]")
+        error("No modules discovered", suggestion="Run 'python3 api.py --help' for usage information")
         console.print()
         return
 
@@ -254,9 +252,7 @@ def main():
 
     if not modules:
         logger.error("No modules found")
-        console.print()
-        console.print("[red]ERROR: No modules found[/red]")
-        console.print()
+        error("No modules found")
         return 1
 
     # Extract command and remaining args (matching seed pattern)
@@ -274,11 +270,7 @@ def main():
         return 0
     else:
         logger.warning(f"Unknown command: {command}")
-        console.print()
-        console.print(f"[red]ERROR: Unknown command: {command}[/red]")
-        console.print()
-        console.print("Run [dim]python3 api.py --help[/dim] for available commands")
-        console.print()
+        error(f"Unknown command: {command}", suggestion="Run 'python3 api.py --help' for available commands")
         return 1
 
 if __name__ == "__main__":

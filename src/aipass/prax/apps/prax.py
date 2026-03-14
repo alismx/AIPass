@@ -25,7 +25,7 @@ from typing import List, Callable
 from aipass.prax.apps.modules.logger import system_logger as logger
 
 # CLI services
-from aipass.cli.apps.modules import console, header, success, error
+from aipass.cli.apps.modules import console, header, success, error, warning
 
 # =============================================================================
 # MODULE DISCOVERY
@@ -63,7 +63,7 @@ def discover_command_modules() -> List[Callable]:
                 command_handlers.append(module.handle_command)
 
         except Exception as e:
-            console.print(f"Warning: Failed to load module {module_file.name}: {e}")
+            warning(f"Failed to load module {module_file.name}: {e}")
 
     return command_handlers
 
@@ -121,7 +121,7 @@ def route_command(command: str, args: List[str], handlers: List[Callable]) -> bo
             if handler(command, args):
                 return True
         except Exception as e:
-            console.print(f"❌ ERROR: Handler failed: {e}")
+            error(f"Handler failed: {e}")
             return False
 
     return False
@@ -177,14 +177,14 @@ Examples:
     handlers = discover_command_modules()
 
     if not handlers:
-        console.print("❌ ERROR: No command modules discovered")
+        error("No command modules discovered")
         return 1
 
     # Route command to appropriate handler
     if route_command(parsed_args.command, parsed_args.args, handlers):
         return 0
     else:
-        console.print(f"❌ ERROR: Unknown command: {parsed_args.command}")
+        error(f"Unknown command: {parsed_args.command}")
         return 1
 
 if __name__ == "__main__":

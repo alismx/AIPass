@@ -22,6 +22,7 @@ from typing import List, Any
 
 from aipass.prax import logger
 from aipass.cli import console, header
+from aipass.cli.apps.modules import error
 
 VERSION = "2.0.0"
 SEEDGO_ROOT = Path(__file__).parent
@@ -228,8 +229,7 @@ def main() -> int:
     if route_command(command, remaining, modules):
         return 0
 
-    console.print(f"[red]Unknown command:[/red] {command}")
-    console.print("Run 'seedgo --help' for usage")
+    error(f"Unknown command: {command}", suggestion="Run 'seedgo --help' for usage")
     return 1
 
 

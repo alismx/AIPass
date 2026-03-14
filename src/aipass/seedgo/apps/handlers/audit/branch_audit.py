@@ -143,7 +143,14 @@ def audit_branch(branch: Dict[str, str], bypass_rules: list, pack_path: Path = N
             v, s = _run_all_files(checker, name, all_files, bypass_rules)
             all_violations[name] = v
             if s:
-                scores[name] = int(sum(s) / len(s))
+                avg_score = int(sum(s) / len(s))
+                scores[name] = avg_score
+                # Update results to reflect all-files findings
+                all_failed = []
+                for vi in v:
+                    all_failed.extend({"name": name, "passed": False, "message": iss} for iss in vi.get("issues", []))
+                if all_failed:
+                    results[name] = {"passed": avg_score >= 75, "checks": all_failed, "score": avg_score, "standard": name.upper()}
 
     # Log structure post-checks (audit-level, not in any checker)
     if "log_structure" in scores:

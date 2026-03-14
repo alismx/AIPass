@@ -21,7 +21,7 @@ from typing import List
 from aipass.prax.apps.modules.logger import system_logger as logger
 
 # CLI services for formatting
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error
 from rich.panel import Panel
 
 # Import handlers
@@ -65,7 +65,7 @@ def handle_ping(verbose: bool = False) -> bool:
     except Exception as e:
         logger.error(f"Ping failed: {e}")
         if verbose:
-            console.print(f"Ping failed: {e}")
+            error(f"Ping failed: {e}")
         return False
 
 
@@ -88,7 +88,7 @@ def handle_status() -> bool:
         return True
     except Exception as e:
         logger.error(f"Status check failed: {e}")
-        console.print(f"Error getting status: {e}")
+        error(f"Error getting status: {e}")
         return False
 
 
@@ -113,7 +113,7 @@ def handle_registry() -> bool:
         return True
     except Exception as e:
         logger.error(f"Registry read failed: {e}")
-        console.print(f"Error reading registry: {e}")
+        error(f"Error reading registry: {e}")
         return False
 
 

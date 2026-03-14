@@ -28,7 +28,7 @@ _AI_MAIL_DIR = Path(__file__).resolve().parents[2]
 _REPO_ROOT = _AI_MAIL_DIR.parents[2]
 
 from aipass.prax import logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error, success
 from aipass.trigger.apps.modules.core import trigger
 
 # Handlers - business logic providers
@@ -120,7 +120,7 @@ def handle_send(args: List[str]) -> bool:
     parsed = parse_send_args(args)
 
     if parsed["mode"] == "error":
-        console.print(f"[red]{parsed['error']}[/red]")
+        error(parsed['error'])
         console.print("   Multiple: send @branch1 @branch2 \"Subject\" \"Message\"")
         return False
 
@@ -204,7 +204,7 @@ def _send_direct(to_branch, subject, message, auto_execute=False,
                     pass
             return True
         else:
-            console.print(f"[red]Failed to deliver: {error_msg}[/red]")
+            error(f"Failed to deliver: {error_msg}")
             dispatch_send_error(to_branch, subject, error_msg, deliver_email_to_branch)
             return False
     except BrokenPipeError:
@@ -212,7 +212,7 @@ def _send_direct(to_branch, subject, message, auto_execute=False,
         return True
     except Exception as e:
         logger.error(f"[email] Send failed: {e}")
-        console.print(f"[red]Error: {e}[/red]")
+        error(f"Error: {e}")
         dispatch_send_error(to_branch, subject, str(e), deliver_email_to_branch)
         return False
 
@@ -226,10 +226,13 @@ def _send_broadcast(subject, message, user_info, auto_execute, no_memory_save, r
         branches, create_email_file, load_email_file, deliver_email_to_branch,
         _delivery_callback, log_operation, update_central)
     if isinstance(results, str):
-        console.print("[red]Failed to load email file for broadcast[/red]")
+        error("Failed to load email file for broadcast")
         return False
-    for name, success, err in results:
-        console.print(f"  {'[green]OK[/green]' if success else '[red]FAIL[/red]'} {name}" + (f" ({err})" if not success else ""))
+    for name, ok, err in results:
+        if ok:
+            console.print(f"  [green]OK[/green] {name}")
+        else:
+            error(f"FAIL {name} ({err})")
     console.print(f"\nBroadcast complete: {success_count}/{total} delivered")
     return ok
 
@@ -241,7 +244,7 @@ def handle_inbox(args: List[str]) -> bool:
         first_arg = args[0] if args else None
         ok, info = resolve_inbox_target(first_arg, _REPO_ROOT, get_branch_by_email, get_current_user)
         if not ok:
-            console.print(f"[red]{info['error']}[/red]")
+            error(info['error'])
             return False
 
         inbox_file = info["inbox_file"]
@@ -269,7 +272,7 @@ def handle_inbox(args: List[str]) -> bool:
         return True
     except Exception as e:
         logger.error(f"[email] Inbox view failed: {e}")
-        console.print(f"[red]Error: {e}[/red]")
+        error(f"Error: {e}")
         return False
 
 

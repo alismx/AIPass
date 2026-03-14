@@ -30,7 +30,7 @@ from rich import box
 from rich.table import Table
 
 from aipass.prax import logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error
 
 # =============================================================================
 # INFRASTRUCTURE SETUP
@@ -55,7 +55,7 @@ def print_introspection():
     # Discover modules
     modules = discover_modules()
 
-    console.print(f"[yellow]Discovered Modules:[/yellow] {len(modules)}")
+    console.print(f"[bold cyan]Discovered Modules:[/bold cyan] {len(modules)}")
     console.print()
 
     for module in modules:
@@ -123,12 +123,12 @@ def print_help():
 
     console.print("[bold cyan]USAGE:[/bold cyan]")
     console.print()
-    console.print("  [yellow]Via Drone (recommended):[/yellow]")
-    console.print("    [dim]drone @memory search \"error handling\"[/dim]")
+    console.print("  [bold]Via Drone (recommended):[/bold]")
+    console.print("    [dim]drone @memory search \"performance patterns\"[/dim]")
     console.print("    [dim]drone @memory status[/dim]")
     console.print("    [dim]drone @memory rollover[/dim]")
     console.print()
-    console.print("  [yellow]Direct execution:[/yellow]")
+    console.print("  [bold]Direct execution:[/bold]")
     console.print("    [dim]python3 -m aipass.memory.apps.memory search \"query\"[/dim]")
     console.print("    [dim]python3 -m aipass.memory.apps.memory rollover[/dim]")
     console.print()
@@ -141,7 +141,7 @@ def print_help():
     console.print("  [cyan]--type TYPE[/cyan]        Filter by memory type (observations, local)")
     console.print("  [cyan]--n N[/cyan]              Number of results (default: 5)")
     console.print()
-    console.print("  [yellow]Example:[/yellow]")
+    console.print("  [bold]Example:[/bold]")
     console.print("    [dim]drone @memory search \"registry bugs\" --branch SEED --n 10[/dim]")
     console.print()
     console.print("-" * 70)
@@ -149,7 +149,7 @@ def print_help():
 
     console.print("[bold cyan]WATCH MODE:[/bold cyan]")
     console.print()
-    console.print("  [yellow]Start memory file watcher:[/yellow]")
+    console.print("  [bold]Start memory file watcher:[/bold]")
     console.print("    [dim]drone @memory watch[/dim]")
     console.print("    [dim]Monitors all branches, auto-rolls when limit exceeded[/dim]")
     console.print("    [dim]Press Ctrl+C to stop[/dim]")
@@ -275,7 +275,7 @@ def start_watch() -> None:
     result = start_memory_watcher()
 
     if not result.get('success'):
-        console.print(f"[red]x Failed to start watcher: {result.get('error')}[/red]")
+        error(f"Failed to start watcher: {result.get('error')}")
         return
 
     console.print(f"[green]>[/green] Watching {result.get('count', 0)} branch directories")
@@ -332,9 +332,7 @@ def main():
         return  # Module handled it successfully
     else:
         console.print()
-        console.print(f"[red]Unknown command: {command}[/red]")
-        console.print()
-        console.print("Run [dim]python3 -m aipass.memory.apps.memory --help[/dim] for available commands")
+        error(f"Unknown command: {command}", suggestion="Run 'python3 -m aipass.memory.apps.memory --help' for available commands")
         console.print()
         return
 

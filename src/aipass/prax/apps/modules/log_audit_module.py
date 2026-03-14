@@ -18,7 +18,7 @@ import sys
 from typing import List
 
 from aipass.prax.apps.modules.logger import system_logger as logger
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, error
 
 
 def print_introspection():
@@ -71,7 +71,7 @@ def _display_audit(files: list, summary: dict) -> None:
     if summary['healthy']:
         console.print("[green]  Status: HEALTHY — all logs within limits[/green]")
     else:
-        console.print(f"[red]  Status: {summary['oversized_count']} oversized, {summary['critical_count']} critical[/red]")
+        error(f"Status: {summary['oversized_count']} oversized, {summary['critical_count']} critical")
 
     # Show oversized files
     oversized = [f for f in files if f["status"] != "ok"]

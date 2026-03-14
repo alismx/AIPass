@@ -1,12 +1,12 @@
 # =================== AIPass ====================
 # Name: registry.py
-# Description: AIPASS_REGISTRY.json CRUD operations
+# Description: *_REGISTRY.json discovery and CRUD operations
 # Version: 1.0.0
 # Created: 2026-03-05
 # Modified: 2026-03-07
 # =============================================
 
-"""AIPASS_REGISTRY.json CRUD operations."""
+"""*_REGISTRY.json discovery and CRUD operations."""
 
 import json
 import os
@@ -31,49 +31,56 @@ def _branches_as_list(branches):
     return []
 
 
+def _glob_registry(directory):
+    """Find the first *_REGISTRY.json in a directory (sorted for consistency).
+
+    Args:
+        directory: Path to search in
+
+    Returns:
+        Path to the registry file, or None if not found
+    """
+    matches = sorted(directory.glob("*_REGISTRY.json"))
+    return matches[0] if matches else None
+
+
 def find_registry(start_path=None):
     """
-    Find AIPASS_REGISTRY.json — consistent with drone's resolution.
+    Find *_REGISTRY.json — walks up from __file__ and start_path/cwd.
+
+    The first *_REGISTRY.json found while walking up IS the project boundary.
+    If multiple exist in the same directory, picks the first alphabetically.
 
     Priority:
     1. AIPASS_REGISTRY environment variable
-    2. Project root (directory with pyproject.toml or .git) — walk up from __file__
-    3. Project root — walk up from start_path/cwd
-    4. Walk up from __file__ for any existing registry
-    5. Last resort: cwd
+    2. Walk up from __file__ — first dir containing *_REGISTRY.json
+    3. Walk up from start_path/cwd — first dir containing *_REGISTRY.json
+    4. Last resort: cwd / AIPASS_REGISTRY.json (backwards compat)
 
     Args:
         start_path: Directory to start searching from
 
     Returns:
-        Path to AIPASS_REGISTRY.json
+        Path to *_REGISTRY.json
     """
     # Check environment variable first (same as drone's config.py)
     env_path = os.environ.get("AIPASS_REGISTRY")
     if env_path:
         return Path(env_path)
 
-    # Walk up from package location — find project root first
-    pkg_dir = Path(__file__).resolve().parent
-    for parent in [pkg_dir] + list(pkg_dir.parents):
-        if (parent / "pyproject.toml").exists() or (parent / ".git").exists():
-            candidate = parent / "AIPASS_REGISTRY.json"
-            if candidate.exists():
-                return candidate
-            # Project root found but no registry — create here
-            return candidate
-
-    # Walk up from start_path or cwd
+    # Walk up from start_path or cwd FIRST — user's location takes priority
     current = Path(start_path).resolve() if start_path else Path.cwd()
     for parent in [current] + list(current.parents):
-        if (parent / "pyproject.toml").exists() or (parent / ".git").exists():
-            return parent / "AIPASS_REGISTRY.json"
+        found = _glob_registry(parent)
+        if found:
+            return found
 
-    # Fallback: any existing registry walking up from package
+    # Walk up from package location (fallback for editable installs)
+    pkg_dir = Path(__file__).resolve().parent
     for parent in [pkg_dir] + list(pkg_dir.parents):
-        candidate = parent / "AIPASS_REGISTRY.json"
-        if candidate.exists():
-            return candidate
+        found = _glob_registry(parent)
+        if found:
+            return found
 
     # Last resort: cwd
     return Path.cwd() / "AIPASS_REGISTRY.json"

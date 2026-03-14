@@ -33,7 +33,7 @@ from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.flow.apps.handlers.json import json_handler
 
 # CLI services for display and error handling
-from aipass.cli.apps.modules import console
+from aipass.cli.apps.modules import console, warning
 
 # Internal: Registry handlers
 from aipass.flow.apps.handlers.registry.load_registry import load_registry
@@ -84,7 +84,7 @@ def _display_messages(messages: List[Dict[str, Any]]):
             console.print(format_restore_error(error_type, plan_key, details=details))
 
         elif msg_type == "warning":
-            console.print(f"[yellow]{msg['text']}[/yellow]")
+            warning(msg['text'])
 
         elif msg_type == "dim":
             console.print(f"[dim]{msg['text']}[/dim]")
