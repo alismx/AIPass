@@ -2,5 +2,11 @@
   "extraPaths": ["src"],
   "pythonVersion": "3.10",
   "reportMissingImports": "error",
-  "reportAttributeAccessIssue": "error"
+  "reportAttributeAccessIssue": "error",
+  "exclude": [
+    "**/.venv",
+    "**/node_modules",
+    "**/.archive",
+    "**/.sorting_unprocessed"
+  ]
 }

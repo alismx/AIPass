@@ -16,8 +16,12 @@ Standard branch entry point (apps/drone.py pattern).
 import sys
 from typing import List
 
+from rich.console import Console
+
 from aipass.prax import logger
 from aipass.cli.apps.modules import console
+
+err_console = Console(stderr=True)
 from aipass.drone.apps.modules import BranchNotFoundError, CommandExecutionError
 from aipass.drone.apps.modules.discovery import get_help
 from aipass.drone.apps.modules.resolver import list_branches
@@ -159,7 +163,7 @@ def _handle_module(name: str, args: List[str]) -> int:
     try:
         result = route_module_command(name, command, cmd_args)
     except (ImportError, AttributeError) as exc:
-        console.print(f"drone: module @{name} is registered but not available: {exc}", stderr=True)
+        err_console.print(f"drone: module @{name} is registered but not available: {exc}")
         return 1
 
     if result.get("stdout"):
@@ -184,15 +188,15 @@ def _handle_target(args: List[str]) -> int:
         try:
             result = route_command(target)
         except BranchNotFoundError as exc:
-            console.print(f"drone: {exc}", stderr=True)
+            err_console.print(f"drone: {exc}")
             return 1
         except CommandExecutionError as exc:
-            console.print(f"drone: {exc}", stderr=True)
+            err_console.print(f"drone: {exc}")
             return 1
         if result.stdout:
             console.print(result.stdout, end="", highlight=False)
         if result.stderr:
-            console.print(result.stderr, end="", highlight=False, stderr=True)
+            err_console.print(result.stderr, end="", highlight=False)
         return result.exit_code
 
     # --help = show help
@@ -204,10 +208,10 @@ def _handle_target(args: List[str]) -> int:
             else:
                 console.print(f"No help available for {target}.")
         except BranchNotFoundError as exc:
-            console.print(f"drone: {exc}", stderr=True)
+            err_console.print(f"drone: {exc}")
             return 1
         except CommandExecutionError as exc:
-            console.print(f"drone: {exc}", stderr=True)
+            err_console.print(f"drone: {exc}")
             return 1
         return 0
 
@@ -225,16 +229,16 @@ def _handle_target(args: List[str]) -> int:
             interactive=interactive,
         )
     except BranchNotFoundError as exc:
-        console.print(f"drone: {exc}", stderr=True)
+        err_console.print(f"drone: {exc}")
         return 1
     except CommandExecutionError as exc:
-        console.print(f"drone: {exc}", stderr=True)
+        err_console.print(f"drone: {exc}")
         return 1
 
     if result.stdout:
         console.print(result.stdout, end="", highlight=False)
     if result.stderr:
-        console.print(result.stderr, end="", highlight=False, stderr=True)
+        err_console.print(result.stderr, end="", highlight=False)
     return result.exit_code
 
 
@@ -272,8 +276,8 @@ def main() -> int:
         return _handle_target(args)
 
     # Unknown command
-    console.print(f"drone: unknown command '{command}'", stderr=True)
-    console.print("Run 'drone --help' for usage.", stderr=True)
+    err_console.print(f"drone: unknown command '{command}'")
+    err_console.print("Run 'drone --help' for usage.")
     return 1
 
 

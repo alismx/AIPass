@@ -3,6 +3,8 @@
 
 **This prompt is your guide.** The patterns shown here are exact. Don't guess command syntax — the examples ARE the API.
 
+**If a command or workflow seems obvious but isn't documented here, flag it.** Don't silently guess — ask or investigate with `--help`. Missing instructions are a prompt bug, not a knowledge gap.
+
 **USER NAME:** Patrick
 
 If no user name is set above, ask on first interaction.
@@ -52,6 +54,9 @@ drone systems                     # List all registered branches
 drone @seedgo audit aipass        # Run standards audit on all branches
 drone @seedgo standards_query aipass_standards  # List all standards (then query by name)
 drone @prax monitor               # Real-time monitoring (interactive)
+drone @flow create . "Subject"        # Create FPLAN (execution plan)
+drone @flow create . "Subject" dplan  # Create DPLAN (design/planning doc)
+drone @flow list                      # List active plans
 ```
 
 ## Dispatch — Wake a Branch
