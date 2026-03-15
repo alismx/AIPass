@@ -33,9 +33,9 @@ from rich.columns import Columns
 # from aipass.prax import logger
 
 # Initialize Rich console (lowercase follows service instance pattern)
-CONSOLE = Console()  # Internal constant
+CONSOLE = Console(force_terminal=True)  # Internal constant — force_terminal ensures ANSI colors even when piped
 console = CONSOLE  # Primary export (lowercase service instance pattern)
-err_console = Console(stderr=True)  # Stderr console for error/warning output
+err_console = Console(stderr=True, force_terminal=True)  # Stderr console for error/warning output
 
 # Trigger loaded lazily to avoid circular import
 _trigger = None

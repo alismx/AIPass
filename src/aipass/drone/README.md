@@ -105,7 +105,7 @@ By default, drone captures subprocess output (`capture_output=True`) with a 30s 
 
 Commands in the interactive tuple bypass capture and inherit the terminal directly — enabling live Rich output, colors, and no timeout. Only add commands here when Patrick needs full terminal experience.
 
-**Current interactive commands** (in `apps/drone.py`):
+**Per-command allowlist** (in `apps/drone.py`):
 
 | Command      | Reason                                      |
 |--------------|---------------------------------------------|
@@ -113,7 +113,13 @@ Commands in the interactive tuple bypass capture and inherit the terminal direct
 | `snapshot`   | Backup snapshot (Rich progress bars)        |
 | `versioned`  | Backup versioned (Rich progress, long-running) |
 
-To add a new command: edit the `interactive` tuple in `_handle_target()` in `apps/drone.py`.
+**Per-branch allowlist** — all commands from these branches get interactive mode:
+
+| Branch | Reason                                      |
+|--------|---------------------------------------------|
+| `cli`  | User-facing CLI with Rich formatted output  |
+
+To add: edit `interactive_commands` or `interactive_branches` in `_handle_target()` in `apps/drone.py`.
 
 ---
 
