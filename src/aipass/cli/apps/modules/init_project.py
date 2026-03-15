@@ -48,27 +48,65 @@ def print_introspection():
 
 
 def print_help():
-    """Display help for the init command."""
+    """Display Rich-formatted help for the init command."""
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich import box
+
     console.print()
-    header("aipass init - Project Bootstrap")
+    header("aipass init — Project Bootstrap")
     console.print("[dim]Initialize an AIPass project in any directory[/dim]")
     console.print()
+    console.print("─" * 70)
+    console.print()
 
+    # Usage examples
     console.print("[bold cyan]USAGE:[/bold cyan]")
     console.print()
-    console.print("  [dim]drone @cli aipass init[/dim]                    Initialize in current directory")
-    console.print("  [dim]drone @cli aipass init /path/to/dir[/dim]       Initialize in target directory")
-    console.print("  [dim]drone @cli aipass init /path/to/dir MyProj[/dim] Initialize with custom name")
+
+    usage_table = Table(show_header=False, border_style="dim", box=box.SIMPLE, padding=(0, 2))
+    usage_table.add_column("Command", style="yellow")
+    usage_table.add_column("Description", style="white")
+    usage_table.add_row("drone @cli aipass init", "Initialize in current directory")
+    usage_table.add_row("drone @cli aipass init /path/to/dir", "Initialize in target directory")
+    usage_table.add_row("drone @cli aipass init /path MyProj", "Initialize with custom project name")
+    console.print(usage_table)
+    console.print()
+    console.print("─" * 70)
     console.print()
 
+    # What it creates
     console.print("[bold cyan]WHAT IT CREATES:[/bold cyan]")
     console.print()
-    console.print("  [green]1.[/green] {NAME}_REGISTRY.json      Project registry with UUID")
-    console.print("  [green]2.[/green] .trinity/passport.json     Project identity")
-    console.print("  [green]3.[/green] .trinity/local.json        Local context (empty)")
-    console.print("  [green]4.[/green] .trinity/observations.json Observations (empty)")
-    console.print("  [green]5.[/green] .aipass/aipass_local_prompt.md  Local prompt")
-    console.print("  [green]6.[/green] AIPASS.md                  Project prompt")
+
+    files_text = """[bold]Project scaffold (6 files):[/bold]
+
+  [green]1.[/green] [yellow]{NAME}_REGISTRY.json[/yellow]       Project registry with UUID
+  [green]2.[/green] [yellow].trinity/passport.json[/yellow]      Project identity (with registry_id)
+  [green]3.[/green] [yellow].trinity/local.json[/yellow]         Session history & learnings
+  [green]4.[/green] [yellow].trinity/observations.json[/yellow]  Collaboration patterns
+  [green]5.[/green] [yellow].aipass/aipass_local_prompt.md[/yellow]  Local prompt (injected every turn)
+  [green]6.[/green] [yellow]AIPASS.md[/yellow]                   Project prompt (persists in context)"""
+
+    console.print(Panel(files_text, border_style="green", padding=(1, 2), box=box.ROUNDED))
+    console.print()
+    console.print("─" * 70)
+    console.print()
+
+    # Arguments
+    console.print("[bold cyan]ARGUMENTS:[/bold cyan]")
+    console.print()
+
+    args_table = Table(show_header=True, header_style="bold cyan", border_style="dim")
+    args_table.add_column("Argument", style="green")
+    args_table.add_column("Required", style="yellow")
+    args_table.add_column("Default", style="dim")
+    args_table.add_column("Description", style="white")
+    args_table.add_row("target_dir", "No", "Current directory", "Directory to initialize")
+    args_table.add_row("project_name", "No", "Directory name", "Name for registry (auto-uppercased)")
+    console.print(args_table)
+    console.print()
+    console.print("─" * 70)
     console.print()
 
     console.print("[dim]Commands: init, init --help[/dim]")
@@ -111,18 +149,33 @@ def handle_command(command: str, args: List[str]) -> bool:
         sys.exit(1)
 
     # Display results
+    from rich.panel import Panel
+    from rich.table import Table
+    from rich import box
+
+    console.print()
     header("Project Initialized")
-    console.print(f"  [bold]{result['project_name']}[/bold]")
-    console.print()
-    success(
-        f"Created {len(result['created_files'])} files",
-        registry=f"{result['registry_file']} (id: {result['registry_id'][:8]}...)",
-        target=result["target"],
+
+    # Summary panel
+    summary = (
+        f"[bold]{result['project_name']}[/bold]\n"
+        f"\n"
+        f"  [yellow]Registry:[/yellow]  {result['registry_file']}\n"
+        f"  [yellow]ID:[/yellow]        [dim]{result['registry_id'][:8]}...[/dim]\n"
+        f"  [yellow]Target:[/yellow]    [dim]{result['target']}[/dim]"
     )
+    console.print(Panel(summary, border_style="green", box=box.ROUNDED))
+
+    # Files table
+    files_table = Table(show_header=True, header_style="bold cyan", border_style="dim")
+    files_table.add_column("#", style="green", width=3)
+    files_table.add_column("File", style="yellow")
+    for i, f in enumerate(result["created_files"], 1):
+        files_table.add_row(str(i), f)
+    console.print(files_table)
     console.print()
-    console.print("[dim]Files created:[/dim]")
-    for f in result["created_files"]:
-        console.print(f"  [dim]{f}[/dim]")
+
+    success(f"Created {len(result['created_files'])} files")
     console.print()
 
     return True

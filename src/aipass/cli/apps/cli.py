@@ -334,9 +334,9 @@ def show_version():
 
 def _handle_aipass(args):
     """Route aipass subcommands."""
-    if not args:
-        error("Missing subcommand", suggestion="Try: drone @cli aipass init")
-        sys.exit(1)
+    if not args or (args[0] in ("--help", "-h", "help")):
+        _print_aipass_introspection()
+        return
 
     subcmd = args[0]
     sub_args = args[1:]
@@ -345,8 +345,36 @@ def _handle_aipass(args):
     if handle_command(subcmd, sub_args):
         return
 
-    error(f"Unknown aipass subcommand: {subcmd}", suggestion="Try: drone @cli aipass init")
+    error(f"Unknown aipass subcommand: {subcmd}", suggestion="drone @cli aipass --help")
     sys.exit(1)
+
+
+def _print_aipass_introspection():
+    """Show available aipass subcommands — discovery for new users."""
+    from rich.table import Table
+
+    CONSOLE.print()
+    header("aipass — Project Commands")
+    CONSOLE.print("[dim]Manage AIPass projects from the command line[/dim]")
+    CONSOLE.print()
+
+    table = Table(show_header=True, header_style="bold cyan", border_style="dim")
+    table.add_column("Command", style="green")
+    table.add_column("Description", style="white")
+    table.add_column("Example", style="dim")
+
+    table.add_row(
+        "init",
+        "Bootstrap a new AIPass project",
+        "drone @cli aipass init /path MyProject",
+    )
+
+    CONSOLE.print(table)
+    CONSOLE.print()
+    CONSOLE.print("[dim]Run [bold]drone @cli aipass init --help[/bold] for detailed usage[/dim]")
+    CONSOLE.print()
+    CONSOLE.print("[dim]Commands: init, --help[/dim]")
+    CONSOLE.print()
 
 
 def main():
