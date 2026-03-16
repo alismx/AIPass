@@ -1,9 +1,9 @@
 # =================== AIPass ====================
 # Name: encapsulation_check.py
 # Description: Handler Encapsulation Standards Checker
-# Version: 1.0.0
+# Version: 1.1.0
 # Created: 2026-03-05
-# Modified: 2026-03-05
+# Modified: 2026-03-15
 # =============================================
 
 """
@@ -13,6 +13,7 @@ Validates that handlers are properly encapsulated:
 - No cross-branch handler imports (Branch A importing Branch B's handlers)
 - No cross-package handler imports (handlers/X importing handlers/Y)
 - Handlers should be accessed through module entry points, not directly
+- Handler security guards present in handlers/__init__.py (inspect.stack guard)
 """
 
 import re
@@ -149,6 +150,115 @@ def get_file_handler_package(file_path: str) -> Optional[str]:
     return None
 
 
+# Cache handler guard results per branch path (reset each audit run)
+_handler_guard_cache: Dict[str, Optional[Dict]] = {}
+
+
+def _resolve_branch_path(file_path: str) -> Optional[Path]:
+    """Resolve the branch root directory for a given file path."""
+    branch_info = get_branch_from_path(file_path)
+    if not branch_info:
+        return None
+    raw_path = branch_info.get('path', '')
+    branch_path = Path(raw_path)
+    if not branch_path.is_absolute():
+        registry_path = _find_registry()
+        branch_path = (registry_path.parent / branch_path).resolve()
+    return branch_path
+
+
+def check_handler_guard(module_path: str, bypass_rules: list | None = None) -> Optional[Dict]:
+    """
+    Check that a branch's handlers/__init__.py contains a security guard.
+
+    The guard uses inspect.stack() to block cross-branch handler imports
+    at runtime. Branches without this guard have unprotected handlers.
+
+    Returns a check dict, or None if the check is not applicable
+    (e.g., no handlers/ directory in the branch).
+    """
+    branch_path = _resolve_branch_path(module_path)
+    if branch_path is None:
+        return None
+
+    branch_key = str(branch_path)
+
+    # Return cached result if already checked this branch
+    if branch_key in _handler_guard_cache:
+        return _handler_guard_cache[branch_key]
+
+    # Check if bypassed
+    init_path = branch_path / "apps" / "handlers" / "__init__.py"
+    if is_bypassed(str(init_path), 'encapsulation', bypass_rules=bypass_rules):
+        result = {
+            'name': 'Handler security guard',
+            'passed': True,
+            'message': 'Handler guard check bypassed'
+        }
+        _handler_guard_cache[branch_key] = result
+        return result
+
+    handlers_dir = branch_path / "apps" / "handlers"
+    if not handlers_dir.is_dir():
+        # No handlers directory — check not applicable
+        _handler_guard_cache[branch_key] = None
+        return None
+
+    if not init_path.exists():
+        result = {
+            'name': 'Handler security guard',
+            'passed': False,
+            'message': 'Missing handlers/__init__.py — no handler security guard'
+        }
+        _handler_guard_cache[branch_key] = result
+        return result
+
+    # Read the init file and check for guard patterns
+    try:
+        content = init_path.read_text(encoding='utf-8')
+    except Exception:
+        result = {
+            'name': 'Handler security guard',
+            'passed': False,
+            'message': 'Cannot read handlers/__init__.py'
+        }
+        _handler_guard_cache[branch_key] = result
+        return result
+
+    # Count non-empty, non-comment lines
+    code_lines = [
+        ln for ln in content.split('\n')
+        if ln.strip() and not ln.strip().startswith('#')
+    ]
+
+    # Guard detection: look for key patterns
+    guard_patterns = ['_guard_branch_access', 'inspect.stack', 'ImportError']
+    has_guard = any(pattern in content for pattern in guard_patterns)
+
+    if has_guard:
+        result = {
+            'name': 'Handler security guard',
+            'passed': True,
+            'message': 'Handler security guard present (inspect.stack guard active)'
+        }
+    elif len(code_lines) < 10:
+        result = {
+            'name': 'Handler security guard',
+            'passed': False,
+            'message': 'Missing handler security guard — cross-branch imports unprotected'
+        }
+    else:
+        # File has substantial code but no recognized guard patterns
+        result = {
+            'name': 'Handler security guard',
+            'passed': False,
+            'message': 'handlers/__init__.py has code but no recognized security guard pattern'
+        }
+
+    _handler_guard_cache[branch_key] = result
+    return result
+
+
 def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     """
     Check if file respects handler encapsulation
@@ -225,6 +335,11 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
             lines, module_path, bypass_rules
         )
         checks.append(direct_import_check)
+
+    # Check 4: Handler security guard presence (branch-level, cached)
+    guard_check = check_handler_guard(module_path, bypass_rules)
+    if guard_check is not None:
+        checks.append(guard_check)
 
     # Calculate score
     if not checks:

@@ -120,11 +120,16 @@ def get_help(command: str | None = None) -> str:
     lines.append("  [dim]drone @seedgo standards_query aipass_standards cli    # Show content[/dim]")
     lines.append("")
 
+    lines.append("[yellow]Checklist:[/yellow]")
+    lines.append("  [dim]drone @seedgo checklist                              # Show checklist introspection[/dim]")
+    lines.append("  [dim]drone @seedgo checklist <file>                       # Run per-standard checklist on file[/dim]")
+    lines.append("")
+
     lines.append("─" * 70)
     lines.append("")
 
     # Commands line for drone discovery
-    lines.append("[dim]Commands: audit, standards_audit, standards_query, diagnostics, diagnostics_audit, readme, readme_update, --help[/dim]")
+    lines.append("[dim]Commands: audit, standards_audit, standards_query, checklist, diagnostics, diagnostics_audit, readme, readme_update, --help[/dim]")
     lines.append("")
 
     return "\n".join(lines)
