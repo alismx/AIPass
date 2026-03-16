@@ -209,8 +209,12 @@ def _handle_target(args: List[str]) -> int:
     command = rest[0]
     cmd_args = rest[1:]
 
-    # Long-running interactive commands bypass capture + timeout
-    interactive = command in ("monitor", "snapshot", "versioned")
+    # Interactive mode bypasses capture + timeout for human-facing output.
+    # Per-command: specific commands that need live terminal (progress bars, TUI).
+    # Per-branch: all commands from that branch get interactive mode (Rich CLI).
+    interactive_commands = ("monitor", "snapshot", "versioned")
+    interactive_branches = ("cli",)
+    interactive = command in interactive_commands or module_name in interactive_branches
 
     try:
         result = route_command(

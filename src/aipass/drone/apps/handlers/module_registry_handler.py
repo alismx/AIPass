@@ -23,6 +23,7 @@ from aipass.prax import logger
 
 # Maps module name -> import path for its drone_adapter
 _MODULE_REGISTRY: dict[str, str] = {
+    "cli": "aipass.cli.drone_adapter",
     "drone": "aipass.drone.drone_adapter",
     "seedgo": "aipass.seedgo.drone_adapter",
 }
