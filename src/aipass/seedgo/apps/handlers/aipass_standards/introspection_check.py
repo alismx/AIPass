@@ -15,11 +15,15 @@ Checks:
 1. Entry points (apps/{name}.py): print_introspection function exists
 2. Entry points: Execution order — no-args check before --help check in main()
 3. Modules (apps/modules/*.py): print_introspection function exists
+4. Modules: handle_command() no-args gate — must gate on empty args and call print_introspection()
 """
 
 import ast
 from pathlib import Path
 from typing import Dict, Optional
+
+# Run on ALL .py files so modules (apps/modules/*.py) are checked, not just entry points
+AUDIT_SCOPE = "all_files"
 
 
 def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
@@ -156,6 +160,12 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
         dispatch_check = check_correct_dispatch(tree, path.name)
         if dispatch_check:
             checks.append(dispatch_check)
+
+    # Check 4: handle_command() no-args gate (modules only)
+    if is_module:
+        gate_check = check_module_handle_command_gate(tree, path.name)
+        if gate_check:
+            checks.append(gate_check)
 
     # Calculate score
     passed_checks = sum(1 for check in checks if check['passed'])
@@ -294,6 +304,75 @@ def _find_main_function(tree: ast.Module) -> Optional[ast.FunctionDef]:
         if isinstance(node, ast.FunctionDef) and node.name == 'main':
             return node
     return None
+
+
+def _find_handle_command_function(tree: ast.Module) -> Optional[ast.FunctionDef]:
+    """Find the top-level handle_command() function definition."""
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef) and node.name == 'handle_command':
+            return node
+    return None
+
+
+def check_module_handle_command_gate(tree: ast.Module, filename: str) -> Optional[Dict]:
+    """
+    For modules (apps/modules/*.py), verify that handle_command() contains a
+    no-args gate that calls print_introspection().
+
+    The standard pattern is:
+        def handle_command(command, args):
+            ...
+            if not args:
+                print_introspection()  # or call a wrapper that shows introspection
+                return True
+
+    Without this gate, the module will immediately execute instead of showing
+    introspection when called with no arguments.
+
+    Uses AST to find handle_command(), then walks its body looking for a
+    no-args conditional whose body calls print_introspection (or a known
+    introspection wrapper).
+    """
+    handle_cmd = _find_handle_command_function(tree)
+
+    if handle_cmd is None:
+        # No handle_command — module may use a different pattern, skip
+        return {
+            'name': 'handle_command no-args gate',
+            'passed': True,
+            'message': f'No handle_command() found in {filename} (skipped)'
+        }
+
+    # Walk handle_command body to find a no-args conditional that calls introspection
+    # Known introspection-related function names (direct or wrapper)
+    introspection_names = {
+        'print_introspection',
+        '_show_audit_introspection',
+        '_show_pack_module_introspection',
+    }
+
+    for node in ast.walk(handle_cmd):
+        if not isinstance(node, ast.If):
+            continue
+
+        if not _is_no_args_check(node):
+            continue
+
+        # Found a no-args gate — check if its body calls an introspection function
+        calls = _get_function_calls_in_block(node.body)
+        if calls & introspection_names:
+            return {
+                'name': 'handle_command no-args gate',
+                'passed': True,
+                'message': f'handle_command() gates on no-args at line {node.lineno} → introspection'
+            }
+
+    # No no-args gate found that dispatches to introspection
+    return {
+        'name': 'handle_command no-args gate',
+        'passed': False,
+        'message': f'handle_command() in {filename} has no no-args gate calling print_introspection() — module will not show introspection when called with no arguments'
+    }
 
 
 def _find_name_main_block(tree: ast.Module) -> Optional[ast.If]:

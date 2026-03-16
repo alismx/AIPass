@@ -135,6 +135,7 @@ def print_introspection() -> None:
     console.print("[yellow]Next:[/yellow]  Explore a module")
     console.print("  [green]drone @seedgo standards_query[/green]       [dim]# Browse standards content[/dim]")
     console.print("  [green]drone @seedgo audit aipass[/green]          [dim]# Run compliance audit[/dim]")
+    console.print("  [green]drone @seedgo checklist <file>[/green]      [dim]# Per-standard checklist on a file[/dim]")
     console.print("  [green]drone @seedgo --help[/green]                [dim]# Full usage guide[/dim]")
     console.print()
 
@@ -191,11 +192,16 @@ def print_help() -> None:
     console.print("  [green]drone @seedgo standards_query aipass_standards cli[/green]    [dim]# Show standard content[/dim]")
     console.print()
 
+    console.print("[yellow]Checklist:[/yellow]")
+    console.print("  [green]drone @seedgo checklist[/green]                      [dim]# Show checklist introspection[/dim]")
+    console.print("  [green]drone @seedgo checklist <file>[/green]               [dim]# Run per-standard checklist on file[/dim]")
+    console.print()
+
     console.print("─" * 70)
     console.print()
 
     # Commands line for drone discovery
-    console.print("[dim]Commands: audit, standards_audit, standards_query, diagnostics, diagnostics_audit, readme, readme_update, --help[/dim]")
+    console.print("[dim]Commands: audit, standards_audit, standards_query, checklist, diagnostics, diagnostics_audit, readme, readme_update, --help[/dim]")
     console.print()
 
 
