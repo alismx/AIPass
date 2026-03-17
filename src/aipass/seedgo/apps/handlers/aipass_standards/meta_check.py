@@ -1,9 +1,9 @@
 # =================== AIPass ====================
 # Name: meta_check.py
 # Description: META Block Standards Checker Handler
-# Version: 1.1.0
+# Version: 1.2.0
 # Created: 2026-03-05
-# Modified: 2026-03-08
+# Modified: 2026-03-16
 # =============================================
 
 """
@@ -30,6 +30,7 @@ import re
 from pathlib import Path
 from typing import Dict, List
 
+AUDIT_SCOPE = "all_files"
 
 # Header/footer markers for library META
 # Accept both AIPass (canonical) and META (legacy) header markers
