@@ -22,7 +22,6 @@ from logging.handlers import RotatingFileHandler
 from aipass.prax.apps.handlers.config.load import (
     get_system_logs_dir,
     get_module_logs_dir,
-    get_hierarchical_logs_dir,
     DEFAULT_LOG_LEVEL,
     load_log_config,
     lines_to_bytes
@@ -118,24 +117,9 @@ def setup_individual_logger(module_name: str) -> logging.Logger:
     system_handler.setFormatter(formatter)
     logger.addHandler(system_handler)
 
-    # HANDLER 2: Hierarchical local log (logs live where the code lives)
-    if module_path:
-        hierarchical_logs_dir = get_hierarchical_logs_dir(module_path)
-        # Detect fallback: caller was in ecosystem but resolution fell back
-        expected_logs = Path(module_path).resolve().parent / "logs"
-        if hierarchical_logs_dir.resolve() != expected_logs.resolve() and _system_logger:
-            _system_logger.warning(
-                f"Log placement fallback for {module_name}: "
-                f"caller outside ecosystem, logs redirected to {hierarchical_logs_dir}"
-            )
-    else:
-        hierarchical_logs_dir = get_module_logs_dir(branch_name)
-        if _system_logger:
-            _system_logger.warning(
-                f"Log placement fallback for {module_name}: "
-                f"stack introspection failed, using branch root {hierarchical_logs_dir}"
-            )
-    module_log_file = hierarchical_logs_dir / f"{module_name}.log"
+    # HANDLER 2: Branch-root local log (two-tier: system_logs/ + branch logs/)
+    local_logs_dir = get_module_logs_dir(branch_name)
+    module_log_file = local_logs_dir / f"{module_name}.log"
     local_limits = log_config['local_logs']
     local_max_bytes = lines_to_bytes(local_limits['max_lines'])
     local_handler = _safe_rotating_handler(module_log_file, local_max_bytes, local_limits['backup_count'])
