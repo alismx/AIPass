@@ -1,16 +1,18 @@
 # =================== AIPass ====================
 # Name: log_structure_check.py
 # Description: Log Structure Standards Checker Handler
-# Version: 1.1.0
+# Version: 1.2.0
 # Created: 2026-03-06
-# Modified: 2026-03-08
+# Modified: 2026-03-17
 # =============================================
 
 """
 Log Structure Standards Checker Handler
 
-Validates that AIPass modules follow hierarchical log placement:
-every directory containing .py code should have a sibling logs/ directory.
+Validates the two-tier logging model:
+  - system_logs/ at repo root (system-wide)
+  - logs/ at branch root only (per-branch)
+No hierarchical logs/ at every nested directory.
 No hardcoded absolute log paths.
 """
 
@@ -37,10 +39,10 @@ def is_bypassed(file_path: str, standard: str, bypass_rules: list | None = None)
 
 def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     """
-    Check module logging structure with hierarchical placement validation.
+    Check module logging structure against the two-tier model.
 
     Checks:
-    1. Parent directory of file has a sibling logs/ directory (hierarchical placement)
+    1. logs/ directory exists at branch root (entry file's parent)
     2. No hardcoded absolute log paths in source
     3. No /home/ references in logging configuration
 
@@ -70,16 +72,16 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
             'standard': 'LOG_STRUCTURE'
         }
 
-    # Check 1: Hierarchical log placement — logs/ directory at the same level as the file
-    parent_dir = path.parent
-    logs_dir = parent_dir / "logs"
+    # Check 1: Branch-root log placement — logs/ directory at the branch root
+    branch_root = path.parent
+    logs_dir = branch_root / "logs"
     has_logs_dir = logs_dir.is_dir()
     checks.append({
-        'name': 'Hierarchical logs/ directory',
+        'name': 'Branch-root logs/ directory',
         'passed': has_logs_dir,
-        'message': f'logs/ directory exists at {parent_dir}/'
+        'message': f'logs/ directory exists at branch root {branch_root}/'
                    if has_logs_dir
-                   else f'Missing logs/ directory at {parent_dir}/ — hierarchical placement requires logs/ at every code level'
+                   else f'Missing logs/ directory at branch root {branch_root}/ — two-tier model requires logs/ at branch root'
     })
 
     # Check 2-3: Scan file for hardcoded log paths

@@ -1,25 +1,33 @@
 # =================== AIPass ====================
 # Name: json_structure_check.py
 # Description: JSON Structure Standards Checker Handler
-# Version: 2.0.0
+# Version: 3.0.0
 # Created: 2026-03-05
-# Modified: 2026-03-05
+# Modified: 2026-03-17
 # =============================================
 
 """
 JSON Structure Standards Checker Handler
 
-Validates JSON handling patterns for pip packages:
-- json_handler.py uses relative paths (not hardcoded absolute)
-- Modules use json_handler for JSON operations (not direct json.load/dump)
-- Branch detection via AIPASS_REGISTRY.json and BRANCH_REGISTRY.json
+Validates three-JSON code wiring in modules and handlers.
+
+For every .py file in apps/modules/ and apps/handlers/:
+  1. Must import json_handler from the branch's handlers/json package
+  2. Must call json_handler.log_operation() at least once
+
+For json_handler.py itself (in a json/ directory):
+  - Validates handler config (relative paths, no hardcoded absolutes)
+
+Entry points and other files outside modules/handlers are skipped.
 """
 
 import re
-import ast
 import json
 from pathlib import Path
 from typing import Dict, List, Optional
+
+# Audit scope: scan every .py file, not just entry point
+AUDIT_SCOPE = "all_files"
 
 
 def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
@@ -45,13 +53,28 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     """
     Check if module follows JSON structure standards.
 
-    For pip packages, validates:
-    1. json_handler.py uses relative paths (Path(__file__).resolve().parent)
-    2. json_handler.py does NOT use hardcoded absolute paths (BRANCH_ROOT, Path.home())
-    3. Modules use json_handler instead of direct json.load/dump
+    Routing:
+      a. json_handler.py in a json/ dir  -> validate handler config
+      b. File in apps/modules/           -> check code wiring
+      c. File in apps/handlers/          -> check code wiring
+      d. Everything else (entry points)  -> skip (not applicable)
+
+    Args:
+        module_path: Path to Python module to check
+        bypass_rules: Optional bypass rules
+
+    Returns:
+        dict with passed, checks, score, standard keys
     """
-    checks = []
     path = Path(module_path)
+
+    if is_bypassed(module_path, 'json_structure', bypass_rules=bypass_rules):
+        return {
+            'passed': True,
+            'checks': [{'name': 'Bypassed', 'passed': True, 'message': 'Standard bypassed via .seedgo/bypass.json'}],
+            'score': 100,
+            'standard': 'JSON STRUCTURE'
+        }
 
     if not path.exists():
         return {
@@ -61,9 +84,17 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
             'standard': 'JSON STRUCTURE'
         }
 
+    # Skip __init__.py files
+    if path.name == '__init__.py':
+        return {
+            'passed': True,
+            'checks': [{'name': 'JSON structure check', 'passed': True, 'message': '__init__.py file (skipped)'}],
+            'score': 100,
+            'standard': 'JSON STRUCTURE'
+        }
+
     try:
-        with open(path, 'r', encoding='utf-8') as f:
-            content = f.read()
+        content = path.read_text(encoding='utf-8')
     except Exception as e:
         return {
             'passed': False,
@@ -72,36 +103,166 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
             'standard': 'JSON STRUCTURE'
         }
 
-    if 'json_handler' in path.name and path.parent.name == 'json':
-        checks = check_json_handler_config(path, content, bypass_rules)
-    elif 'apps/modules' in str(path):
-        checks = check_module_json_files(path, content, bypass_rules)
+    path_str = str(path)
 
-    if not checks:
+    # --- Case (a): json_handler.py in a json/ directory ---
+    if 'json_handler' in path.name and path.parent.name == 'json':
+        checks = _check_json_handler_config(path, content, bypass_rules)
+        passed_count = sum(1 for c in checks if c['passed'])
+        total = len(checks)
+        score = int((passed_count / total * 100)) if total > 0 else 0
+        return {
+            'passed': score >= 75,
+            'checks': checks,
+            'score': score,
+            'standard': 'JSON STRUCTURE'
+        }
+
+    # --- Determine if the file is in modules/ or handlers/ ---
+    in_modules = 'apps/modules' in path_str or 'apps\\modules' in path_str
+    in_handlers = 'apps/handlers' in path_str or 'apps\\handlers' in path_str
+
+    # Exclude files inside the json/ handler directory itself (they ARE the
+    # json infrastructure, not consumers of it)
+    if in_handlers and path.parent.name == 'json':
         return {
             'passed': True,
-            'checks': [{'name': 'JSON structure check', 'passed': True, 'message': 'No JSON operations detected (skipped)'}],
+            'checks': [{'name': 'JSON structure check', 'passed': True,
+                         'message': 'JSON handler infrastructure file (not applicable)'}],
             'score': 100,
             'standard': 'JSON STRUCTURE'
         }
 
-    passed_checks = sum(1 for check in checks if check['passed'])
-    total_checks = len(checks)
-    score = int((passed_checks / total_checks * 100)) if total_checks > 0 else 0
-    overall_passed = score >= 75
+    # --- Cases (b) and (c): code wiring check ---
+    if in_modules or in_handlers:
+        checks = _check_code_wiring(path, content)
+        passed_count = sum(1 for c in checks if c['passed'])
+        total = len(checks)
+        score = int((passed_count / total * 100)) if total > 0 else 0
+        return {
+            'passed': passed_count == total,
+            'checks': checks,
+            'score': score,
+            'standard': 'JSON STRUCTURE'
+        }
 
+    # --- Case (d): file outside modules/ and handlers/ (entry point, etc.) ---
     return {
-        'passed': overall_passed,
-        'checks': checks,
-        'score': score,
+        'passed': True,
+        'checks': [{'name': 'JSON structure check', 'passed': True,
+                     'message': 'Not in modules/ or handlers/ (not applicable)'}],
+        'score': 100,
         'standard': 'JSON STRUCTURE'
     }
 
 
+# ------------------------------------------------------------------
+# Internal helpers
+# ------------------------------------------------------------------
+
+def _check_code_wiring(_path: Path, content: str) -> List[Dict]:
+    """
+    Check that a module/handler file has the three-JSON wiring:
+      1. Imports json_handler
+      2. Calls json_handler.log_operation()
+
+    Returns a list of two check dicts.
+    """
+    checks: List[Dict] = []
+
+    # Check 1: imports json_handler
+    # Matches patterns like:
+    #   from aipass.seedgo.apps.handlers.json import json_handler
+    #   from aipass.flow.apps.handlers.json import json_handler
+    #   from ...handlers.json import json_handler
+    has_import = bool(
+        re.search(r'from\s+\S*\.json\s+import\s+json_handler', content)
+        or re.search(r'from\s+\S*json\s+import\s+json_handler', content)
+        or re.search(r'import\s+json_handler', content)
+    )
+    checks.append({
+        'name': 'json_handler import',
+        'passed': has_import,
+        'message': 'Imports json_handler' if has_import
+                   else 'Missing json_handler import — add: from aipass.<branch>.apps.handlers.json import json_handler'
+    })
+
+    # Check 2: calls json_handler.log_operation()
+    has_log_operation = 'json_handler.log_operation' in content
+    checks.append({
+        'name': 'log_operation call',
+        'passed': has_log_operation,
+        'message': 'Calls json_handler.log_operation()' if has_log_operation
+                   else 'Missing json_handler.log_operation() call — every module/handler must log operations'
+    })
+
+    return checks
+
+
+def _check_json_handler_config(_handler_path: Path, content: str, _bypass_rules: list | None = None) -> List[Dict]:
+    """
+    Check json_handler.py for library profile.
+
+    For pip packages:
+    - PASS if using relative paths (Path(__file__).resolve().parent)
+    - FAIL if using hardcoded absolute paths (Path.home(), BRANCH_ROOT, etc.)
+    """
+    checks: List[Dict] = []
+
+    # Check 1: No hardcoded absolute paths
+    has_path_home = bool(re.search(r'Path\.home\(\)', content))
+    # Only flag _ROOT constants that use Path.home() (legacy pattern)
+    # Allow _ROOT = Path(__file__).resolve()... (relative, pip-safe)
+    has_branch_root = False
+    for line in content.split('\n'):
+        stripped = line.strip()
+        if stripped.startswith('#'):
+            continue
+        if re.search(r'\w+_ROOT\s*=', stripped) and 'Path.home()' in stripped:
+            has_branch_root = True
+            break
+
+    if has_path_home or has_branch_root:
+        issues = []
+        if has_path_home:
+            issues.append('Path.home()')
+        if has_branch_root:
+            issues.append('hardcoded _ROOT constant')
+        checks.append({
+            'name': 'No absolute paths',
+            'passed': False,
+            'message': f'Found {", ".join(issues)} — pip packages should use relative paths'
+        })
+    else:
+        checks.append({
+            'name': 'No absolute paths',
+            'passed': True,
+            'message': 'No hardcoded absolute paths (correct for pip packages)'
+        })
+
+    # Check 2: Uses relative path resolution
+    has_relative = bool(re.search(r'Path\(__file__\)', content)
+                        or re.search(r'\.resolve\(\)', content)
+                        or re.search(r'\.parent', content))
+
+    checks.append({
+        'name': 'Relative path resolution',
+        'passed': has_relative,
+        'message': 'Uses relative path resolution (Path(__file__).parent)' if has_relative
+                   else 'Missing relative path resolution — should use Path(__file__).resolve().parent'
+    })
+
+    return checks
+
+
+# ------------------------------------------------------------------
+# Utility functions (used by other code in the audit system)
+# ------------------------------------------------------------------
+
 def _find_registry() -> Path:
     """Find AIPASS_REGISTRY.json by walking up from this file's location."""
     current = Path(__file__).resolve().parent
-    for parent in [current] + list(current.parents):
+    for parent in [current, *list(current.parents)]:
         candidate = parent / "AIPASS_REGISTRY.json"
         if candidate.exists():
             return candidate
@@ -167,125 +328,5 @@ def get_branch_path(branch_name: str) -> Optional[str]:
                     return str(branch_path)
         except (json.JSONDecodeError, IOError):
             pass
-
-    return None
-
-
-def check_json_handler_config(handler_path: Path, content: str, bypass_rules: list | None = None) -> List[Dict]:  # noqa: ARG001
-    """
-    Check json_handler.py for library profile.
-
-    For pip packages:
-    - PASS if using relative paths (Path(__file__).resolve().parent, etc.)
-    - FAIL if using hardcoded absolute paths (Path.home(), BRANCH_ROOT, etc.)
-    """
-    checks = []
-
-    # Check 1: No hardcoded absolute paths
-    has_path_home = bool(re.search(r'Path\.home\(\)', content))
-    # Only flag _ROOT constants that use Path.home() (legacy pattern)
-    # Allow _ROOT = Path(__file__).resolve()... (relative, pip-safe)
-    has_branch_root = False
-    for line in content.split('\n'):
-        stripped = line.strip()
-        if stripped.startswith('#'):
-            continue
-        if re.search(r'\w+_ROOT\s*=', stripped) and 'Path.home()' in stripped:
-            has_branch_root = True
-            break
-
-    if has_path_home or has_branch_root:
-        issues = []
-        if has_path_home:
-            issues.append('Path.home()')
-        if has_branch_root:
-            issues.append('hardcoded _ROOT constant')
-        checks.append({
-            'name': 'No absolute paths',
-            'passed': False,
-            'message': f'Found {", ".join(issues)} — pip packages should use relative paths'
-        })
-    else:
-        checks.append({
-            'name': 'No absolute paths',
-            'passed': True,
-            'message': 'No hardcoded absolute paths (correct for pip packages)'
-        })
-
-    # Check 2: Uses relative path resolution
-    has_relative = bool(re.search(r'Path\(__file__\)', content) or
-                       re.search(r'\.resolve\(\)', content) or
-                       re.search(r'\.parent', content))
-
-    checks.append({
-        'name': 'Relative path resolution',
-        'passed': has_relative,
-        'message': 'Uses relative path resolution (Path(__file__).parent)' if has_relative
-                   else 'Missing relative path resolution — should use Path(__file__).resolve().parent'
-    })
-
-    return checks
-
-
-def check_module_json_files(module_path: Path, content: str, bypass_rules: list | None = None) -> List[Dict]:
-    """
-    Check if module uses json_handler for JSON operations.
-    For library profile, just validates json_handler usage pattern.
-    """
-    checks = []
-
-    uses_json_handler = 'json_handler' in content and ('from' in content or 'import' in content)
-
-    if not uses_json_handler:
-        json_check = check_json_handler_usage(content, str(module_path), bypass_rules)
-        if json_check:
-            checks.append(json_check)
-        return checks
-
-    # Module uses json_handler — that's correct
-    checks.append({
-        'name': 'json_handler usage',
-        'passed': True,
-        'message': 'Module uses json_handler for JSON operations'
-    })
-
-    return checks
-
-
-def check_json_handler_usage(content: str, file_path: str, bypass_rules: list | None = None) -> Optional[Dict]:
-    """
-    Check that modules use json_handler for JSON operations (not direct json.load/dump).
-    """
-    try:
-        tree = ast.parse(content)
-    except SyntaxError:
-        return None
-
-    has_json_operations = False
-    has_json_handler_import = False
-
-    for node in ast.walk(tree):
-        if isinstance(node, ast.ImportFrom):
-            if node.module and 'json_handler' in node.module:
-                has_json_handler_import = True
-
-        if isinstance(node, ast.Call):
-            if isinstance(node.func, ast.Attribute):
-                if (isinstance(node.func.value, ast.Name) and
-                    node.func.value.id == 'json' and
-                    node.func.attr in ['dump', 'load']):
-                    has_json_operations = True
-
-    if not has_json_operations:
-        return None
-
-    if has_json_operations and not has_json_handler_import:
-        if is_bypassed(file_path, 'json_structure', bypass_rules=bypass_rules):
-            return None
-        return {
-            'name': 'json_handler usage',
-            'passed': False,
-            'message': 'Direct JSON operations detected (use json_handler for structured JSON management)'
-        }
 
     return None

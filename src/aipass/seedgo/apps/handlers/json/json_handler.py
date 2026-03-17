@@ -1,21 +1,21 @@
 # =================== AIPass ====================
 # Name: json_handler.py
-# Description: Json Handler
-# Version: 1.0.0
+# Description: Auto-Creating JSON Handler
+# Version: 1.1.0
 # Created: 2026-03-05
-# Modified: 2026-03-05
+# Modified: 2026-03-17
 # =============================================
 
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Any, Optional
-import sys
+from typing import Dict, Any, Optional
 import inspect
 
-PACK_ROOT = Path(__file__).resolve().parent.parent.parent  # json/ -> handlers/ -> aipass/
-SEEDGO_JSON_DIR = PACK_ROOT / "aipass_json"
-JSON_TEMPLATES_DIR = PACK_ROOT / "json_templates"
+_BRANCH_ROOT = Path(__file__).resolve().parents[3]   # json/ -> handlers/ -> apps/ -> {branch}/
+_BRANCH_NAME = _BRANCH_ROOT.name
+JSON_DIR = _BRANCH_ROOT / f"{_BRANCH_NAME}_json"
+JSON_TEMPLATES_DIR = _BRANCH_ROOT / "apps" / "json_templates"
 
 
 def _get_caller_module_name() -> str:
@@ -82,12 +82,12 @@ def validate_json_structure(data: Any, json_type: str) -> bool:
 def get_json_path(module_name: str, json_type: str) -> Path:
     """Get path for module JSON file"""
     filename = f"{module_name}_{json_type}.json"
-    return SEEDGO_JSON_DIR / filename
+    return JSON_DIR / filename
 
 
 def ensure_json_exists(module_name: str, json_type: str) -> bool:
     """Ensure JSON file exists, create from template if missing"""
-    SEEDGO_JSON_DIR.mkdir(parents=True, exist_ok=True)
+    JSON_DIR.mkdir(parents=True, exist_ok=True)
 
     json_path = get_json_path(module_name, json_type)
 
@@ -238,16 +238,17 @@ if __name__ == "__main__":
         border_style="bright_blue"
     ))
     console.print()
-    console.print("[yellow]TESTING:[/yellow] Creating seedgo JSONs...")
+    console.print(f"[yellow]TESTING:[/yellow] Creating {_BRANCH_NAME} JSONs...")
+    console.print(f"[dim]JSON_DIR: {JSON_DIR}[/dim]")
 
     # Test auto-creation
-    log_operation("test_operation", {"test": "data"}, "seedgo")
-    increment_counter("seedgo", "test_counter", 1)
-    update_data_metrics("seedgo", test_metric="working")
+    log_operation("test_operation", {"test": "data"}, _BRANCH_NAME)
+    increment_counter(_BRANCH_NAME, "test_counter", 1)
+    update_data_metrics(_BRANCH_NAME, test_metric="working")
 
     console.print()
-    console.print("[green]Check aipass_json/ directory for created files:[/green]")
-    console.print("  [dim]•[/dim] seedgo_config.json")
-    console.print("  [dim]•[/dim] seedgo_data.json")
-    console.print("  [dim]•[/dim] seedgo_log.json")
+    console.print(f"[green]Check {JSON_DIR.relative_to(_BRANCH_ROOT)}/ for created files:[/green]")
+    console.print(f"  [dim]•[/dim] {_BRANCH_NAME}_config.json")
+    console.print(f"  [dim]•[/dim] {_BRANCH_NAME}_data.json")
+    console.print(f"  [dim]•[/dim] {_BRANCH_NAME}_log.json")
     console.print()
