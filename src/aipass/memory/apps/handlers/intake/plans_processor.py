@@ -27,7 +27,7 @@ from datetime import datetime
 from typing import Dict, Any, List
 
 from aipass.prax import logger
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 # Subprocess scripts
 _HANDLERS_DIR = Path(__file__).resolve().parent.parent
@@ -322,6 +322,6 @@ def process_plans() -> Dict[str, Any]:
     if errors:
         result['errors'] = errors
 
-    log_operation("process_plans", {"files_processed": files_processed, "total_chunks": total_chunks, "success": result['success']})
+    json_handler.log_operation("process_plans", {"files_processed": files_processed, "total_chunks": total_chunks, "success": result['success']})
 
     return result

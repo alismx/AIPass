@@ -34,7 +34,7 @@ from typing import Dict, Any, List, Tuple
 from datetime import datetime
 
 from aipass.prax.apps.modules.logger import get_system_logger
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 logger = get_system_logger()
 
@@ -597,7 +597,7 @@ def enforce_limit(file_path: Path) -> Dict[str, Any]:
     except Exception as e:
         return {'success': False, 'error': f'Failed to write file: {e}'}
 
-    log_operation("enforce_limit", {"removed": to_remove_count, "remaining": len(to_keep), "success": True})
+    json_handler.log_operation("enforce_limit", {"removed": to_remove_count, "remaining": len(to_keep), "success": True})
 
     return {
         'success': True,
@@ -791,7 +791,7 @@ def add_learning(
     # Enforce limit after adding
     enforce_result = enforce_limit(file_path)
 
-    log_operation("add_learning", {"key": key, "action": "updated" if is_update else "added", "success": True})
+    json_handler.log_operation("add_learning", {"key": key, "action": "updated" if is_update else "added", "success": True})
 
     return {
         'success': True,

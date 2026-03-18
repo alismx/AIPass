@@ -1,20 +1,9 @@
-# ===================AIPASS====================
-# META DATA HEADER
-# Name: retriever.py - Symbolic Fragment Retrieval Handler
-# Date: 2026-02-04
-# Version: 0.2.0
-# Category: memory_bank/handlers/symbolic
-#
-# CHANGELOG (Max 5 entries):
-#   - v0.2.0 (2026-02-15): Add relevance_tier labels to query/get results (FPLAN-0341 P4)
-#   - v0.1.1 (2026-02-15): Fix: embedding_function=None on all get_collection(),
-#     cosine similarity formula, use shared chroma_client singleton
-#   - v0.1.0 (2026-02-04): Initial version - Fragmented Memory Phase 3
-#
-# CODE STANDARDS:
-#   - Handler independence: No module imports
-#   - Error handling: Return status dicts (3-tier architecture)
-#   - File size: <300 lines target
+# =================== AIPass ====================
+# Name: retriever.py
+# Description: Symbolic Fragment Retriever
+# Version: 0.1.0
+# Created: 2026-03-17
+# Modified: 2026-03-17
 # =============================================
 
 """
@@ -38,7 +27,7 @@ from pathlib import Path
 # Handler imports (domain-organized, no modules)
 from aipass.memory.apps.handlers.vector import embedder
 from aipass.memory.apps.handlers.symbolic.chroma_client import get_chroma_client
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 
 # =============================================================================
@@ -403,7 +392,7 @@ def retrieve_fragments(
     # Return top n_results
     final_results = ranked[:n_results]
 
-    log_operation("symbolic_retrieve", {"results": len(final_results), "methods": search_methods_used, "success": True})
+    json_handler.log_operation("symbolic_retrieve", {"results": len(final_results), "methods": search_methods_used, "success": True})
     return {
         'success': True,
         'results': final_results,

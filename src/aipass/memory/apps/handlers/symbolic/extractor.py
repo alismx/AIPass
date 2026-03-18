@@ -1,18 +1,9 @@
-# ===================AIPASS====================
-# META DATA HEADER
-# Name: extractor.py - Symbolic Memory Extractor Handler
-# Date: 2026-02-04
-# Version: 0.2.0
-# Category: memory_bank/handlers/symbolic
-#
-# CHANGELOG (Max 5 entries):
-#   - v0.2.0 (2026-02-15): Phase 2 - LLM-based extraction via OpenRouter (FPLAN-0341)
-#   - v0.1.0 (2026-02-04): Initial version - ported from symbolic_memory.py
-#
-# CODE STANDARDS:
-#   - Handler independence: No module imports (OpenRouter lazy-imported)
-#   - Error handling: Return status dicts (3-tier architecture)
-#   - File size: <400 lines target
+# =================== AIPass ====================
+# Name: extractor.py
+# Description: Symbolic Dimension Extractor
+# Version: 0.1.0
+# Created: 2026-03-17
+# Modified: 2026-03-17
 # =============================================
 
 """
@@ -31,7 +22,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 # memory/ root resolved from symbolic/extractor.py
 _MEMORY_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -464,5 +455,5 @@ def analyze_conversation_llm(chat_history: List[Dict[str, Any]]) -> Dict[str, An
             'chunk_count': llm.get('chunk_count', 0)},
         'message_count': reg.get('message_count', len(chat_history)),
         'error': llm.get('error')}
-    log_operation("symbolic_extract", {"fragments": len(result['fragments']), "messages": result['message_count'], "success": True})
+    json_handler.log_operation("symbolic_extract", {"fragments": len(result['fragments']), "messages": result['message_count'], "success": True})
     return result

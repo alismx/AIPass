@@ -1,18 +1,9 @@
-# ===================AIPASS====================
-# META DATA HEADER
-# Name: chroma_client.py - Shared ChromaDB Client Handler
-# Date: 2026-02-04
-# Version: 0.2.0
-# Category: memory_bank/handlers/symbolic
-#
-# CHANGELOG (Max 5 entries):
-#   - v0.2.0 (2026-02-15): Canonical singleton client for all ChromaDB access,
-#     added get_client() alias, embedding_function=None, cosine distance metadata
-#   - v0.1.0 (2026-02-04): Initial version - shared singleton ChromaDB client
-#
-# CODE STANDARDS:
-#   - Handler independence: No module imports
-#   - Error handling: Return status dicts (3-tier architecture)
+# =================== AIPass ====================
+# Name: chroma_client.py
+# Description: Symbolic ChromaDB Client
+# Version: 0.1.0
+# Created: 2026-03-17
+# Modified: 2026-03-17
 # =============================================
 
 """
@@ -34,7 +25,7 @@ Key Functions:
 from typing import Dict, Any
 from pathlib import Path
 
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 
 # =============================================================================
@@ -130,7 +121,7 @@ def get_collection(
                 embedding_function=None
             )
 
-        log_operation("chroma_get_collection", {"collection": collection_name, "create": create, "success": True})
+        json_handler.log_operation("chroma_get_collection", {"collection": collection_name, "create": create, "success": True})
         return {
             'success': True,
             'collection': collection

@@ -1,18 +1,9 @@
-# ===================AIPASS====================
-# META DATA HEADER
-# Name: storage.py - Symbolic Fragment Storage Handler
-# Date: 2026-02-04
-# Version: 0.2.0
-# Category: memory_bank/handlers/symbolic
-#
-# CHANGELOG (Max 5 entries):
-#   - v0.2.0 (2026-02-15): Add store_llm_fragment/batch for v2 LLM schema (FPLAN-0341 P3)
-#   - v0.1.0 (2026-02-04): Initial version - Fragmented Memory Phase 2
-#
-# CODE STANDARDS:
-#   - Handler independence: No module imports
-#   - Error handling: Return status dicts (3-tier architecture)
-#   - File size: <300 lines target
+# =================== AIPass ====================
+# Name: storage.py
+# Description: Symbolic Storage Handler
+# Version: 0.1.0
+# Created: 2026-03-17
+# Modified: 2026-03-17
 # =============================================
 
 """
@@ -40,7 +31,7 @@ from pathlib import Path
 
 # Handler imports (domain-organized, no modules)
 from aipass.memory.apps.handlers.vector import embedder
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 
 # =============================================================================
@@ -308,7 +299,7 @@ def store_fragment(
         )
 
         total = collection.count()
-        log_operation("symbolic_store_fragment", {"fragment_id": frag_id, "total": total, "success": True})
+        json_handler.log_operation("symbolic_store_fragment", {"fragment_id": frag_id, "total": total, "success": True})
         return {
             'success': True,
             'fragment_id': frag_id,
@@ -420,7 +411,7 @@ def store_fragments_batch(
         )
 
         total = collection.count()
-        log_operation("symbolic_store_batch", {"stored": len(batch_ids), "total": total, "success": True})
+        json_handler.log_operation("symbolic_store_batch", {"stored": len(batch_ids), "total": total, "success": True})
         return {
             'success': True,
             'stored': len(batch_ids),
@@ -540,7 +531,7 @@ def store_llm_fragment(
         )
 
         total = collection.count()
-        log_operation("symbolic_store_llm_fragment", {"fragment_id": frag_id, "total": total, "success": True})
+        json_handler.log_operation("symbolic_store_llm_fragment", {"fragment_id": frag_id, "total": total, "success": True})
         return {
             'success': True,
             'fragment_id': frag_id,
@@ -668,7 +659,7 @@ def store_llm_fragments_batch(
         )
 
         total = collection.count()
-        log_operation("symbolic_store_llm_batch", {"stored": len(frag_ids), "total": total, "success": True})
+        json_handler.log_operation("symbolic_store_llm_batch", {"stored": len(frag_ids), "total": total, "success": True})
         return {
             'success': True,
             'stored': len(frag_ids),
@@ -713,7 +704,7 @@ def delete_fragment(
         collection.delete(ids=[fragment_id])
 
         total = collection.count()
-        log_operation("symbolic_delete_fragment", {"deleted_id": fragment_id, "total": total, "success": True})
+        json_handler.log_operation("symbolic_delete_fragment", {"deleted_id": fragment_id, "total": total, "success": True})
         return {
             'success': True,
             'deleted_id': fragment_id,

@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from aipass.prax import logger
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 # =============================================================================
 # PATH SETUP
@@ -230,7 +230,7 @@ def push_to_spawn_templates(dry_run: bool = False) -> dict:
         f"{result['files_modified']} files modified"
     )
 
-    log_operation("spawn_template_push", {"sets_updated": result["template_sets_updated"], "files": result["files_modified"], "dry_run": dry_run, "success": True})
+    json_handler.log_operation("spawn_template_push", {"sets_updated": result["template_sets_updated"], "files": result["files_modified"], "dry_run": dry_run, "success": True})
     return result
 
 

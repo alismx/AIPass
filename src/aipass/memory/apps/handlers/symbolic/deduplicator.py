@@ -1,17 +1,9 @@
-# ===================AIPASS====================
-# META DATA HEADER
-# Name: deduplicator.py - Symbolic Fragment Deduplication Handler
-# Date: 2026-02-15
+# =================== AIPass ====================
+# Name: deduplicator.py
+# Description: Symbolic Fragment Deduplicator
 # Version: 0.1.0
-# Category: memory_bank/handlers/symbolic
-#
-# CHANGELOG (Max 5 entries):
-#   - v0.1.0 (2026-02-15): Initial version - FPLAN-0341 Phase 3 AUDN dedup
-#
-# CODE STANDARDS:
-#   - Handler independence: No module imports (OpenRouter lazy-imported)
-#   - Error handling: Return status dicts (3-tier architecture)
-#   - File size: <300 lines target
+# Created: 2026-03-17
+# Modified: 2026-03-17
 # =============================================
 
 """
@@ -32,7 +24,7 @@ import re
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 # memory/ root resolved from symbolic/deduplicator.py
 _MEMORY_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -191,7 +183,7 @@ def deduplicate_fragment(
     action = parsed['action']
     reason = parsed.get('reason', 'No reason provided')
 
-    log_operation("symbolic_dedup", {"action": action, "existing_count": len(existing_fragments), "success": True})
+    json_handler.log_operation("symbolic_dedup", {"action": action, "existing_count": len(existing_fragments), "success": True})
 
     # Apply action to fragment
     if action == 'UPDATE':

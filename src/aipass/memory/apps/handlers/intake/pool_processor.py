@@ -1,18 +1,9 @@
-# ===================AIPASS====================
-# META DATA HEADER
-# Name: pool_processor.py - Memory Pool Intake Handler
-# Date: 2025-11-27
-# Version: 0.2.0
-# Category: memory/handlers/intake
-#
-# CHANGELOG (Max 5 entries):
-#   - v0.2.0 (2026-03-16): Modernize imports, paths, remove MEMORY_BANK references
-#   - v0.1.0 (2025-11-27): Initial version - process memory_pool files to vectors
-#
-# CODE STANDARDS:
-#   - Pure handler: No orchestration, just processing logic
-#   - Stateless functions
-#   - Returns dict with success/error
+# =================== AIPass ====================
+# Name: pool_processor.py
+# Description: Memory Pool Processor
+# Version: 0.1.0
+# Created: 2026-03-17
+# Modified: 2026-03-17
 # =============================================
 
 """
@@ -34,7 +25,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any
 
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 # Paths
 _MEMORY_ROOT = Path(__file__).resolve().parent.parent.parent.parent  # handlers/intake/ → handlers/ → apps/ → memory/
@@ -448,7 +439,7 @@ def process_memory_pool() -> dict:
     if results['files_processed'] > 0:
         _update_central_and_dashboard()
 
-    log_operation("process_memory_pool", {"files_processed": results['files_processed'], "total_chunks": results['total_chunks'], "success": results['success']})
+    json_handler.log_operation("process_memory_pool", {"files_processed": results['files_processed'], "total_chunks": results['total_chunks'], "success": results['success']})
 
     return results
 
