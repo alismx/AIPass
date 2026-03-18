@@ -12,7 +12,7 @@ Load Registry Handler
 Loads the Flow PLAN registry from JSON file with error handling.
 
 Features:
-- Loads flow_registry.json
+- Loads fplan_registry.json
 - Returns default structure if file missing
 - Graceful error handling
 - Reusable across Flow modules
@@ -36,7 +36,7 @@ FLOW_ROOT = _PKG_ROOT / "flow"
 
 MODULE_NAME = "load_registry"
 FLOW_JSON_DIR = FLOW_ROOT / "flow_json"
-REGISTRY_FILE = FLOW_JSON_DIR / "flow_registry.json"
+REGISTRY_FILE = FLOW_JSON_DIR / "fplan_registry.json"
 
 # =============================================
 # HANDLER FUNCTION
@@ -49,7 +49,7 @@ def load_registry(registry_file: str | None = None) -> Dict[str, Any]:
         registry_file: Optional filename (e.g. "fplan_registry.json",
             "dplan_registry.json"). When provided, loads from
             ``FLOW_JSON_DIR / registry_file`` instead of the default
-            ``flow_registry.json``.
+            ``fplan_registry.json``.
 
     Returns:
         Dict containing:

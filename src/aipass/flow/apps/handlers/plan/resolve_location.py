@@ -1,21 +1,36 @@
 # =================== AIPass ====================
 # Name: resolve_location.py
 # Description: Plan Location Resolution Handler
-# Version: 1.0.0
+# Version: 2.0.0
 # Created: 2025-11-29
-# Modified: 2025-11-29
+# Modified: 2026-03-17
 # =============================================
 
 """
 Plan Location Resolution Handler
 
-Resolves plan locations for explicit paths.
+Resolves plan locations using the CALLER's working directory, not flow's.
+Drone sets AIPASS_CALLER_CWD env var before invoking flow, so relative
+paths (like ".") resolve to where the user actually is.
+
 @ symbols are pre-resolved by Drone before Flow receives args.
-Handles absolute paths, relative paths, and defaults to cwd.
 """
 
+import os
 from pathlib import Path
 from typing import Tuple
+
+
+def _get_caller_cwd() -> Path:
+    """Return the caller's working directory.
+
+    Drone passes this via AIPASS_CALLER_CWD env var. Falls back to
+    Path.cwd() for direct invocation (testing, standalone).
+    """
+    caller_cwd = os.environ.get("AIPASS_CALLER_CWD")
+    if caller_cwd:
+        return Path(caller_cwd)
+    return Path.cwd()
 
 
 def resolve_plan_location(
@@ -23,47 +38,33 @@ def resolve_plan_location(
     ecosystem_root: Path
 ) -> Tuple[bool, Path, str]:
     """
-    Resolve plan location for explicit paths
+    Resolve plan location relative to the CALLER's directory.
 
-    Handles two location types:
-    1. Explicit path: Resolved to absolute path
-    2. None: Defaults to current working directory
-
-    Note: @ symbols are pre-resolved by Drone before Flow receives args.
-    Flow only handles absolute/relative paths.
-
-    Validates that resolved directory exists.
+    Plans are created where the caller is, not where flow lives.
+    Drone passes AIPASS_CALLER_CWD so "." resolves to the caller's CWD.
 
     Args:
-        location: Target location (absolute/relative path, or None for cwd)
-        ecosystem_root: Root directory (kept for API compatibility, not used)
+        location: Target location (absolute/relative path, ".", or None)
+        ecosystem_root: Root directory (kept for API compatibility)
 
     Returns:
         Tuple of (success, resolved_path, error_message)
-        - success: False if directory doesn't exist
-        - resolved_path: Absolute path to directory (or Path.cwd() on error)
-        - error_message: Empty string on success, error details on failure
-
-    Examples:
-        >>> resolve_plan_location("/repo/src/aipass/flow", Path("/repo/src/aipass"))
-        (True, Path("/repo/src/aipass/flow"), "")
-
-        >>> resolve_plan_location(None, Path("/repo/src/aipass"))
-        (True, Path.cwd(), "")
-
-        >>> resolve_plan_location("/nonexistent", Path("/repo/src/aipass"))
-        (False, Path.cwd(), "Directory /nonexistent does not exist")
     """
-    # Determine target directory
+    caller_cwd = _get_caller_cwd()
+
     if location:
-        # Handle explicit path
-        target_dir = Path(location).resolve()
+        loc_path = Path(location)
+        if loc_path.is_absolute():
+            target_dir = loc_path.resolve()
+        else:
+            # Resolve relative paths against CALLER's CWD, not flow's
+            target_dir = (caller_cwd / loc_path).resolve()
     else:
-        # Default to current working directory
-        target_dir = Path.cwd()
+        # No location provided — use caller's CWD
+        target_dir = caller_cwd
 
     # Validate directory exists
     if not target_dir.exists():
-        return False, Path.cwd(), f"Directory {target_dir} does not exist"
+        return False, caller_cwd, f"Directory {target_dir} does not exist"
 
     return True, target_dir, ""

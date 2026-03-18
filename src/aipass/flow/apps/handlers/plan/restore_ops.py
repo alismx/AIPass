@@ -32,6 +32,7 @@ from aipass.prax import logger
 
 _PKG_ROOT = Path(__file__).resolve().parents[4]  # handlers/plan/ -> handlers/ -> apps/ -> flow/ -> aipass/
 FLOW_ROOT = _PKG_ROOT / "flow"
+PROCESSED_PLANS_DIR = _PKG_ROOT / "backup" / "processed_plans"
 
 MODULE_NAME = "restore_plan"
 
@@ -40,9 +41,12 @@ MODULE_NAME = "restore_plan"
 # RECOVERY IMPLEMENTATION
 # =============================================
 
-def recover_plan_from_backup(plan_key: str, load_registry=None, save_registry=None) -> tuple[bool, str]:
+def recover_plan_from_backup(plan_key: str, load_registry: Any = None, save_registry: Any = None) -> tuple[bool, str]:
     """
-    Attempt to recover a plan from processed_plans backup
+    Attempt to recover a plan from processed_plans backup.
+
+    Plan-type-agnostic: searches for any prefix matching the plan key
+    (e.g. FPLAN-0165, DPLAN-0165).
 
     Args:
         plan_key: Normalized plan number (e.g., "0165")
@@ -52,19 +56,18 @@ def recover_plan_from_backup(plan_key: str, load_registry=None, save_registry=No
     Returns:
         (success, message)
     """
-    # Check processed_plans directory
-    processed_plans = FLOW_ROOT / "processed_plans"
-    plan_file = processed_plans / f"FPLAN-{plan_key}.md"
+    # Check backup processed_plans directory
+    processed_plans = PROCESSED_PLANS_DIR
 
-    # CRITICAL: If base file doesn't exist, or if timestamp variants exist, use the NEWEST backup
-    # This handles cases where plan was closed multiple times from different locations
-    variants = list(processed_plans.glob(f"FPLAN-{plan_key}*.md"))
+    # Search for any prefix matching the plan key (FPLAN-, DPLAN-, etc.)
+    variants = list(processed_plans.glob(f"*-{plan_key}*.md")) if processed_plans.exists() else []
+    plan_file = processed_plans / f"FPLAN-{plan_key}.md"  # fallback default
     if variants:
         # Sort by modification time, newest first
         variants.sort(key=lambda p: p.stat().st_mtime, reverse=True)
         plan_file = variants[0]  # Use most recent backup
     elif not plan_file.exists():
-        return False, f"FPLAN-{plan_key} not found in backups"
+        return False, f"Plan {plan_key} not found in backups"
 
     # Read plan file to extract original location from header
     try:
@@ -114,9 +117,12 @@ def recover_plan_from_backup(plan_key: str, load_registry=None, save_registry=No
         original_location = str(FLOW_ROOT)
         relative_path = "flow"
 
-    # Copy file to ORIGINAL location (preserve backup)
-    target = Path(original_location) / f"FPLAN-{plan_key}.md"
+    # Copy file to ORIGINAL location (preserve backup) using the original filename
+    target = Path(original_location) / plan_file.name
     copy2(plan_file, target)
+
+    # Derive display label from the backup filename
+    plan_label = plan_file.stem  # e.g. "FPLAN-0165" or "DPLAN-0004"
 
     # Create minimal registry entry
     registry = load_registry()
@@ -133,7 +139,7 @@ def recover_plan_from_backup(plan_key: str, load_registry=None, save_registry=No
     }
     save_registry(registry)
 
-    return True, f"Recovered FPLAN-{plan_key} from {plan_file.name} to {original_location}"
+    return True, f"Recovered {plan_label} from {plan_file.name} to {original_location}"
 
 
 # =============================================
@@ -143,14 +149,14 @@ def recover_plan_from_backup(plan_key: str, load_registry=None, save_registry=No
 def restore_plan_impl(
     plan_num: str | None = None,
     # Dependencies injected from module
-    normalize_plan_number=None,
-    load_registry=None,
-    save_registry=None,
-    validate_plan_exists=None,
-    recover_plan_from_backup_fn=None,
-    scan_plan_files=None,
-    update_dashboard_local=None,
-    push_to_plans_central=None,
+    normalize_plan_number: Any = None,
+    load_registry: Any = None,
+    save_registry: Any = None,
+    validate_plan_exists: Any = None,
+    recover_plan_from_backup_fn: Any = None,
+    scan_plan_files: Any = None,
+    update_dashboard_local: Any = None,
+    push_to_plans_central: Any = None,
 ) -> Dict[str, Any]:
     """
     Implement plan restore workflow

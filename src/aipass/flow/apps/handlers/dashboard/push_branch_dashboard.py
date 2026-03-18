@@ -17,7 +17,7 @@ targets the branch where a plan LIVES. Each branch sees its own active plans
 on its own dashboard.
 
 Data Flow:
-    1. Read flow_registry.json (source of truth)
+    1. Read fplan_registry.json (source of truth)
     2. Filter active plans for target branch (by location path)
     3. Get recently closed plans (last 5, within last 7 days)
     4. Get total plan count for this branch
@@ -51,7 +51,7 @@ _PKG_ROOT = Path(__file__).resolve().parents[4]
 FLOW_ROOT = _PKG_ROOT / "flow"
 
 # Registry location
-REGISTRY_FILE = FLOW_ROOT / "flow_json" / "flow_registry.json"
+REGISTRY_FILE = FLOW_ROOT / "flow_json" / "fplan_registry.json"
 
 # Dashboard template path (package-relative)
 DASHBOARD_TEMPLATE_FILE = _PKG_ROOT / "devpulse" / "templates" / "DASHBOARD.template.json"
@@ -192,7 +192,7 @@ def _calculate_quick_status(sections: Dict[str, Any]) -> Dict[str, Any]:
 
 def _load_registry() -> Dict[str, Any]:
     """
-    Load flow_registry.json.
+    Load fplan_registry.json.
 
     Returns:
         Registry dict or empty structure if unavailable
@@ -214,7 +214,7 @@ def _filter_branch_plans(
     Filter plans for a specific branch from the registry.
 
     Args:
-        registry: Full flow_registry.json data
+        registry: Full fplan_registry.json data
         branch_path: Absolute path to the branch directory
 
     Returns:

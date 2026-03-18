@@ -29,27 +29,51 @@ from aipass.flow.apps.handlers.registry.load_registry import load_registry
 # HANDLER FUNCTION
 # =============================================
 
+def _get_all_registry_files() -> List[str]:
+    """Return per-type registry filenames via plan-type discovery."""
+    try:
+        from aipass.flow.apps.handlers.template.plan_type_loader import discover_plan_types  # type: ignore[import-not-found]
+        files: List[str] = []
+        for _key, config in discover_plan_types().items():
+            rf = config.get("registry_file")
+            if rf and rf not in files:
+                files.append(rf)
+        if files:
+            return files
+    except Exception:
+        pass
+    return []
+
+
 def get_open_plans() -> List[Tuple[str, Dict[str, Any]]]:
     """
-    Get all open plans from registry
+    Get all open plans from ALL per-type registries.
 
     Returns:
         List of tuples: [(plan_num, plan_info), ...]
         Empty list if no open plans found
-
-    Example:
-        >>> plans = get_open_plans()
-        >>> for plan_num, plan_info in plans:
-        ...     print(f"PLAN{plan_num}: {plan_info['subject']}")
     """
-    # Load registry
-    registry = load_registry()
+    open_plans: List[Tuple[str, Dict[str, Any]]] = []
+    reg_files = _get_all_registry_files()
 
-    # Filter for open plans
-    open_plans = [
-        (plan_num, plan_info)
-        for plan_num, plan_info in registry.get("plans", {}).items()
-        if plan_info.get("status") == "open"
-    ]
+    if reg_files:
+        for reg_file in reg_files:
+            try:
+                registry = load_registry(registry_file=reg_file)
+                open_plans.extend(
+                    (plan_num, plan_info)
+                    for plan_num, plan_info in registry.get("plans", {}).items()
+                    if plan_info.get("status") == "open"
+                )
+            except Exception:
+                continue
+    else:
+        # Fallback: load default registry
+        registry = load_registry()
+        open_plans = [
+            (plan_num, plan_info)
+            for plan_num, plan_info in registry.get("plans", {}).items()
+            if plan_info.get("status") == "open"
+        ]
 
     return open_plans

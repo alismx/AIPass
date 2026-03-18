@@ -12,7 +12,7 @@ Save Registry Handler
 Saves the Flow PLAN registry to JSON file with automatic timestamp updates.
 
 Features:
-- Saves flow_registry.json
+- Saves fplan_registry.json
 - Auto-updates last_updated timestamp
 - Creates directory if missing
 - Graceful error handling
@@ -39,7 +39,7 @@ FLOW_ROOT = _PKG_ROOT / "flow"
 
 MODULE_NAME = "save_registry"
 FLOW_JSON_DIR = FLOW_ROOT / "flow_json"
-REGISTRY_FILE = FLOW_JSON_DIR / "flow_registry.json"
+REGISTRY_FILE = FLOW_JSON_DIR / "fplan_registry.json"
 
 # =============================================
 # HANDLER FUNCTION
@@ -53,7 +53,7 @@ def save_registry(registry: Dict[str, Any], registry_file: str | None = None) ->
         registry_file: Optional filename (e.g. "fplan_registry.json",
             "dplan_registry.json"). When provided, saves to
             ``FLOW_JSON_DIR / registry_file`` instead of the default
-            ``flow_registry.json``.
+            ``fplan_registry.json``.
 
     Returns:
         True if save successful, False on error

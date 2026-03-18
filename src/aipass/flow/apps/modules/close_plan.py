@@ -105,18 +105,18 @@ def _display_messages(messages: List[Dict[str, Any]]):
             error(msg['text'])
 
         elif msg_type == "header":
-            console.print(format_plan_deletion_header(msg["plan_key"], msg["plan_info"]))
+            console.print(format_plan_deletion_header(msg["plan_key"], msg["plan_info"], prefix=msg.get("prefix", "FPLAN")))
 
         elif msg_type == "cancelled":
             console.print(format_deletion_cancelled())
 
         elif msg_type == "close_success":
-            console.print(format_plan_deletion_success(msg["plan_key"]))
+            console.print(format_plan_deletion_success(msg["plan_key"], prefix=msg.get("prefix", "FPLAN")))
 
         elif msg_type == "plan_list":
             warning(f"Found {msg['count']} open plan(s) to close:")
             for plan in msg.get("plans", []):
-                console.print(f"  * FPLAN-{plan['plan_num']}: {plan['subject']}")
+                console.print(f"  * {plan.get('prefix', 'FPLAN')}-{plan['plan_num']}: {plan['subject']}")
 
         elif msg_type == "confirm_warning":
             error(f"WARNING: This will close all {msg['count']} plans!")
@@ -126,7 +126,7 @@ def _display_messages(messages: List[Dict[str, Any]]):
             console.print("-" * 60)
 
         elif msg_type == "closing_single":
-            console.print(f"\n[dim]Closing FPLAN-{msg['plan_num']}...[/dim]")
+            console.print(f"\n[dim]Closing {msg.get('prefix', 'FPLAN')}-{msg['plan_num']}...[/dim]")
 
         elif msg_type == "close_all_summary":
             console.print("\n" + "=" * 60)
@@ -290,13 +290,15 @@ def handle_command(command: str, args: List[str]) -> bool:
     # 2. VALIDATE: Check for parsing errors
     if error:
         console.print(format_delete_usage_error())
-        return False
+        return True  # Command was handled (error already displayed)
 
     # 3. EXECUTE: Run workflow orchestrator
-    success = close_plan(plan_num=plan_num, confirm=confirm, all_plans=all_plans)
+    close_plan(plan_num=plan_num, confirm=confirm, all_plans=all_plans)
 
-    # 4. RETURN: Result (close_plan already handles all output)
-    return success
+    # 4. RETURN: True = command was handled (even if the operation failed,
+    #    the error has already been displayed -- returning False would cause
+    #    flow.py to print a spurious "Unknown command" message)
+    return True
 
 
 # =============================================
