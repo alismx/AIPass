@@ -30,7 +30,7 @@ from typing import Dict, Any, List, Tuple, Optional
 from datetime import datetime
 
 from aipass.prax import logger
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 # Handler imports (same-branch allowed per handler boundaries)
 from aipass.memory.apps.handlers.json.memory_files import (
@@ -420,7 +420,7 @@ def push_templates(dry_run: bool = False) -> dict:
         if not _update_version_file(result["branches_list"]):
             result["errors"].append("Failed to update template version file")
 
-    log_operation("template_push", {"branches": result["branches_updated"], "files": result["files_modified"], "dry_run": dry_run, "success": True})
+    json_handler.log_operation("template_push", {"branches": result["branches_updated"], "files": result["files_modified"], "dry_run": dry_run, "success": True})
     return result
 
 

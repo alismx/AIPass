@@ -1,19 +1,9 @@
-# ===================AIPASS====================
-# META DATA HEADER
-# Name: symbolic.py - Symbolic Memory Orchestration Module
-# Date: 2026-02-04
-# Version: 0.3.0
-# Category: memory_bank/modules
-#
-# CHANGELOG (Max 5 entries):
-#   - v0.3.0 (2026-02-15): v2 schema display in CLI, extract command, v2 demo/hook-test (FPLAN-0341 P4)
-#   - v0.2.0 (2026-02-15): Add LLM dedup pipeline extract_and_store_llm (FPLAN-0341 P3)
-#   - v0.1.0 (2026-02-04): Initial version - Fragmented Memory Phase 1
-#
-# CODE STANDARDS:
-#   - Thin orchestration: Delegate all logic to handlers
-#   - No business logic: Only coordinate workflow
-#   - handle_command() pattern
+# =================== AIPass ====================
+# Name: symbolic.py
+# Description: Symbolic Memory Module
+# Version: 0.1.0
+# Created: 2026-03-17
+# Modified: 2026-03-17
 # =============================================
 
 """
@@ -34,8 +24,8 @@ from typing import List, Dict, Any
 
 # Service imports
 from aipass.prax import logger
-from aipass.cli.apps.modules import console, header
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.cli.apps.modules import console, error, header, warning
+from aipass.memory.apps.handlers.json import json_handler
 
 # Handler imports (domain-organized)
 from aipass.memory.apps.handlers.symbolic import extractor
@@ -981,7 +971,7 @@ def run_demo() -> None:
 
     console.print("[dim]Note: Run 'symbolic extract <file>' to use the real LLM pipeline[/dim]")
     console.print()
-    log_operation("symbolic_demo", {"success": True})
+    json_handler.log_operation("symbolic_demo", {"success": True})
 
 
 def search_fragments_cli(args: List[str]) -> None:
@@ -1063,7 +1053,7 @@ def search_fragments_cli(args: List[str]) -> None:
     console.print()
 
     if not results:
-        console.print("[yellow]No matching fragments found[/yellow]")
+        warning("No matching fragments found")
         console.print()
         console.print("[dim]Try:[/dim]")
         console.print("  Different search terms")
@@ -1139,7 +1129,7 @@ def search_fragments_cli(args: List[str]) -> None:
 
     console.print()
     logger.info(f"[symbolic] Displayed {len(results)} fragment results")
-    log_operation("symbolic_fragments", {"query": query or "", "results": len(results)})
+    json_handler.log_operation("symbolic_fragments", {"query": query or "", "results": len(results)})
 
 
 def run_hook_test(args: List[str]) -> None:
@@ -1270,7 +1260,7 @@ def run_hook_test(args: List[str]) -> None:
     console.print(f"  [dim]Fragments surfaced:[/dim] {state.get('fragments_surfaced', 0)}")
     console.print(f"  [dim]Messages since last:[/dim] {state.get('messages_since_last', 0)}")
     console.print()
-    log_operation("symbolic_hook_test", {"surfaced": result.get('surfaced', False), "success": result.get('success', False)})
+    json_handler.log_operation("symbolic_hook_test", {"surfaced": result.get('surfaced', False), "success": result.get('success', False)})
 
 
 def analyze_file(file_path: str) -> None:
@@ -1319,7 +1309,7 @@ def analyze_file(file_path: str) -> None:
         console.print(f"  [dim]Words:[/dim]    {meta.get('total_words', 0)}")
         console.print(f"  [dim]Depth:[/dim]    {meta.get('depth', 'unknown')}")
         console.print()
-        log_operation("symbolic_analyze", {"file": path.name, "messages": result['message_count']})
+        json_handler.log_operation("symbolic_analyze", {"file": path.name, "messages": result['message_count']})
     else:
         console.print(f"[red]✗[/red] Analysis failed: {result.get('error', 'Unknown error')}")
 
@@ -1386,7 +1376,7 @@ def extract_file(file_path: str, source_branch: str | None = None) -> None:
     console.print()
     logger.info(f"[symbolic] extract_file complete: {result}")
     if result.get('success'):
-        log_operation("symbolic_extract", {"file": path.name, "added": result.get('added', 0), "updated": result.get('updated', 0)})
+        json_handler.log_operation("symbolic_extract", {"file": path.name, "added": result.get('added', 0), "updated": result.get('updated', 0)})
 
 
 # =============================================================================
@@ -1557,7 +1547,7 @@ def bootstrap_from_jsonl(max_sessions: int = 8) -> None:
     sessions = _find_bootstrap_sessions(max_sessions)
 
     if not sessions:
-        console.print("[red]No suitable session files found in ~/.claude/projects/[/red]")
+        error("No suitable session files found in ~/.claude/projects/")
         return
 
     console.print(f"[cyan]Found {len(sessions)} sessions to process[/cyan]")
@@ -1657,7 +1647,7 @@ def bootstrap_from_jsonl(max_sessions: int = 8) -> None:
         f"{total_added} added, {total_updated} updated, "
         f"{total_skipped} skipped, {total_errors} errors"
     )
-    log_operation("symbolic_bootstrap", {"sessions": processed_count, "added": total_added, "errors": total_errors})
+    json_handler.log_operation("symbolic_bootstrap", {"sessions": processed_count, "added": total_added, "errors": total_errors})
 
 
 # =============================================================================

@@ -1,18 +1,9 @@
-# ===================AIPASS====================
-# META DATA HEADER
-# Name: hook.py - Fragmented Memory Hook Handler
-# Date: 2026-02-04
-# Version: 0.2.0
-# Category: memory_bank/handlers/symbolic
-#
-# CHANGELOG (Max 5 entries):
-#   - v0.2.0 (2026-02-15): v2 schema support in format_fragment_recall/format_multiple_recalls
-#   - v0.1.0 (2026-02-04): Initial version - Fragmented Memory Phase 4
-#
-# CODE STANDARDS:
-#   - Handler independence: No module imports
-#   - Error handling: Return status dicts (3-tier architecture)
-#   - File size: <300 lines target
+# =================== AIPass ====================
+# Name: hook.py
+# Description: Symbolic Hook Handler
+# Version: 0.1.0
+# Created: 2026-03-17
+# Modified: 2026-03-17
 # =============================================
 
 """
@@ -37,7 +28,7 @@ from typing import Dict, List, Any, Tuple
 # Handler imports (domain-organized, no modules)
 from aipass.memory.apps.handlers.symbolic import retriever
 from aipass.memory.apps.handlers.json import memory_files
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 # memory/ root resolved from symbolic/hook.py
 _MEMORY_ROOT = Path(__file__).resolve().parent.parent.parent.parent
@@ -635,7 +626,7 @@ def process_hook(
     # Record the surface
     record_surface(fragment)
 
-    log_operation("symbolic_hook", {"fragment_id": fragment.get('id'), "surfaced": True, "success": True})
+    json_handler.log_operation("symbolic_hook", {"fragment_id": fragment.get('id'), "surfaced": True, "success": True})
     return {
         'success': True,
         'surfaced': True,

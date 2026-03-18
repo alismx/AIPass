@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import List, Dict, Any
 
 from aipass.prax import logger
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 # logger imported from aipass.prax
 
@@ -503,7 +503,7 @@ def execute_rollover() -> Dict[str, Any]:
         except Exception as e:
             logger.info(f"[rollover] Memory pool check: {e}")
 
-    log_operation("rollover_execute", {
+    json_handler.log_operation("rollover_execute", {
         "triggers": len(triggers),
         "success_count": success_count,
         "failed_count": len(failed),

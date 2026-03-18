@@ -3,7 +3,7 @@
 **Purpose:** Central memory archive with semantic search, rollover, and archival across all AIPass branches.
 **Module:** `aipass.memory`
 **Created:** 2026-03-07
-**Last Updated:** 2026-03-08
+**Last Updated:** 2026-03-17
 **Citizen Class:** builder
 
 ---
@@ -74,9 +74,10 @@ memory/
 │   │   ├── search/              # Search implementation (vector/semantic)
 │   │   ├── storage/             # Storage backend operations
 │   │   ├── tracking/            # Line count and metadata tracking
+│   │   ├── symbolic/             # Symbolic dimension extraction
+│   │   ├── templates/            # Template management
 │   │   └── vector/              # Vector DB (ChromaDB) operations
 │   ├── extensions/          # Extension plugins
-│   ├── json_templates/      # JSON template files
 │   └── plugins/             # Plugin system
 ├── artifacts/               # Build/output artifacts
 ├── docs/                    # Documentation
@@ -117,4 +118,4 @@ The rollover module monitors memory files across all branches registered in `AIP
 
 ---
 
-*Last Updated: 2026-03-08*
+*Last Updated: 2026-03-17*

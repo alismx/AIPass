@@ -28,7 +28,7 @@ from pathlib import Path
 from typing import Dict, Any, List, Optional
 
 from aipass.prax import logger
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 # =============================================================================
 # PATH SETUP
@@ -298,7 +298,7 @@ def diff_template_vs_branch(branch_path: str | Path) -> dict:
         if file_diff["additions"] or file_diff["removals"] or file_diff["modifications"]:
             result["observations"].append(file_diff)
 
-    log_operation("template_diff", {"branch": branch_name, "local_diffs": len(result["local"]), "obs_diffs": len(result["observations"]), "success": True})
+    json_handler.log_operation("template_diff", {"branch": branch_name, "local_diffs": len(result["local"]), "obs_diffs": len(result["observations"]), "success": True})
     return result
 
 

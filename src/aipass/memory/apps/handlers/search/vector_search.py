@@ -33,7 +33,7 @@ from typing import List, Dict, Any
 from pathlib import Path
 
 from aipass.prax.apps.modules.logger import get_system_logger
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 logger = get_system_logger()
 
@@ -318,7 +318,7 @@ def search_collection(
                 'collection': collection_name
             }
 
-        log_operation("vector_search_collection", {"collection": collection_name, "count": result.get('count', 0), "success": True})
+        json_handler.log_operation("vector_search_collection", {"collection": collection_name, "count": result.get('count', 0), "success": True})
         return {
             'success': True,
             **result
@@ -488,7 +488,7 @@ def search_all_collections(
                 }
 
         total = sum(r['count'] for r in results.values())
-        log_operation("vector_search_all", {"collections": len(results), "total_results": total, "success": True})
+        json_handler.log_operation("vector_search_all", {"collections": len(results), "total_results": total, "success": True})
         return {
             'success': True,
             'results': results,

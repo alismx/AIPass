@@ -27,7 +27,7 @@ from typing import List, Dict, Any
 from dataclasses import dataclass
 
 from aipass.prax.apps.modules.logger import get_system_logger
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 logger = get_system_logger()
 
@@ -327,6 +327,8 @@ def check_all_branches() -> Dict[str, Any]:
                     v2_reason=v2_reason,
                 )
                 triggers.append(trigger)
+
+    json_handler.log_operation("check_all_branches", {"branches_checked": len(branches), "triggers_found": len(triggers)})
 
     return {
         'success': True,

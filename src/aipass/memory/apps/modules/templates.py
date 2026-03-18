@@ -28,7 +28,7 @@ from rich import box
 
 from aipass.prax import logger
 from aipass.cli.apps.modules import console, error, warning
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 # =============================================================================
 # INFRASTRUCTURE SETUP
@@ -287,7 +287,7 @@ def _display_push_results(result: dict, dry_run: bool) -> None:
         f"{result['branches_updated']}/{result['branches_scanned']} branches, "
         f"{result['files_modified']} files"
     )
-    log_operation("templates_push", {"branches_updated": result['branches_updated'], "files_modified": result['files_modified']})
+    json_handler.log_operation("templates_push", {"branches_updated": result['branches_updated'], "files_modified": result['files_modified']})
     console.print()
 
 
@@ -420,13 +420,13 @@ def _display_diff_results(branch_name: str | None = None) -> None:
         console.print("[green]All branches are up to date with templates.[/green]")
     else:
         if total_diffs > 0:
-            console.print(f"[yellow]{total_diffs} branches have template differences[/yellow]")
+            warning(f"{total_diffs} branches have template differences")
             console.print("[dim]Run 'push-templates --dry-run' to preview changes[/dim]")
         if total_errors > 0:
             console.print(f"[red]{total_errors} errors encountered[/red]")
 
     logger.info(f"[templates] Diff complete: {total_diffs} branches with diffs, {total_errors} errors")
-    log_operation("templates_diff", {"branches_compared": len(branches), "branches_with_diffs": total_diffs})
+    json_handler.log_operation("templates_diff", {"branches_compared": len(branches), "branches_with_diffs": total_diffs})
     console.print()
 
 
@@ -484,7 +484,7 @@ def _display_status(status: dict) -> None:
         console.print("[cyan]Branches pushed:[/cyan]    none")
 
     logger.info(f"[templates] Status checked - version: {version}, last push: {last_push}")
-    log_operation("templates_status", {"version": version, "branches_pushed": len(pushed)})
+    json_handler.log_operation("templates_status", {"version": version, "branches_pushed": len(pushed)})
     console.print()
 
 

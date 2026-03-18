@@ -33,7 +33,7 @@ from typing import Dict, List, Any, Tuple
 from datetime import datetime
 
 # Handler imports (relative within package)
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 from aipass.memory.apps.handlers.json.memory_files import read_memory_file_data, write_memory_file_simple
 from aipass.prax.apps.modules.logger import get_system_logger
 
@@ -452,6 +452,8 @@ def extract_items(
 
     # Derive branch and type from path
     branch_name, memory_type = _derive_branch_and_type(file_path)
+
+    json_handler.log_operation("extract_items", {"branch": branch_name, "type": memory_type, "extracted_count": items_to_extract})
 
     return {
         'success': True,

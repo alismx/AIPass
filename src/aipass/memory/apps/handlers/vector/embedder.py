@@ -33,7 +33,7 @@ from typing import List, Dict, Any
 from pathlib import Path
 
 from aipass.prax.apps.modules.logger import get_system_logger
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 logger = get_system_logger()
 
@@ -197,7 +197,7 @@ def encode_batch(texts: List[str]) -> Dict[str, Any]:
         service = _get_service()
         result = service.encode_batch(texts)
 
-        log_operation("vector_encode_batch", {"count": result.get('count', 0), "dimension": result.get('dimension', 0), "success": True})
+        json_handler.log_operation("vector_encode_batch", {"count": result.get('count', 0), "dimension": result.get('dimension', 0), "success": True})
         return {
             'success': True,
             **result

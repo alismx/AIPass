@@ -43,7 +43,7 @@ except ImportError:
 from aipass.memory.apps.handlers.tracking.line_counter import update_line_count
 from aipass.memory.apps.handlers.monitor.detector import check_single_file
 from aipass.prax.apps.modules.logger import get_system_logger
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 logger = get_system_logger()
 
@@ -227,7 +227,7 @@ def check_and_rollover() -> Dict[str, Any]:
     # Check code_archive for new files to index
     results['code_archive'] = _check_code_archive()
 
-    log_operation("check_and_rollover", {"files_checked": results.get('files_checked', 0), "rollover_triggered": results.get('rollover_triggered', False)})
+    json_handler.log_operation("check_and_rollover", {"files_checked": results.get('files_checked', 0), "rollover_triggered": results.get('rollover_triggered', False)})
 
     return results
 

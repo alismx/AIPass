@@ -26,7 +26,7 @@ from datetime import datetime
 from typing import Dict, Any, List
 
 from aipass.prax.apps.modules.logger import get_system_logger
-from aipass.memory.apps.handlers.json.json_handler import log_operation
+from aipass.memory.apps.handlers.json import json_handler
 
 logger = get_system_logger()
 
@@ -431,7 +431,7 @@ def push_memory_bank_dashboard() -> bool:
             "memory_bank", section_data, branch_paths
         )
 
-        log_operation("dashboard_push", {"branches_updated": success_count, "success": success_count > 0})
+        json_handler.log_operation("dashboard_push", {"branches_updated": success_count, "success": success_count > 0})
 
         return success_count > 0
 
