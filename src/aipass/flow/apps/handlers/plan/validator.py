@@ -10,17 +10,36 @@
 Plan Validation Handler
 
 Validates and normalizes plan numbers and registry entries.
+Plan-type-agnostic: handles FPLAN-, DPLAN-, and future prefixes.
 """
 
+import re
 from typing import Dict, Any, Tuple
+
+# Matches any PREFIX- at the start (e.g. FPLAN-, DPLAN-, XPLAN-)
+_PREFIX_RE = re.compile(r'^([A-Z]+PLAN)-', re.IGNORECASE)
+
+
+def extract_prefix(plan_num: str) -> str | None:
+    """Extract the plan-type prefix from a plan identifier.
+
+    Args:
+        plan_num: Raw input like ``"DPLAN-0004"`` or ``"42"``.
+
+    Returns:
+        Uppercase prefix (e.g. ``"DPLAN"``) or ``None`` if no prefix found.
+    """
+    if not isinstance(plan_num, str):
+        return None
+    m = _PREFIX_RE.match(plan_num.strip())
+    return m.group(1).upper() if m else None
 
 
 def normalize_plan_number(plan_num: str) -> str:
     """
     Normalize plan number to 4-digit format
 
-    Accepts various formats ("1", "42", "0001") and normalizes
-    to standard 4-digit format ("0001", "0042", "0001").
+    Strips any known prefix (FPLAN-, DPLAN-, PLAN-, etc.).
 
     Args:
         plan_num: Plan number in any format
@@ -34,25 +53,18 @@ def normalize_plan_number(plan_num: str) -> str:
     Examples:
         >>> normalize_plan_number("1")
         "0001"
-        >>> normalize_plan_number("42")
-        "0042"
-        >>> normalize_plan_number("0001")
-        "0001"
         >>> normalize_plan_number("FPLAN-0042")
         "0042"
-        >>> normalize_plan_number("PLAN4444")
-        "4444"
+        >>> normalize_plan_number("DPLAN-0004")
+        "0004"
     """
-    # Normalize prefix variations for robustness
     if isinstance(plan_num, str):
-        upper = plan_num.upper()
-        # Strip FPLAN- prefix (standard format)
-        if upper.startswith("FPLAN-"):
-            plan_num = plan_num[6:]
-        # Strip PLAN- prefix (alternate format)
+        upper = plan_num.upper().strip()
+        m = _PREFIX_RE.match(upper)
+        if m:
+            plan_num = plan_num[m.end():]
         elif upper.startswith("PLAN-"):
             plan_num = plan_num[5:]
-        # Strip PLAN prefix without dash (e.g., PLAN4444)
         elif upper.startswith("PLAN"):
             plan_num = plan_num[4:]
     return f"{int(plan_num):04d}"
@@ -70,12 +82,7 @@ def validate_plan_exists(plan_key: str, registry: Dict[str, Any]) -> Tuple[bool,
         Tuple of (exists, error_message)
         - exists: True if plan found in registry
         - error_message: None if exists, error string if not found
-
-    Examples:
-        >>> exists, error = validate_plan_exists("0001", registry)
-        >>> if not exists:
-        ...     print(error)
     """
     if plan_key not in registry.get("plans", {}):
-        return False, f"FPLAN-{plan_key} not found in registry"
+        return False, f"Plan {plan_key} not found in registry"
     return True, None

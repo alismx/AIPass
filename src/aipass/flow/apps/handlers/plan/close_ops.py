@@ -37,6 +37,56 @@ FLOW_ROOT = _PKG_ROOT / "flow"
 MODULE_NAME = "close_plan"
 
 # =============================================
+# PLAN TYPE ROUTING
+# =============================================
+
+
+def _extract_prefix(plan_num_raw: str) -> str | None:
+    """Extract plan-type prefix (e.g. ``"DPLAN"``) from raw input."""
+    import re
+    m = re.match(r'^([A-Z]+PLAN)-', plan_num_raw.strip(), re.IGNORECASE)
+    return m.group(1).upper() if m else None
+
+
+def _resolve_registry_file(plan_num_raw: str) -> str | None:
+    """Resolve registry_file from a raw plan number with prefix.
+
+    Returns registry filename or None if no prefix detected.
+    """
+    prefix = _extract_prefix(plan_num_raw)
+    if prefix is None:
+        return None
+    try:
+        from aipass.flow.apps.handlers.template.plan_type_loader import get_plan_type  # type: ignore[import-not-found]
+        config = get_plan_type(prefix)
+        return config.get("registry_file")
+    except Exception:
+        return None
+
+
+def _find_plan_across_registries(plan_key: str, load_registry_fn: Any) -> str | None:
+    """Search all registries for a plan number when no prefix given.
+
+    Returns registry filename where the plan was found, or None.
+    """
+    try:
+        from aipass.flow.apps.handlers.template.plan_type_loader import discover_plan_types  # type: ignore[import-not-found]
+        for _type_key, config in discover_plan_types().items():
+            reg_file = config.get("registry_file")
+            if not reg_file:
+                continue
+            try:
+                registry = load_registry_fn(registry_file=reg_file)
+                if plan_key in registry.get("plans", {}):
+                    return reg_file
+            except Exception:
+                continue
+    except Exception:
+        pass
+    return None
+
+
+# =============================================
 # HELPER
 # =============================================
 
@@ -55,18 +105,19 @@ def _spawn_background_runner():
 # CLOSE PLAN IMPLEMENTATION
 # =============================================
 
-def close_plan_impl(plan_num=None, confirm=False, all_plans=False, spawn_background=True,
+def close_plan_impl(plan_num: Any = None, confirm: bool = False,
+                    all_plans: bool = False, spawn_background: bool = True,
                     # Dependencies injected from module
-                    normalize_plan_number=None,
-                    load_registry=None,
-                    save_registry=None,
-                    validate_plan_exists=None,
-                    confirm_plan_deletion=None,
-                    is_template_content=None,
-                    update_dashboard_local=None,
-                    push_to_plans_central=None,
-                    push_flow_to_branch_dashboard=None,
-                    close_all_plans_fn=None) -> Dict[str, Any]:
+                    normalize_plan_number: Any = None,
+                    load_registry: Any = None,
+                    save_registry: Any = None,
+                    validate_plan_exists: Any = None,
+                    confirm_plan_deletion: Any = None,
+                    is_template_content: Any = None,
+                    update_dashboard_local: Any = None,
+                    push_to_plans_central: Any = None,
+                    push_flow_to_branch_dashboard: Any = None,
+                    close_all_plans_fn: Any = None) -> Dict[str, Any]:
     """
     Implement plan closure workflow
 
@@ -85,7 +136,7 @@ def close_plan_impl(plan_num=None, confirm=False, all_plans=False, spawn_backgro
         Dict with keys: success (bool), messages (list of dicts with type/text),
         plan_key (str), cancelled (bool)
     """
-    messages: List[Dict[str, str]] = []
+    messages: List[Dict[str, Any]] = []
 
     # Handle --all flag
     if all_plans:
@@ -107,8 +158,20 @@ def close_plan_impl(plan_num=None, confirm=False, all_plans=False, spawn_backgro
         # 1. VALIDATE: Normalize plan number (handler)
         plan_key = normalize_plan_number(plan_num)
 
-        # 2. LOAD DATA: Get registry (service)
-        registry = load_registry()
+        # 2. LOAD DATA: Detect correct registry from prefix, then load
+        reg_file = _resolve_registry_file(plan_num)
+        if reg_file:
+            registry = load_registry(registry_file=reg_file)
+        else:
+            # No prefix -- try default registry first
+            registry = load_registry()
+            exists_default, _ = validate_plan_exists(plan_key, registry)
+            if not exists_default:
+                # Search other registries
+                found_reg = _find_plan_across_registries(plan_key, load_registry)
+                if found_reg:
+                    reg_file = found_reg
+                    registry = load_registry(registry_file=reg_file)
 
         # 3. VALIDATE: Check plan exists (handler)
         exists, error_msg = validate_plan_exists(plan_key, registry)
@@ -124,24 +187,30 @@ def close_plan_impl(plan_num=None, confirm=False, all_plans=False, spawn_backgro
         plan_info = registry["plans"][plan_key]
         plan_file = Path(plan_info.get("file_path", ""))
 
+        # Derive display label from filename (e.g. "FPLAN-0079" or "DPLAN-0004")
+        plan_label = plan_file.stem if plan_file.name else f"PLAN-{plan_key}"
+
+        # Extract prefix for display functions (e.g. "FPLAN", "DPLAN")
+        plan_prefix = _extract_prefix(plan_label) or "FPLAN"
+
         # 4. IDEMPOTENCY CHECK: Prevent double-closing (with orphan cleanup)
         if plan_info['status'] == 'closed':
             closed_date = plan_info.get('closed', 'unknown')
 
             # Check if .md file is orphaned on disk (registry-closed but file never moved)
             if plan_file.exists():
-                messages.append({"type": "warning", "text": f"FPLAN-{plan_key} already closed on {closed_date} — orphaned .md file detected"})
+                messages.append({"type": "warning", "text": f"{plan_label} already closed on {closed_date} — orphaned .md file detected"})
                 messages.append({"type": "dim", "text": f"  Cleaning up: moving {plan_file.name} to processed_plans/"})
                 try:
                     from aipass.flow.apps.handlers.mbank.process import archive_plan
                     if archive_plan(plan_file):
-                        logger.info(f"[{MODULE_NAME}] Cleaned up orphaned file for FPLAN-{plan_key}: {plan_file}")
+                        logger.info(f"[{MODULE_NAME}] Cleaned up orphaned file for {plan_label}: {plan_file}")
                         messages.append({"type": "success", "text": "  Orphaned file archived successfully"})
                     else:
-                        logger.warning(f"[{MODULE_NAME}] Failed to archive orphaned file for FPLAN-{plan_key}: {plan_file}")
+                        logger.warning(f"[{MODULE_NAME}] Failed to archive orphaned file for {plan_label}: {plan_file}")
                         messages.append({"type": "error_text", "text": "  Failed to move orphaned file — manual cleanup required"})
                 except Exception as e:
-                    logger.warning(f"[{MODULE_NAME}] Error cleaning orphaned file for FPLAN-{plan_key}: {e}")
+                    logger.warning(f"[{MODULE_NAME}] Error cleaning orphaned file for {plan_label}: {e}")
                     messages.append({"type": "error_text", "text": f"  Error during cleanup: {e}"})
                 return {
                     "success": True,
@@ -150,7 +219,7 @@ def close_plan_impl(plan_num=None, confirm=False, all_plans=False, spawn_backgro
                     "cancelled": False,
                 }
 
-            messages.append({"type": "warning", "text": f"FPLAN-{plan_key} already closed on {closed_date}"})
+            messages.append({"type": "warning", "text": f"{plan_label} already closed on {closed_date}"})
             messages.append({"type": "dim", "text": "Nothing to do - plan is already archived"})
             return {
                 "success": False,
@@ -166,18 +235,21 @@ def close_plan_impl(plan_num=None, confirm=False, all_plans=False, spawn_backgro
                 content = f.read()
 
             if is_template_content(content):
-                messages.append({"type": "warning", "text": f"  FPLAN-{plan_key} is empty template - fast-deleting (not archiving)"})
+                messages.append({"type": "warning", "text": f"  {plan_label} is empty template - fast-deleting (not archiving)"})
 
                 # Delete the file
                 plan_file.unlink()
                 logger.info(f"[{MODULE_NAME}] Deleted empty template file: {plan_file}")
 
-                # Remove from registry
+                # Remove from registry and save to correct per-type registry
                 del registry["plans"][plan_key]
-                save_registry(registry)
-                logger.info(f"[{MODULE_NAME}] Removed FPLAN-{plan_key} from registry")
+                if reg_file:
+                    save_registry(registry, registry_file=reg_file)
+                else:
+                    save_registry(registry)
+                logger.info(f"[{MODULE_NAME}] Removed {plan_label} from registry")
 
-                messages.append({"type": "success", "text": f"  Empty template deleted - FPLAN-{plan_key} removed from system"})
+                messages.append({"type": "success", "text": f"  Empty template deleted - {plan_label} removed from system"})
                 return {
                     "success": True,
                     "messages": messages,
@@ -193,7 +265,7 @@ def close_plan_impl(plan_num=None, confirm=False, all_plans=False, spawn_backgro
             messages.append({"type": "warning", "text": "  Could not check template status, continuing with normal close"})
 
         # DISPLAY: plan info header
-        messages.append({"type": "header", "plan_key": plan_key, "plan_info": plan_info})
+        messages.append({"type": "header", "plan_key": plan_key, "plan_info": plan_info, "prefix": plan_prefix})
 
         # CONFIRM: Ask user only if explicitly requested (--confirm/--interactive)
         if confirm:
@@ -212,8 +284,11 @@ def close_plan_impl(plan_num=None, confirm=False, all_plans=False, spawn_backgro
             # CRITICAL: Close ALWAYS succeeds from this point. Archive is non-blocking.
             plan_info['status'] = 'closed'
             plan_info['closed'] = datetime.now(timezone.utc).isoformat()
-            save_registry(registry)
-            logger.info(f"[{MODULE_NAME}] Marked FPLAN-{plan_key} as closed")
+            if reg_file:
+                save_registry(registry, registry_file=reg_file)
+            else:
+                save_registry(registry)
+            logger.info(f"[{MODULE_NAME}] Marked {plan_label} as closed")
         except Exception as e:
             logger.error(f"[{MODULE_NAME}] Failed to mark plan as closed: {e}")
             messages.append({"type": "error_text", "text": f"  Failed to update registry: {e}"})
@@ -229,7 +304,7 @@ def close_plan_impl(plan_num=None, confirm=False, all_plans=False, spawn_backgro
             messages.append({"type": "step", "text": "[3/5] Starting background processing..."})
             try:
                 _spawn_background_runner()
-                logger.info(f"[{MODULE_NAME}] Spawned background post-processing for FPLAN-{plan_key}")
+                logger.info(f"[{MODULE_NAME}] Spawned background post-processing for {plan_label}")
                 messages.append({"type": "dim", "text": "  Summary generation and archival running in background"})
             except FileNotFoundError as e:
                 logger.warning(f"[{MODULE_NAME}] Background runner not found: {e}")
@@ -264,7 +339,7 @@ def close_plan_impl(plan_num=None, confirm=False, all_plans=False, spawn_backgro
 
         # --- Step 5/5: Done ---
         messages.append({"type": "step", "text": "[5/5] Finalizing..."})
-        messages.append({"type": "close_success", "plan_key": plan_key})
+        messages.append({"type": "close_success", "plan_key": plan_key, "prefix": plan_prefix})
 
         # Append to branch's CLOSED_PLANS.local.json
         try:
@@ -308,10 +383,10 @@ def close_plan_impl(plan_num=None, confirm=False, all_plans=False, spawn_backgro
         }
 
 
-def close_all_plans_impl(confirm=False,
+def close_all_plans_impl(confirm: bool = False,
                          # Dependencies injected from module
-                         get_open_plans=None,
-                         close_plan_fn=None) -> Dict[str, Any]:
+                         get_open_plans: Any = None,
+                         close_plan_fn: Any = None) -> Dict[str, Any]:
     """
     Close all open plans in one operation
 
@@ -323,7 +398,7 @@ def close_all_plans_impl(confirm=False,
     Returns:
         Dict with keys: success (bool), messages (list), success_count, failure_count, total
     """
-    messages: List[Dict[str, str]] = []
+    messages: List[Dict[str, Any]] = []
 
     try:
         # Get all open plans (handler)

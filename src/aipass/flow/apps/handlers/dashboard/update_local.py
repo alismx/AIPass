@@ -9,7 +9,7 @@
 """
 Update Dashboard Local Handler
 
-Updates Flow's DASHBOARD.local.json file with plan summaries from flow_registry.json.
+Updates Flow's DASHBOARD.local.json file with plan summaries from fplan_registry.json.
 
 This handler follows the 3-tier logging standard:
 - NO Prax imports
@@ -24,7 +24,7 @@ Flow's Dual Role:
 - Key principle: Each branch touches ONLY its own section, respects others
 
 Data Flow:
-1. Read flow_registry.json (source of truth)
+1. Read fplan_registry.json (source of truth)
 2. Extract Flow's plans only (location='flow')
 3. Partition into active (status='open') and recently_closed (status='closed', last 5)
 4. Calculate statistics (active_count, total_closed, next_number)
@@ -81,7 +81,7 @@ FLOW_ROOT = _PKG_ROOT / "flow"
 # CONFIGURATION
 # =============================================
 
-REGISTRY_FILE = FLOW_ROOT / "flow_json" / "flow_registry.json"
+REGISTRY_FILE = FLOW_ROOT / "flow_json" / "fplan_registry.json"
 DASHBOARD_FILE = FLOW_ROOT / "DASHBOARD.local.json"
 
 # =============================================
@@ -90,7 +90,7 @@ DASHBOARD_FILE = FLOW_ROOT / "DASHBOARD.local.json"
 
 def _read_registry() -> Optional[Dict[str, Any]]:
     """
-    Read flow_registry.json.
+    Read fplan_registry.json.
 
     Returns:
         Registry dict or None if error
@@ -253,7 +253,7 @@ def update_dashboard_local() -> bool:
     Update DASHBOARD.local.json with Flow's plan summaries from registry.
 
     This is the main handler function that:
-    1. Reads flow_registry.json
+    1. Reads fplan_registry.json
     2. Extracts Flow's plans (location='flow')
     3. Partitions into active and closed
     4. Updates ONLY the 'flow_plans' section of DASHBOARD.local.json

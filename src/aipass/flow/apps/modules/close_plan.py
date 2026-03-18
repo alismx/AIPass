@@ -105,18 +105,18 @@ def _display_messages(messages: List[Dict[str, Any]]):
             error(msg['text'])
 
         elif msg_type == "header":
-            console.print(format_plan_deletion_header(msg["plan_key"], msg["plan_info"]))
+            console.print(format_plan_deletion_header(msg["plan_key"], msg["plan_info"], prefix=msg.get("prefix", "FPLAN")))
 
         elif msg_type == "cancelled":
             console.print(format_deletion_cancelled())
 
         elif msg_type == "close_success":
-            console.print(format_plan_deletion_success(msg["plan_key"]))
+            console.print(format_plan_deletion_success(msg["plan_key"], prefix=msg.get("prefix", "FPLAN")))
 
         elif msg_type == "plan_list":
             warning(f"Found {msg['count']} open plan(s) to close:")
             for plan in msg.get("plans", []):
-                console.print(f"  * FPLAN-{plan['plan_num']}: {plan['subject']}")
+                console.print(f"  * {plan.get('prefix', 'FPLAN')}-{plan['plan_num']}: {plan['subject']}")
 
         elif msg_type == "confirm_warning":
             error(f"WARNING: This will close all {msg['count']} plans!")
@@ -126,7 +126,7 @@ def _display_messages(messages: List[Dict[str, Any]]):
             console.print("-" * 60)
 
         elif msg_type == "closing_single":
-            console.print(f"\n[dim]Closing FPLAN-{msg['plan_num']}...[/dim]")
+            console.print(f"\n[dim]Closing {msg.get('prefix', 'FPLAN')}-{msg['plan_num']}...[/dim]")
 
         elif msg_type == "close_all_summary":
             console.print("\n" + "=" * 60)

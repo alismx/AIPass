@@ -48,9 +48,9 @@ def _find_repo_root() -> Path:
 
 _REPO_ROOT = _find_repo_root()
 MEMORY_BANK_PATH = _REPO_ROOT / "MEMORY_BANK" / "plans"
-PROCESSED_PLANS_DIR = FLOW_ROOT / "processed_plans"
+PROCESSED_PLANS_DIR = _PKG_ROOT / "backup" / "processed_plans"
 PRIVATE_BRANCH_REGISTRY = _REPO_ROOT / "PRIVATE_BRANCH_REGISTRY.json"
-REGISTRY_FILE = FLOW_JSON_DIR / "flow_registry.json"
+REGISTRY_FILE = FLOW_JSON_DIR / "fplan_registry.json"
 CONFIG_FILE = FLOW_JSON_DIR / "flow_mbank_config.json"
 TRL_REGISTRY_FILE = FLOW_JSON_DIR / "flow_mbank_registry.json"
 API_CONFIG_FILE = FLOW_ROOT / "apps" / "handlers" / "json_templates" / "custom" / "api_config.json"
@@ -218,53 +218,74 @@ def get_ai_model() -> Optional[str]:
         return None
 
 # =============================================
+# PLAN TYPE HELPERS
+# =============================================
+
+
+def _get_all_registry_files() -> List[str]:
+    """Return per-type registry filenames via plan-type discovery."""
+    try:
+        from aipass.flow.apps.handlers.template.plan_type_loader import discover_plan_types  # type: ignore[import-not-found]
+        files: List[str] = []
+        for _key, config in discover_plan_types().items():
+            rf = config.get("registry_file")
+            if rf and rf not in files:
+                files.append(rf)
+        if files:
+            return files
+    except Exception:
+        pass
+    return [REGISTRY_FILE.name]
+
+
+# =============================================
 # REGISTRY OPERATIONS
 # =============================================
 
-def load_flow_registry() -> Dict[str, Any]:
-    """Load the flow registry"""
-    if not REGISTRY_FILE.exists():
-        raise Exception(f"Flow registry not found at {REGISTRY_FILE}")
-
+def load_flow_registry(registry_file: str | None = None) -> Dict[str, Any]:
+    """Load a plan registry."""
+    target = FLOW_JSON_DIR / registry_file if registry_file else REGISTRY_FILE
+    if not target.exists():
+        raise Exception(f"Flow registry not found at {target}")
     try:
-        with open(REGISTRY_FILE, 'r', encoding='utf-8') as f:
+        with open(target, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
         raise Exception(f"Failed to load flow registry: {e}")
 
-def save_flow_registry(registry: Dict[str, Any]):
-    """Save the flow registry"""
+def save_flow_registry(registry: Dict[str, Any], registry_file: str | None = None) -> None:
+    """Save a plan registry."""
+    target = FLOW_JSON_DIR / registry_file if registry_file else REGISTRY_FILE
     try:
         registry["last_updated"] = datetime.now(timezone.utc).isoformat()
-        with open(REGISTRY_FILE, 'w', encoding='utf-8') as f:
+        with open(target, 'w', encoding='utf-8') as f:
             json.dump(registry, f, indent=2, ensure_ascii=False)
     except Exception as e:
         raise Exception(f"Failed to save flow registry: {e}")
 
 def get_closed_plans() -> List[Dict[str, Any]]:
-    """Get closed PLANs from flow registry
-
-    AUTO-HEAL: Before getting closed plans, verify and heal any orphaned plans
+    """Get closed PLANs from ALL per-type registries.
 
     Returns:
-        List of dicts with keys: number, path, info
+        List of dicts with keys: number, path, info, registry_file
     """
-    # AUTO-HEAL LAYER: Fix orphaned plans before processing new ones
-    heal_result = verify_and_heal_orphaned_plans()
-
-    registry = load_flow_registry()
-    closed_plans = []
-
-    for plan_num, plan_info in registry.get("plans", {}).items():
-        if plan_info.get("status") == "closed" and plan_info.get("processed") != True:
-            file_path = Path(plan_info.get("file_path", ""))
-            if file_path.exists():
-                closed_plans.append({
-                    "number": plan_num,
-                    "path": file_path,
-                    "info": plan_info
-                })
-
+    verify_and_heal_orphaned_plans()
+    closed_plans: List[Dict[str, Any]] = []
+    for reg_file in _get_all_registry_files():
+        try:
+            registry = load_flow_registry(registry_file=reg_file)
+        except Exception:
+            continue
+        for plan_num, plan_info in registry.get("plans", {}).items():
+            if plan_info.get("status") == "closed" and plan_info.get("processed") is not True:
+                file_path = Path(plan_info.get("file_path", ""))
+                if file_path.exists():
+                    closed_plans.append({
+                        "number": plan_num,
+                        "path": file_path,
+                        "info": plan_info,
+                        "registry_file": reg_file,
+                    })
     return closed_plans
 
 # =============================================
@@ -654,188 +675,105 @@ def cleanup_temp_files() -> Dict[str, Any]:
 # =============================================
 
 def verify_and_heal_orphaned_plans() -> Dict[str, Any]:
-    """Cross-check registry vs filesystem and auto-heal orphaned plans
-
-    Detects plans where registry says processed=true but file still at original location.
-    Attempts to move orphaned files to processed_plans/ directory.
-
-    Returns:
-        Dict with keys:
-            - orphans_found: int
-            - successfully_healed: int
-            - failed_to_heal: int
-            - orphans: list of plan details
-    """
-    registry = load_flow_registry()
-
+    """Cross-check ALL registries vs filesystem and auto-heal orphaned plans."""
     orphans_found = 0
     successfully_healed = 0
     failed_to_heal = 0
-    orphan_details = []
+    orphan_details: List[Dict[str, Any]] = []
 
-    for plan_num, plan_info in registry.get("plans", {}).items():
-        # Only check plans marked as processed
-        if plan_info.get("processed") == True and plan_info.get("cleanup_completed") == True:
-            original_path = Path(plan_info.get("file_path", ""))
-
-            # VERIFICATION: Does file still exist at original location?
-            if original_path.exists():
-                # ORPHAN DETECTED
-                orphans_found += 1
-
-                # Attempt auto-heal by moving file now
-                try:
-                    PROCESSED_PLANS_DIR.mkdir(parents=True, exist_ok=True)
-                    destination = PROCESSED_PLANS_DIR / original_path.name
-
-                    # Handle duplicates
-                    if destination.exists():
-                        timestamp = datetime.now().strftime("%H%M%S")
-                        stem = destination.stem
-                        suffix = destination.suffix
-                        destination = PROCESSED_PLANS_DIR / f"{stem}_{timestamp}{suffix}"
-
-                    # Attempt move
-                    original_path.rename(destination)
-
-                    # Verify move
-                    if destination.exists() and not original_path.exists():
-                        successfully_healed += 1
-                        orphan_details.append({
-                            "plan": f"FPLAN-{plan_num}",
-                            "status": "healed",
-                            "original_path": str(original_path),
-                            "destination": str(destination)
-                        })
-                    else:
+    for reg_file in _get_all_registry_files():
+        try:
+            registry = load_flow_registry(registry_file=reg_file)
+        except Exception:
+            continue
+        for plan_num, plan_info in registry.get("plans", {}).items():
+            if plan_info.get("processed") is True and plan_info.get("cleanup_completed") is True:
+                original_path = Path(plan_info.get("file_path", ""))
+                if original_path.exists():
+                    orphans_found += 1
+                    plan_label = original_path.stem
+                    try:
+                        PROCESSED_PLANS_DIR.mkdir(parents=True, exist_ok=True)
+                        destination = PROCESSED_PLANS_DIR / original_path.name
+                        if destination.exists():
+                            timestamp = datetime.now().strftime("%H%M%S")
+                            destination = PROCESSED_PLANS_DIR / f"{destination.stem}_{timestamp}{destination.suffix}"
+                        original_path.rename(destination)
+                        if destination.exists() and not original_path.exists():
+                            successfully_healed += 1
+                            orphan_details.append({"plan": plan_label, "status": "healed",
+                                                   "original_path": str(original_path), "destination": str(destination)})
+                        else:
+                            failed_to_heal += 1
+                            orphan_details.append({"plan": plan_label, "status": "heal_failed",
+                                                   "error": "Verification failed", "path": str(original_path)})
+                    except Exception as e:
                         failed_to_heal += 1
-                        orphan_details.append({
-                            "plan": f"FPLAN-{plan_num}",
-                            "status": "heal_failed",
-                            "error": "Verification failed after rename",
-                            "path": str(original_path)
-                        })
+                        orphan_details.append({"plan": plan_label, "status": "heal_failed",
+                                               "error": str(e), "path": str(original_path)})
 
-                except Exception as e:
-                    failed_to_heal += 1
-                    orphan_details.append({
-                        "plan": f"FPLAN-{plan_num}",
-                        "status": "heal_failed",
-                        "error": str(e),
-                        "path": str(original_path)
-                    })
-
-    return {
-        "orphans_found": orphans_found,
-        "successfully_healed": successfully_healed,
-        "failed_to_heal": failed_to_heal,
-        "orphans": orphan_details
-    }
+    return {"orphans_found": orphans_found, "successfully_healed": successfully_healed,
+            "failed_to_heal": failed_to_heal, "orphans": orphan_details}
 
 # =============================================
 # MAIN PROCESSING
 # =============================================
 
 def process_closed_plans() -> Dict[str, Any]:
-    """Main function to process all closed plans
+    """Process all closed plans across all plan types.
 
-    # AI summarization removed — plans vectorized directly from flow/processed_plans/
-    # Processing is now: archive_plan() → update registry flags → done
-
-    AUTO-HEAL: Cleans up old -TEMP files from MEMORY_BANK after processing
-
-    Returns:
-        Dict with keys:
-            - success: bool
-            - processed: int (successfully processed)
-            - errors: int (failed)
-            - results: list of per-plan results
-            - error: str (if success=False)
-            - cleanup: dict (TEMP file cleanup results)
+    Processing: archive_plan() -> update registry flags -> vector processing (best effort)
     """
     try:
-        # Get closed plans from registry (includes auto-heal)
         closed_plans = get_closed_plans()
-
         if not closed_plans:
-            # No closed plans to process, but still run cleanup
             cleanup_result = cleanup_temp_files()
-            return {
-                "success": True,
-                "processed": 0,
-                "errors": 0,
-                "results": [],
-                "cleanup": cleanup_result
-            }
+            return {"success": True, "processed": 0, "errors": 0, "results": [], "cleanup": cleanup_result}
 
         processed_count = 0
         error_count = 0
-        results = []
+        results: List[Dict[str, Any]] = []
 
         for plan in closed_plans:
             try:
-                plan_path = plan["path"]
-                plan_num = plan["number"]
+                plan_path: Path = plan["path"]
+                plan_num: str = plan["number"]
+                reg_file: str = plan.get("registry_file", REGISTRY_FILE.name)
+                plan_label = plan_path.stem
+                correlation_id = f"{plan_label}-{datetime.now().strftime('%H%M%S')}"
 
-                # Generate correlation ID for tracking
-                correlation_id = f"FPLAN-{plan_num}-{datetime.now().strftime('%H%M%S')}"
-
-                # Archive plan to flow/processed_plans/
                 archive_success = archive_plan(plan_path)
 
-                # Update registry flags
-                registry = load_flow_registry()
+                registry = load_flow_registry(registry_file=reg_file)
                 if plan_num in registry.get("plans", {}):
                     registry["plans"][plan_num]["cleanup_completed"] = archive_success
                     registry["plans"][plan_num]["cleanup_date"] = datetime.now(timezone.utc).isoformat()
-
                     if archive_success:
                         registry["plans"][plan_num]["processed"] = True
                         registry["plans"][plan_num]["processed_date"] = datetime.now(timezone.utc).isoformat()
-
-                    save_flow_registry(registry)
+                    save_flow_registry(registry, registry_file=reg_file)
 
                 if archive_success:
                     processed_count += 1
-                    results.append({
-                        "plan": f"FPLAN-{plan_num}",
-                        "status": "archived",
-                        "correlation_id": correlation_id
-                    })
+                    # Best-effort vector processing
+                    try:
+                        from aipass.memory.apps.handlers.intake.plans_processor import process_plans  # type: ignore[import-not-found]
+                        process_plans()
+                    except Exception:
+                        pass
+                    results.append({"plan": plan_label, "status": "archived", "correlation_id": correlation_id})
                 else:
                     error_count += 1
-                    results.append({
-                        "plan": f"FPLAN-{plan_num}",
-                        "status": "archive_failed",
-                        "error": "Failed to move plan to flow/processed_plans/",
-                        "correlation_id": correlation_id
-                    })
-
+                    results.append({"plan": plan_label, "status": "archive_failed",
+                                    "error": "Failed to move plan to backup/processed_plans/",
+                                    "correlation_id": correlation_id})
             except Exception as e:
                 error_count += 1
-                plan_num = plan.get('number', 'unknown')
-                results.append({
-                    "plan": f"FPLAN-{plan_num}",
-                    "status": "error",
-                    "error": str(e)
-                })
+                results.append({"plan": str(plan.get("path", "unknown")), "status": "error", "error": str(e)})
 
-        # AUTO-HEAL: Clean up old -TEMP files from MEMORY_BANK
         cleanup_result = cleanup_temp_files()
-
-        return {
-            "success": True,
-            "processed": processed_count,
-            "errors": error_count,
-            "results": results,
-            "cleanup": cleanup_result
-        }
+        return {"success": True, "processed": processed_count, "errors": error_count,
+                "results": results, "cleanup": cleanup_result}
 
     except Exception as e:
-        return {
-            "success": False,
-            "processed": 0,
-            "errors": 0,
-            "results": [],
-            "error": str(e)
-        }
+        return {"success": False, "processed": 0, "errors": 0, "results": [], "error": str(e)}

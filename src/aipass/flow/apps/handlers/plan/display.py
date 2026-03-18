@@ -1,9 +1,9 @@
 # =================== AIPass ====================
 # Name: display.py
 # Description: Plan Display Handler
-# Version: 0.1.0
+# Version: 0.2.0
 # Created: 2025-11-15
-# Modified: 2025-11-15
+# Modified: 2026-03-17
 # =============================================
 
 """
@@ -83,13 +83,14 @@ def display_plan_result(
 
 # DELETE PLAN DISPLAY FUNCTIONS
 
-def format_plan_deletion_header(plan_key: str, plan_info: Dict[str, Any]) -> str:
+def format_plan_deletion_header(plan_key: str, plan_info: Dict[str, Any], prefix: str = "FPLAN") -> str:
     """
     Format plan information header for deletion confirmation
 
     Args:
         plan_key: Normalized plan number (e.g., "0001")
         plan_info: Plan metadata dictionary from registry
+        prefix: Plan prefix (e.g. "FPLAN", "DPLAN")
 
     Returns:
         Formatted header string with Rich markup for plan details
@@ -98,7 +99,7 @@ def format_plan_deletion_header(plan_key: str, plan_info: Dict[str, Any]) -> str
 
     lines = [
         "",
-        "[bold cyan]╭─ Close FPLAN-" + plan_key + " ─╮[/bold cyan]",
+        f"[bold cyan]╭─ Close {prefix}-" + plan_key + " ─╮[/bold cyan]",
         "",
         f"  [dim]Location:[/dim] {plan_info.get('relative_path', 'unknown')}",
         f"  [dim]Subject:[/dim]  {plan_info.get('subject', 'N/A')}",
@@ -114,7 +115,8 @@ def format_plan_deletion_header(plan_key: str, plan_info: Dict[str, Any]) -> str
 def format_plan_error(
     error_type: str,
     plan_num: str | None = None,
-    details: str | None = None
+    details: str | None = None,
+    prefix: str = "FPLAN",
 ) -> str:
     """
     Format error messages for plan operations
@@ -123,12 +125,13 @@ def format_plan_error(
         error_type: Type of error ("not_found", "invalid_number", "general")
         plan_num: Plan number if relevant
         details: Additional error details
+        prefix: Plan prefix (e.g. "FPLAN", "DPLAN")
 
     Returns:
         Formatted error message
     """
     if error_type == "not_found":
-        return f"[ERROR] FPLAN-{plan_num} not found in registry"
+        return f"[ERROR] {prefix}-{plan_num} not found in registry"
     elif error_type == "invalid_number":
         return f"[ERROR] Invalid plan number: {plan_num}"
     elif error_type == "general":
@@ -137,30 +140,32 @@ def format_plan_error(
         return "[ERROR] Unknown error"
 
 
-def format_plan_deletion_success(plan_key: str) -> str:
+def format_plan_deletion_success(plan_key: str, prefix: str = "FPLAN") -> str:
     """
     Format success message for completed plan deletion
 
     Args:
         plan_key: Normalized plan number (e.g., "0001")
+        prefix: Plan prefix (e.g. "FPLAN", "DPLAN")
 
     Returns:
         Formatted success message
     """
-    return f"\n[SUCCESS] FPLAN-{plan_key} deleted successfully\n"
+    return f"\n[SUCCESS] {prefix}-{plan_key} closed successfully\n"
 
 
-def format_registry_removal_status(plan_key: str) -> str:
+def format_registry_removal_status(plan_key: str, prefix: str = "FPLAN") -> str:
     """
     Format status message for registry removal
 
     Args:
         plan_key: Normalized plan number (e.g., "0001")
+        prefix: Plan prefix (e.g. "FPLAN", "DPLAN")
 
     Returns:
         Formatted status message
     """
-    return f"[OK] Removed FPLAN-{plan_key} from registry"
+    return f"[OK] Removed {prefix}-{plan_key} from registry"
 
 
 def format_deletion_cancelled() -> str:
@@ -192,13 +197,14 @@ def format_delete_usage_error() -> str:
 
 # RESTORE PLAN DISPLAY FUNCTIONS
 
-def format_restore_header(plan_key: str, plan_info: Dict[str, Any]) -> str:
+def format_restore_header(plan_key: str, plan_info: Dict[str, Any], prefix: str = "FPLAN") -> str:
     """
     Format plan information header for restore confirmation
 
     Args:
         plan_key: Normalized plan number (e.g., "0001")
         plan_info: Plan metadata dictionary from registry
+        prefix: Plan prefix (e.g. "FPLAN", "DPLAN")
 
     Returns:
         Formatted header string with Rich markup for plan details
@@ -209,7 +215,7 @@ def format_restore_header(plan_key: str, plan_info: Dict[str, Any]) -> str:
 
     lines = [
         "",
-        "[bold cyan]╭─ Restore FPLAN-" + plan_key + " ─╮[/bold cyan]",
+        f"[bold cyan]╭─ Restore {prefix}-" + plan_key + " ─╮[/bold cyan]",
         "",
         f"  [dim]Location:[/dim]      {plan_info.get('relative_path', 'unknown')}",
         f"  [dim]Subject:[/dim]       {plan_info.get('subject', 'N/A')}",
@@ -224,23 +230,24 @@ def format_restore_header(plan_key: str, plan_info: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def format_restore_success(plan_key: str, restored_location: str | None = None) -> str:
+def format_restore_success(plan_key: str, restored_location: str | None = None, prefix: str = "FPLAN") -> str:
     """
     Format success message for completed plan restore
 
     Args:
         plan_key: Normalized plan number (e.g., "0001")
         restored_location: Where the plan was restored to
+        prefix: Plan prefix (e.g. "FPLAN", "DPLAN")
 
     Returns:
         Formatted success message
     """
     if restored_location:
-        return f"\n[SUCCESS] FPLAN-{plan_key} restored to open status at: {restored_location}\n"
-    return f"\n[SUCCESS] FPLAN-{plan_key} restored to open status\n"
+        return f"\n[SUCCESS] {prefix}-{plan_key} restored to open status at: {restored_location}\n"
+    return f"\n[SUCCESS] {prefix}-{plan_key} restored to open status\n"
 
 
-def format_restore_error(error_type: str, plan_key: str | None = None, details: str | None = None) -> str:
+def format_restore_error(error_type: str, plan_key: str | None = None, details: str | None = None, prefix: str = "FPLAN") -> str:
     """
     Format error messages for restore operations
 
@@ -248,16 +255,17 @@ def format_restore_error(error_type: str, plan_key: str | None = None, details: 
         error_type: Type of error ("not_found", "already_open", "file_missing", "invalid_number", "general")
         plan_key: Plan number if relevant
         details: Additional error details
+        prefix: Plan prefix (e.g. "FPLAN", "DPLAN")
 
     Returns:
         Formatted error message
     """
     if error_type == "not_found":
-        return f"[ERROR] FPLAN-{plan_key} not found in registry"
+        return f"[ERROR] {prefix}-{plan_key} not found in registry"
     elif error_type == "already_open":
-        return f"[ERROR] FPLAN-{plan_key} is already open - cannot restore what isn't closed"
+        return f"[ERROR] {prefix}-{plan_key} is already open - cannot restore what isn't closed"
     elif error_type == "file_missing":
-        return f"[ERROR] FPLAN-{plan_key} file not found at registered location - move file back first"
+        return f"[ERROR] {prefix}-{plan_key} file not found at registered location - move file back first"
     elif error_type == "invalid_number":
         return f"[ERROR] Invalid plan number: {plan_key}"
     elif error_type == "general":
@@ -285,13 +293,14 @@ def format_restore_usage_error() -> str:
 
 # LIST PLAN DISPLAY FUNCTIONS
 
-def format_plan_info(plan_key: str, plan_info: Dict[str, Any]) -> str:
+def format_plan_info(plan_key: str, plan_info: Dict[str, Any], prefix: str = "FPLAN") -> str:
     """
     Format a single plan's information for display
 
     Args:
         plan_key: Plan number (e.g., "0001")
         plan_info: Plan metadata dictionary
+        prefix: Plan prefix (e.g. "FPLAN", "DPLAN")
 
     Returns:
         Formatted string with plan details
@@ -311,7 +320,7 @@ def format_plan_info(plan_key: str, plan_info: Dict[str, Any]) -> str:
         except (ValueError, AttributeError):
             pass  # Keep original value if parsing fails
 
-    return f"  FPLAN-{plan_key}  [{status:>6}]  {location:<30}  {subject:<40}  {created}"
+    return f"  {prefix}-{plan_key}  [{status:>6}]  {location:<30}  {subject:<40}  {created}"
 
 
 def format_plans_list(

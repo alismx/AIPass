@@ -53,7 +53,7 @@ def find_branch_registry(branch_path: Path, branch_name: str) -> Optional[Path]:
     if not branch_path.exists():
         return None
 
-    # Pattern 1: flow_json/flow_registry.json
+    # Pattern 1: flow_json/{branch}_registry.json
     candidate = branch_path / "flow_json" / f"{branch_name}_registry.json"
     if candidate.exists():
         return candidate
@@ -284,8 +284,8 @@ def save_central(central_file: Path, central_dir: Path, central_data: Dict[str, 
 # =============================================
 
 def aggregate_central_impl(heal: bool = True,
-                           central_file: Path = None,
-                           central_dir: Path = None) -> bool:
+                           central_file: Path | None = None,
+                           central_dir: Path | None = None) -> bool:
     """Aggregate and validate central plans
 
     Algorithm:
@@ -309,6 +309,14 @@ def aggregate_central_impl(heal: bool = True,
     """
     try:
         logger.info(f"[{MODULE_NAME}] Starting central aggregation")
+
+        # Apply defaults when caller passes None
+        if central_file is None or central_dir is None:
+            logger.error(f"[{MODULE_NAME}] central_file and central_dir are required")
+            return False
+
+        assert central_file is not None  # narrowing for type checker
+        assert central_dir is not None
 
         # Load central file
         central_data = load_central(central_file)

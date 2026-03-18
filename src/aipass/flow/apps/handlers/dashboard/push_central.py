@@ -13,7 +13,7 @@ Pushes Flow's plan data to the central PLANS.central.json file at AI_CENTRAL.
 This handler follows the 3-tier logging standard (no Prax imports, no logging).
 
 Features:
-- Reads flow_registry.json to get Flow's plans
+- Reads fplan_registry.json to get Flow's plans
 - Extracts only plans where location='flow' (Flow's own plans)
 - Updates branches.flow section in PLANS.central.json
 - Preserves all other branch sections
@@ -44,7 +44,7 @@ from aipass.flow.apps.modules.aggregate_central import aggregate_central
 
 MODULE_NAME = "push_central"
 FLOW_JSON_DIR = FLOW_ROOT / "flow_json"
-REGISTRY_FILE = FLOW_JSON_DIR / "flow_registry.json"
+REGISTRY_FILE = FLOW_JSON_DIR / "fplan_registry.json"
 def _find_repo_root() -> Path:
     """Walk up from this file to find the repo root (contains AIPASS_REGISTRY.json)."""
     current = Path(__file__).resolve().parent
@@ -63,7 +63,7 @@ CENTRAL_FILE = AI_CENTRAL_DIR / "PLANS.central.json"
 # =============================================
 
 def _load_registry() -> Dict[str, Any]:
-    """Load flow_registry.json
+    """Load fplan_registry.json
 
     Returns:
         Registry dict or empty structure if file doesn't exist
@@ -82,7 +82,7 @@ def _extract_flow_plans(registry: Dict[str, Any]) -> tuple[List[Dict], List[Dict
     """Extract Flow's own plans from registry
 
     Args:
-        registry: The flow_registry.json data
+        registry: The fplan_registry.json data
 
     Returns:
         Tuple of (active_plans, recently_closed_plans)
@@ -190,7 +190,7 @@ def push_to_plans_central() -> bool:
     """Push Flow's plan data to AI_CENTRAL/PLANS.central.json
 
     Algorithm:
-    1. Read flow_registry.json
+    1. Read fplan_registry.json
     2. Extract only plans where location='flow' (Flow's own plans)
     3. Format for central structure with branch metadata
     4. Read existing PLANS.central.json if exists
