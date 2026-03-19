@@ -172,6 +172,7 @@ def create_pr(branch_name: str, description: str, branch_dir: Path) -> dict:
         pr_create = subprocess.run(
             [
                 "gh", "pr", "create",
+                "--head", feature_branch,
                 "--title", f"feat({branch_name}): {description}",
                 "--body", pr_body,
             ],
