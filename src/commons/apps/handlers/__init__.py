@@ -62,21 +62,7 @@ def _guard_branch_access():
         stack = inspect.stack()
         for frame in stack:
             if frame.filename in ("<string>", "<stdin>"):
-                target_line = "unknown"
-                if frame.code_context:
-                    target_line = frame.code_context[0].strip()
-                raise ImportError(
-                    f"\n{'='*60}\n"
-                    f"ACCESS DENIED: Cross-branch handler import blocked\n"
-                    f"{'='*60}\n"
-                    f"  Caller:  interactive/script\n"
-                    f"  Blocked: {target_line}\n"
-                    f"\n"
-                    f"  Handlers are internal to their branch.\n"
-                    f"  Use the module API instead:\n"
-                    f"    from {MY_BRANCH}.apps.modules.<module> import <function>\n"
-                    f"{'='*60}"
-                )
+                return  # Allow command-line Python through
         return
 
     # IMPORTANT: Commons is at src/commons/, not src/aipass/commons/
