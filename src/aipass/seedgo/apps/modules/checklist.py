@@ -269,7 +269,21 @@ def handle_command(command: str, args: List[str]) -> bool:
         resolved = Path.cwd() / resolved
     resolved = resolved.resolve()
 
-    # Run checklist
+    # Directory mode — run checklist on all .py files in directory
+    if resolved.is_dir():
+        py_files = sorted(resolved.glob("*.py"))
+        py_files = [f for f in py_files if not f.name.startswith("_")]
+        if not py_files:
+            error("No .py files found in directory", suggestion=f"Directory: {resolved}")
+            return True
+        console.print(f"\n[bold cyan]Checklist — {resolved.name}/[/bold cyan]  [dim]({len(py_files)} files)[/dim]\n")
+        for f in py_files:
+            results = run_checklist(str(f), pack_name=pack_name)
+            _print_results(results, str(f))
+            console.print()
+        return True
+
+    # Single file mode
     results = run_checklist(str(resolved), pack_name=pack_name)
 
     # Print results
@@ -333,7 +347,8 @@ def print_help() -> None:
     console.print()
 
     console.print("[yellow]USAGE:[/yellow]")
-    console.print("  [green]drone @seedgo checklist <file>[/green]                    [dim]# Check file (aipass pack)[/dim]")
+    console.print("  [green]drone @seedgo checklist <file>[/green]                    [dim]# Check single file[/dim]")
+    console.print("  [green]drone @seedgo checklist <directory>[/green]               [dim]# Check all .py files in directory[/dim]")
     console.print("  [green]drone @seedgo checklist --pack <pack> <file>[/green]      [dim]# Check with specific pack[/dim]")
     console.print("  [green]drone @seedgo checklist --help[/green]                    [dim]# This help message[/dim]")
     console.print()
