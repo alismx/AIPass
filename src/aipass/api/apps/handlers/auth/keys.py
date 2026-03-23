@@ -10,13 +10,12 @@
 API Key Management Handler
 
 Handles API key retrieval and validation for multiple providers.
-Uses fallback chain: config → env → .env files.
+Keys are read from config JSON or directly from ~/.secrets/aipass/.env.
 
 Functions:
-    get_api_key() - Get validated API key with fallback chain
+    get_api_key() - Get validated API key
     validate_key() - Validate key format for provider
     get_key_from_config() - Retrieve key from config JSON
-    get_key_from_env() - Retrieve key from environment variable
     get_validation_rules() - Get provider-specific validation rules
 """
 
@@ -25,14 +24,10 @@ from pathlib import Path
 import sys
 
 # Standard library
-import os
 from typing import Optional, Dict, Any
 
 # Logging
 from aipass.prax import logger
-
-# Internal handlers
-from aipass.api.apps.handlers.auth.env import read_env_file
 
 # JSON handler
 from aipass.api.apps.handlers.json import json_handler
@@ -73,12 +68,11 @@ VALIDATION_RULES = {
 
 def get_api_key(provider: str = "openrouter") -> Optional[str]:
     """
-    Get validated API key for provider with fallback chain.
+    Get validated API key for provider.
 
-    Fallback order:
+    Sources (in order):
     1. Config JSON file (api_json/api_connect_config.json)
-    2. Environment variable
-    3. .env file (multi-path search)
+    2. Secrets file (~/.secrets/aipass/.env)
 
     Args:
         provider: Provider name (default: 'openrouter')
@@ -97,23 +91,13 @@ def get_api_key(provider: str = "openrouter") -> Optional[str]:
         # 1. Try config file
         key = get_key_from_config(provider)
         if key and validate_key(key, provider):
-            # Using key from config
             source = "config"
 
-        # 2. Try environment variable
+        # 2. Try secrets file
         if not source:
-            key = get_key_from_env(provider)
+            key = _read_key_from_secrets(provider)
             if key and validate_key(key, provider):
-                # Using key from environment
-                source = "env"
-
-        # 3. Try .env file
-        if not source:
-            env_var = f"{provider.upper()}_API_KEY"
-            key = read_env_file(env_var)
-            if key and validate_key(key, provider):
-                # Using key from .env file
-                source = "dotenv"
+                source = "secrets"
 
         if source:
             json_handler.log_operation("key_retrieved", {"provider": provider, "source": source})
@@ -123,8 +107,38 @@ def get_api_key(provider: str = "openrouter") -> Optional[str]:
         return None
 
     except Exception as e:
-        # Failed to get key
         logger.error(f"Failed to get API key for provider '{provider}': {e}")
+        return None
+
+
+def _read_key_from_secrets(provider: str) -> Optional[str]:
+    """
+    Read API key directly from ~/.secrets/aipass/.env.
+
+    Args:
+        provider: Provider name (e.g., 'openrouter')
+
+    Returns:
+        str: API key value or None if not found
+    """
+    secrets_path = Path.home() / ".secrets" / "aipass" / ".env"
+    if not secrets_path.exists():
+        return None
+
+    try:
+        env_var = f"{provider.upper()}_API_KEY"
+        with open(secrets_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if not line or line.startswith('#'):
+                    continue
+                if '=' in line:
+                    key, value = line.split('=', 1)
+                    if key.strip() == env_var:
+                        return value.strip()
+        return None
+    except Exception as e:
+        logger.warning(f"Error reading secrets file: {e}")
         return None
 
 
@@ -170,31 +184,6 @@ def get_key_from_config(provider: str) -> Optional[str]:
         logger.error(f"Error reading config for provider '{provider}': {e}")
         return None
 
-
-def get_key_from_env(provider: str) -> Optional[str]:
-    """
-    Retrieve API key from environment variable.
-
-    Checks os.environ for {PROVIDER}_API_KEY.
-
-    Args:
-        provider: Provider name (e.g., 'openrouter')
-
-    Returns:
-        str: API key from environment or None if not found
-
-    Example:
-        >>> key = get_key_from_env('openrouter')
-        >>> # Checks OPENROUTER_API_KEY env variable
-    """
-    env_var = f"{provider.upper()}_API_KEY"
-    key = os.getenv(env_var)
-
-    if key:
-        # Found key in environment variable
-        return key
-
-    return None
 
 
 # ==============================================
@@ -295,16 +284,12 @@ def diagnose_key(provider: str = "openrouter") -> str:
     source = "config"
 
     if not key:
-        key = get_key_from_env(provider)
-        source = "env"
+        key = _read_key_from_secrets(provider)
+        source = "secrets"
 
     if not key:
-        env_var = f"{provider.upper()}_API_KEY"
-        key = read_env_file(env_var)
-        source = "dotenv"
-
-    if not key:
-        return "No API key found in any source (config, environment, .env file)"
+        secrets_path = Path.home() / ".secrets" / "aipass" / ".env"
+        return f"API key for {provider} not found. Expected at {secrets_path}. Run drone @api setup to configure."
 
     # Key exists but failed validation — explain why
     key = key.strip()

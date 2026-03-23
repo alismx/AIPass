@@ -167,7 +167,6 @@ def provision_json_folder(json_folder: Path) -> bool:
 
         json_folder.mkdir(parents=True, exist_ok=True)
         logger.info(f"Created JSON folder: {json_folder}")
-        logger.info(f"Created JSON folder: {json_folder}")
 
         return True
     except Exception as e:
