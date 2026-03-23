@@ -37,7 +37,7 @@ def print_introspection():
 
     console.print("[cyan]Connected Handlers:[/cyan]")
     console.print("  • api.apps.handlers.auth.keys")
-    console.print("  • api.apps.handlers.auth.env")
+    console.print("  • api.apps.handlers.auth.env (template creation)")
     console.print("  • api.apps.handlers.config.provider")
     console.print("  • api.apps.handlers.json.json_handler")
     console.print()
