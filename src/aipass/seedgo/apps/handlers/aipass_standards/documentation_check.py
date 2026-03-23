@@ -17,7 +17,11 @@ import re
 from pathlib import Path
 from typing import Dict, List
 
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
+
+# Audit scope: all Python files
+AUDIT_SCOPE = "all_files"
 
 
 def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
@@ -31,11 +35,9 @@ def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_r
         if rule_file and rule_file not in file_path:
             continue
         rule_lines = rule.get('lines', [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -76,6 +78,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
             content = f.read()
             lines = content.split('\n')
     except Exception as e:
+        logger.info("Cannot read %s: %s", path, e)
         return {
             'passed': False,
             'checks': [{'name': 'File readable', 'passed': False, 'message': f'Error reading file: {e}'}],
@@ -98,8 +101,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
 
     # Check 2: Function docstrings (for public functions)
     function_docs_check = check_function_docstrings(content, lines)
-    if function_docs_check:
-        checks.append(function_docs_check)
+    checks.append(function_docs_check)
 
     passed_checks = sum(1 for check in checks if check['passed'])
     total_checks = len(checks)
@@ -138,7 +140,7 @@ def check_module_docstring(lines: List[str]) -> Dict:
     }
 
 
-def check_function_docstrings(content: str, lines: List[str]) -> Dict | None:  # noqa: ARG001
+def check_function_docstrings(content: str, lines: List[str]) -> Dict:  # noqa: ARG001
     """
     Check that public functions have docstrings.
 
@@ -154,7 +156,11 @@ def check_function_docstrings(content: str, lines: List[str]) -> Dict | None:  #
                 public_functions.append((func_name, i))
 
     if not public_functions:
-        return None
+        return {
+            'name': 'Function docstrings',
+            'passed': True,
+            'message': 'No public functions to check'
+        }
 
     undocumented = []
     for func_name, line_num in public_functions:

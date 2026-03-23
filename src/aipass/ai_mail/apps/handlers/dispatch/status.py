@@ -19,6 +19,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
+from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.ai_mail.apps.handlers.json import json_handler
 
 # Dispatch log location (package-relative)
@@ -35,7 +36,8 @@ def load_dispatch_log() -> List[Dict[str, Any]]:
         with open(DISPATCH_LOG_FILE, 'r', encoding='utf-8') as f:
             data = json.load(f)
             return data.get("dispatches", [])
-    except (json.JSONDecodeError, IOError):
+    except (json.JSONDecodeError, IOError) as e:
+        logger.warning("[status] Failed to load dispatch log: %s", e)
         return []
 
 
@@ -56,7 +58,8 @@ def save_dispatch_log(dispatches: List[Dict[str, Any]]) -> bool:
         with open(DISPATCH_LOG_FILE, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         return True
-    except IOError:
+    except IOError as e:
+        logger.warning("[status] Failed to save dispatch log: %s", e)
         return False
 
 
@@ -108,7 +111,8 @@ def check_pid_status(pid: int) -> str:
             return "RUNNING"
         else:
             return "COMPLETED"
-    except (subprocess.SubprocessError, OSError):
+    except (subprocess.SubprocessError, OSError) as e:
+        logger.warning("[status] Failed to check PID %s: %s", pid, e)
         return "UNKNOWN"
 
 
@@ -135,5 +139,6 @@ def calculate_age(timestamp_str: str) -> str:
         else:
             days = total_seconds // 86400
             return f"{days}d ago"
-    except ValueError:
+    except ValueError as e:
+        logger.warning("[status] Failed to parse timestamp '%s': %s", timestamp_str, e)
         return "unknown"

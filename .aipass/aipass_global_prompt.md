@@ -51,6 +51,8 @@ drone @branch --help              # Branch help
 drone systems                     # List all registered branches
 drone @seedgo audit aipass        # Run standards audit on all branches
 drone @seedgo standards_query aipass_standards  # List all standards (then query by name)
+drone @seedgo checklist <file>    # Quick standards check on a single file
+drone @seedgo checklist <dir>     # Check all .py files in a directory
 drone @prax monitor               # Real-time monitoring (interactive)
 drone @flow create . "Subject"        # Create FPLAN (execution plan)
 drone @flow create . "Subject" master # Create FPLAN master (multi-phase execution)
@@ -78,8 +80,8 @@ drone @ai_mail dispatch wake @target
 drone @ai_mail dispatch wake --fresh @target
 ```
 
-- `dispatch @target` = send email with dispatch header + wake (preferred for tasks)
-- `email @target` = just mail, no wake (FYI, status updates)
+- `dispatch @target` = send email with dispatch header + wake **(DEFAULT — always use this)**
+- `email @target` = just mail, no wake (FYI only — use only when explicitly requested)
 - `--dispatch` flag on `email` = adds dispatch header but doesn't auto-wake
 
 **Always reply to dispatch emails.** When devpulse or another branch sends you work, they're waiting for a response. Complete the task, then email back with results. No silent completions — if someone dispatched you, they need to know what happened.

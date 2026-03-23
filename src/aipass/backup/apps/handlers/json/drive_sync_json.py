@@ -24,6 +24,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from aipass.prax import logger
+
 # Module JSON file paths (resolved by caller)
 _log_lock = threading.Lock()
 
@@ -46,8 +48,8 @@ def atomic_json_write(file_path: Path, data: Any) -> None:
     except Exception:
         try:
             os.unlink(tmp_path)
-        except OSError:
-            pass
+        except OSError as e:
+            logger.warning(f"[drive_sync_json] Failed to clean up temp file: {e}")
         raise
 
 
@@ -65,7 +67,8 @@ def load_config(config_file: Path) -> Dict[str, Any]:
             with open(config_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         return {}
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[drive_sync_json] Failed to load config from {config_file}: {e}")
         return {}
 
 
@@ -97,7 +100,8 @@ def load_data(data_file: Path) -> Dict[str, Any]:
             with open(data_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         return {}
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[drive_sync_json] Failed to load data from {data_file}: {e}")
         return {}
 
 
@@ -117,8 +121,9 @@ def save_data(data_file: Path, data: Dict[str, Any]) -> None:
         try:
             snapshot = copy.deepcopy(data)
             break
-        except RuntimeError:
+        except RuntimeError as e:
             if attempt < 2:
+                logger.info(f"[drive_sync_json] Deepcopy retry {attempt + 1}/3: {e}")
                 time.sleep(0.05 * (attempt + 1))
             else:
                 raise
@@ -152,12 +157,14 @@ def load_log(log_file: Path, max_retries: int = 3) -> Dict[str, Any]:
             else:
                 save_log(log_file, default_log)
                 return default_log
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             if attempt < max_retries - 1:
                 time.sleep(0.1 * (attempt + 1))
             else:
+                logger.warning(f"[drive_sync_json] JSON decode failed after {max_retries} retries for {log_file}: {e}")
                 return default_log
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[drive_sync_json] Failed to load log from {log_file}: {e}")
             return default_log
     return default_log
 

@@ -116,8 +116,8 @@ def send_to_broadcast(
     try:
         from aipass.trigger.apps.modules.core import trigger
         trigger.fire('email_broadcast_sent', recipients=len(branches), successful=success_count, subject=subject)
-    except ImportError:
-        pass
+    except ImportError as e:
+        logger.warning("[send] trigger import unavailable for broadcast event: %s", e)
 
     # Update central (best-effort)
     try:
@@ -173,8 +173,8 @@ def send_to_single(
         try:
             from aipass.trigger.apps.modules.core import trigger
             trigger.fire('email_sent', to=to_branch, subject=subject, auto_execute=auto_execute)
-        except ImportError:
-            pass
+        except ImportError as e:
+            logger.warning("[send] trigger import unavailable for send event: %s", e)
 
         # Update central (best-effort)
         try:
@@ -209,14 +209,16 @@ def collect_interactive_input(branches: List[Dict[str, Any]]) -> Optional[Dict[s
             return None
         else:
             selected_email = branches[idx]["email"]
-    except (ValueError, KeyboardInterrupt, EOFError):
+    except (ValueError, KeyboardInterrupt, EOFError) as e:
+        logger.warning("[send] recipient selection cancelled or invalid: %s", e)
         return None
 
     try:
         subject = input("Subject: ").strip()
         if not subject:
             return None
-    except (KeyboardInterrupt, EOFError):
+    except (KeyboardInterrupt, EOFError) as e:
+        logger.warning("[send] subject input cancelled: %s", e)
         return None
 
     try:
@@ -225,19 +227,22 @@ def collect_interactive_input(branches: List[Dict[str, Any]]) -> Optional[Dict[s
             try:
                 line = input()
                 message_lines.append(line)
-            except EOFError:
+            except EOFError as e:
+                logger.warning("[send] message input ended: %s", e)
                 break
         message = "\n".join(message_lines).strip()
         if not message:
             return None
-    except KeyboardInterrupt:
+    except KeyboardInterrupt as e:
+        logger.warning("[send] message input cancelled: %s", e)
         return None
 
     try:
         confirm = input("\nSend? (y/n): ").strip().lower()
         if confirm != 'y':
             return None
-    except (KeyboardInterrupt, EOFError):
+    except (KeyboardInterrupt, EOFError) as e:
+        logger.warning("[send] confirmation cancelled: %s", e)
         return None
 
     return {

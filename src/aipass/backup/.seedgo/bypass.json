@@ -4,7 +4,38 @@
     "created": "2026-03-07T23:23:53.621520",
     "description": "Standards bypass configuration for this branch"
   },
-  "bypass": [],
+  "bypass": [
+    {
+      "file": "apps/modules/backup_core.py",
+      "standard": "deep_nesting",
+      "reason": "run_backup() depth 8 — full backup orchestration: dry-run vs real, versioned vs snapshot, progress wrapping, mode branching. Genuine 8-level conditional chain, all paths are necessary."
+    },
+    {
+      "file": "apps/handlers/operations/file_scanner.py",
+      "standard": "deep_nesting",
+      "reason": "scan_files() depth 7 — tree walking with dual code paths (with/without Rich progress). Both modes need identical walk logic with different UI feedback."
+    },
+    {
+      "file": "apps/handlers/operations/file_cleanup.py",
+      "standard": "deep_nesting",
+      "reason": "cleanup_deleted_files() depth 8 — three-pass deletion strategy (dirs, files, empty dirs) each with dry-run branching and state tracking between passes."
+    },
+    {
+      "file": "apps/handlers/operations/file_operations.py",
+      "standard": "deep_nesting",
+      "reason": "copy_versioned_file() depth 8 — baseline creation + diff generation + retry logic + permission management via temporarily_writable context managers."
+    },
+    {
+      "file": "apps/modules/google_drive_sync.py",
+      "standard": "deep_nesting",
+      "reason": "SKIP — file is being rewritten. handle_command() depth 5."
+    },
+    {
+      "file": "apps/handlers/operations/drive_sync_client.py",
+      "standard": "deep_nesting",
+      "reason": "SKIP — file is being rewritten. 6 functions flagged (depth 4-5)."
+    }
+  ],
   "notes": {
     "usage": "Add entries to 'bypass' list to exclude specific violations",
     "example": {

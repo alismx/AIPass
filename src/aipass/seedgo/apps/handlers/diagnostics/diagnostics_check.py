@@ -28,6 +28,7 @@ from rich.console import Console
 console = Console()
 
 # Import ignore patterns from bypass handler
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.bypass.ignore_handler import get_audit_ignore_patterns
 from aipass.seedgo.apps.handlers.json import json_handler
 
@@ -100,7 +101,7 @@ def check_file(file_path: str) -> Dict:
         try:
             output = json.loads(result.stdout)
         except json.JSONDecodeError:
-            # Pyright may output text on error
+            logger.info("Failed to parse pyright JSON output for %s", file_path)
             return {
                 'file': str(file_path),
                 'errors': 0,
@@ -135,6 +136,7 @@ def check_file(file_path: str) -> Dict:
         }
 
     except subprocess.TimeoutExpired:
+        logger.info("Pyright timed out for %s", file_path)
         return {
             'file': str(file_path),
             'errors': 0,
@@ -143,6 +145,7 @@ def check_file(file_path: str) -> Dict:
             'error': 'Pyright timed out'
         }
     except Exception as e:
+        logger.info("Pyright check failed for %s: %s", file_path, e)
         return {
             'file': str(file_path),
             'errors': 0,
@@ -193,6 +196,7 @@ def check_directory(directory: str, pattern: str = "**/*.py") -> Dict:
         try:
             output = json.loads(result.stdout)
         except json.JSONDecodeError:
+            logger.info("Failed to parse pyright JSON output for directory %s", directory)
             return {
                 'total_files': 0,
                 'files_with_errors': 0,
@@ -249,6 +253,7 @@ def check_directory(directory: str, pattern: str = "**/*.py") -> Dict:
         }
 
     except subprocess.TimeoutExpired:
+        logger.info("Pyright timed out for directory %s", directory)
         return {
             'total_files': 0,
             'files_with_errors': 0,
@@ -258,6 +263,7 @@ def check_directory(directory: str, pattern: str = "**/*.py") -> Dict:
             'error': 'Pyright timed out (directory too large?)'
         }
     except Exception as e:
+        logger.info("Pyright directory check failed for %s: %s", directory, e)
         return {
             'total_files': 0,
             'files_with_errors': 0,
@@ -306,7 +312,7 @@ def _discover_pack_configs() -> List[Dict]:
                 'config': config
             })
         except (json.JSONDecodeError, IOError):
-            # Skip malformed config files gracefully
+            logger.info("Skipped malformed diagnostics config: %s", config_file)
             continue
 
     return configs
@@ -374,6 +380,7 @@ def _run_runner(runner_name: str, branch_path: str, bypass_rules: Optional[list]
             if not content:
                 continue
         except IOError:
+            logger.info("Cannot read runner file: %s", runner_path)
             continue
 
         # Dynamically import the runner module
@@ -381,6 +388,7 @@ def _run_runner(runner_name: str, branch_path: str, bypass_rules: Optional[list]
         try:
             runner_module = importlib.import_module(module_name)
         except (ImportError, Exception):
+            logger.info("Failed to import runner module: %s", module_name)
             continue
 
         # Call check_branch if it exists
@@ -391,6 +399,7 @@ def _run_runner(runner_name: str, branch_path: str, bypass_rules: Optional[list]
         try:
             return check_fn(branch_path, bypass_rules=bypass_rules)
         except Exception:
+            logger.info("Runner %s failed for branch %s", runner_name, branch_path)
             continue
 
     return None
@@ -523,9 +532,9 @@ def format_summary(results: Dict) -> str:
 
 
 if __name__ == '__main__':
-    # CLI usage: python diagnostics_check.py [file_or_directory]
+    # CLI usage: drone @seedgo diagnostics [file_or_directory]
     if len(sys.argv) < 2:
-        console.print("[yellow]Usage:[/yellow] python diagnostics_check.py <file_or_directory>")
+        console.print("[yellow]Usage:[/yellow] drone @seedgo diagnostics <file_or_directory>")
         sys.exit(1)
 
     target = sys.argv[1]

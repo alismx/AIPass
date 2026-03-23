@@ -10,6 +10,7 @@
 import importlib.util
 from pathlib import Path
 from typing import Any, Dict, List
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.bypass import ignore_handler
 from aipass.seedgo.apps.handlers.json import json_handler
 
@@ -31,6 +32,7 @@ def discover_checkers(pack_path: Path | None = None) -> Dict[str, Any]:
         try:
             spec.loader.exec_module(mod)
         except Exception:
+            logger.info("Skipped checker %s: failed to load", cf.name)
             continue
         if hasattr(mod, "check_module") or hasattr(mod, "check_branch"):
             checkers[name] = mod
@@ -54,6 +56,7 @@ def _run_all_files(checker, name: str, files: List[Dict], bypass_rules: list) ->
         try:
             r = checker.check_module(fi["file"], bypass_rules=bypass_rules)
         except Exception:
+            logger.info("Checker %s failed on %s", name, fi["name"])
             continue
         score, checks = r.get("score", 0), r.get("checks", [])
         if checks and not any(w in c.get("message", "").lower() for c in checks
@@ -65,51 +68,11 @@ def _run_all_files(checker, name: str, files: List[Dict], bypass_rules: list) ->
         failed = [c for c in checks if not c.get("passed", False)]
         if failed:
             msgs = [c.get("message", "Unknown") for c in failed]
-            v = {"file": fi["name"], "path": fi["file"], "score": score, "issues": msgs}
-            if name == "modules":
-                v["message"] = "; ".join(msgs)
+            v = {"file": fi["name"], "path": fi["file"], "score": score, "issues": msgs,
+                 "message": "; ".join(msgs)}
             violations.append(v)
     return violations, scores
 
-def _log_structure_post_checks(branch_path: Path) -> tuple:
-    """Branch-level log structure checks. Returns (violations, scores).
-
-    Two-tier model:
-      - ``system_logs/`` at repo root is managed by prax (runtime dispatch).
-        Having many system logs and few local logs is *normal*.
-      - ``logs/`` at branch root holds local-only logs. Flat placement is
-        fine — the standard does not prescribe internal organisation.
-    """
-    violations: list[dict] = []
-    scores: list[int] = []
-
-    in_dirs = [f for f in branch_path.rglob("*.log") if f.parent.name == "logs"]
-
-    # Check: Verify system_logs/ exists when the branch produces logs.
-    # The two-tier model expects prax to dispatch runtime logs to
-    # system_logs/.  A mismatch only matters when the branch has NO
-    # system logs at all despite having local logs (potential prax
-    # misconfiguration).
-    repo = next(
-        (p for p in [branch_path] + list(branch_path.parents)
-         if (p / "AIPASS_REGISTRY.json").is_file()),
-        None,
-    )
-    if repo and (repo / "system_logs").is_dir():
-        sd = repo / "system_logs"
-        system_count = len(list(sd.glob(f"{branch_path.name}_*.log")))
-        if in_dirs and system_count == 0:
-            # Branch has local logs but zero system logs -- prax may not
-            # be dispatching for this branch.
-            scores.append(50)
-            violations.append({
-                "file": "(branch-level)", "path": str(sd), "score": 50,
-                "issues": [f"Branch has {len(in_dirs)} local log(s) but 0 system logs — prax dispatch may be misconfigured"],
-            })
-        else:
-            scores.append(100)
-
-    return violations, scores
 
 def _load_diagnostics_checker():
     """Load diagnostics checker from handlers/diagnostics/ (shared infrastructure)."""
@@ -123,6 +86,7 @@ def _load_diagnostics_checker():
     try:
         spec.loader.exec_module(mod)
     except Exception:
+        logger.info("Failed to load diagnostics checker from %s", diag_path)
         return None
     return mod
 
@@ -147,6 +111,7 @@ def audit_branch(branch: Dict[str, str], bypass_rules: list, pack_path: Path | N
                 r = checker.check_branch(str(branch_path), bypass_rules=bypass_rules)
                 results[name], scores[name] = r, r.get("score", 0)
             except Exception as e:
+                logger.info("Branch-level checker %s failed: %s", name, e)
                 results[name], scores[name] = {"passed": False, "score": 0, "error": str(e)}, 0
             continue
         # Entry-point: always run on entry file
@@ -154,6 +119,7 @@ def audit_branch(branch: Dict[str, str], bypass_rules: list, pack_path: Path | N
             r = checker.check_module(entry_file, bypass_rules=bypass_rules)
             results[name], scores[name] = r, r.get("score", 0)
         except Exception as e:
+            logger.info("Entry-point checker %s failed: %s", name, e)
             results[name], scores[name] = {"passed": False, "score": 0, "error": str(e)}, 0
         # All-files scope: scan every .py file, override score with average
         if scope == "all_files" and all_files:
@@ -169,12 +135,16 @@ def audit_branch(branch: Dict[str, str], bypass_rules: list, pack_path: Path | N
                 if all_failed:
                     results[name] = {"passed": avg_score >= 75, "checks": all_failed, "score": avg_score, "standard": name.upper()}
 
-    # Log structure post-checks (audit-level, not in any checker)
-    if "log_structure" in scores:
-        pv, ps = _log_structure_post_checks(branch_path)
-        all_violations.setdefault("log_structure", []).extend(pv)
-        if ps:
-            scores["log_structure"] = int(sum(ps + [scores["log_structure"]]) / (len(ps) + 1))
+    # Dynamic post-checks: call check_branch_post() on any checker that implements it
+    for name, checker in checkers.items():
+        if hasattr(checker, "check_branch_post") and name in scores:
+            try:
+                pv, ps = checker.check_branch_post(str(branch_path))
+                all_violations.setdefault(name, []).extend(pv)
+                if ps:
+                    scores[name] = int(sum(ps + [scores[name]]) / (len(ps) + 1))
+            except Exception:
+                logger.info("Post-check %s failed for branch %s", name, branch["name"])
 
     json_handler.log_operation("branch_audit_completed", {"branch": branch["name"], "checkers": len(checkers)})
     avg = int(sum(scores.values()) / len(scores)) if scores else 0

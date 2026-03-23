@@ -470,12 +470,10 @@ class TestPRHandler:
         assert "nothing to commit" in result["message"].lower()
 
     def test_cleanup_always_runs(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        """Checkout main and release lock happen even on errors."""
+        """Release lock happens even on errors (never leaves main)."""
         registry = tmp_path / "AIPASS_REGISTRY.json"
         registry.write_text("{}", encoding="utf-8")
         monkeypatch.chdir(tmp_path)
-
-        cleanup_calls = []
 
         def mock_subprocess_run(cmd, **kwargs):
             result = MagicMock()
@@ -485,14 +483,10 @@ class TestPRHandler:
             if cmd[1:3] == ["rev-parse", "--abbrev-ref"]:
                 result.returncode = 0
                 result.stdout = "main\n"
-            elif cmd[1:3] == ["checkout", "-b"]:
-                result.returncode = 1
-                result.stderr = "fatal: branch already exists"
-            elif cmd[1] == "checkout" and len(cmd) > 2 and cmd[2] == "main":
-                cleanup_calls.append("checkout_main")
+            elif cmd[0] == "git" and cmd[1] == "add":
                 result.returncode = 0
-            elif cmd[1] == "pull":
-                cleanup_calls.append("pull")
+            elif cmd[1:3] == ["diff", "--cached"]:
+                # Nothing staged — triggers early exit
                 result.returncode = 0
             else:
                 result.returncode = 0
@@ -509,7 +503,7 @@ class TestPRHandler:
                     result = create_pr("api", "test desc", tmp_path / "src" / "aipass" / "api")
 
         assert result["success"] is False
-        assert "checkout_main" in cleanup_calls
+        # Lock must always be released, even on early exit
         release_mock.assert_called_once_with(force=True)
 
 

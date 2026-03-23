@@ -143,6 +143,7 @@ def _purge_email_files(mailbox_path: Path, files: List[Path], folder_type: str) 
                 email_data["_source_file"] = str(file_path.name)
                 emails_data.append(email_data)
         except Exception as e:
+            logger.warning("[purge] Failed to load email file %s: %s", file_path.name, e)
             load_errors.append(f"{file_path.name}: {e}")
 
     # Vectorize emails to Memory Bank
@@ -167,6 +168,7 @@ def _purge_email_files(mailbox_path: Path, files: List[Path], folder_type: str) 
             file_path.unlink()
             deleted_count += 1
         except Exception as e:
+            logger.warning("[purge] Failed to delete file %s: %s", file_path.name, e)
             delete_errors.append(f"{file_path.name}: {e}")
 
     return {
@@ -235,9 +237,11 @@ def _vectorize_emails(emails: List[Dict[str, Any]], folder_type: str) -> Dict[st
 
         return {"success": True, "count": len(texts)}
 
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as e:
+        logger.warning("[purge] Vectorization timed out for %s: %s", folder_type, e)
         return {"success": False, "error": "Vectorization timed out"}
     except Exception as e:
+        logger.warning("[purge] Vectorization failed for %s: %s", folder_type, e)
         return {"success": False, "error": str(e)}
 
 

@@ -25,6 +25,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Tuple
 
+from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.ai_mail.apps.handlers.json import json_handler
 
 
@@ -90,6 +91,7 @@ def ping_registry(
         return True
 
     except Exception as e:
+        logger.warning("[registry] ping_registry failed for %s: %s", branch_name, e)
         return False
 
 
@@ -177,6 +179,7 @@ def count_file_lines(file_path: Path) -> int:
         with open(file_path, 'r', encoding='utf-8') as f:
             return len(f.readlines())
     except Exception as e:
+        logger.warning("[registry] count_file_lines failed for %s: %s", file_path, e)
         return 0
 
 
@@ -217,6 +220,7 @@ def update_json_memory_health(
             return False
 
     except Exception as e:
+        logger.warning("[registry] update_json_memory_health failed for %s: %s", file_path, e)
         return False
 
 

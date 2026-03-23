@@ -27,6 +27,7 @@ import ast
 import re
 from pathlib import Path
 
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
 
 AUDIT_SCOPE = "branch_level"
@@ -66,12 +67,7 @@ _MAIN_BLOCK_RE = re.compile(
 
 # -- Bypass helper ------------------------------------------------------------
 
-def is_bypassed(
-    file_path: str,
-    standard: str,
-    line: int | None = None,
-    bypass_rules: list | None = None,
-) -> bool:
+def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
     """Check if a violation should be bypassed."""
     if not bypass_rules:
         return False
@@ -82,11 +78,9 @@ def is_bypassed(
         if rule_file and rule_file not in file_path:
             continue
         rule_lines = rule.get("lines", [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -149,6 +143,7 @@ def _extract_functions(py_file: Path) -> list[tuple[str, int]]:
         source = py_file.read_text(encoding="utf-8", errors="ignore")
         tree = ast.parse(source, filename=str(py_file))
     except SyntaxError:
+        logger.info("Skipped %s: SyntaxError during parse", py_file)
         return []
 
     results: list[tuple[str, int]] = []
@@ -246,6 +241,7 @@ def check_branch(branch_path: str, bypass_rules: list | None = None) -> dict:
         try:
             raw = py_file.read_text(encoding="utf-8", errors="ignore")
         except OSError:
+            logger.info("Cannot read %s for unused function analysis", py_file)
             continue
         file_sources[py_file] = _strip_non_code(raw)
 
@@ -293,6 +289,7 @@ def check_branch(branch_path: str, bypass_rules: list | None = None) -> dict:
             try:
                 rel_path = py_file.relative_to(branch)
             except ValueError:
+                logger.info("File %s not relative to branch, using full path", py_file)
                 rel_path = py_file
             unused_functions.append({
                 "name": func_name,

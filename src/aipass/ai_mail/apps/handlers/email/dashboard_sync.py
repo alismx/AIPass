@@ -99,8 +99,8 @@ def _calculate_section_data(inbox_data: Dict) -> Dict:
                     msg_ts = datetime.strptime(ts_str, "%Y-%m-%d %H:%M:%S")
                     if oldest_unread_ts is None or msg_ts < oldest_unread_ts:
                         oldest_unread_ts = msg_ts
-                except (ValueError, TypeError):
-                    pass  # Malformed timestamp - skip for age calculation
+                except (ValueError, TypeError) as e:
+                    logger.warning("[dashboard] malformed unread timestamp: %s", e)
 
         if is_opened:
             opened_count += 1
@@ -126,7 +126,8 @@ def _calculate_section_data(inbox_data: Dict) -> Dict:
         try:
             dt = datetime.strptime(last_dispatch_ts, "%Y-%m-%d %H:%M:%S")
             last_dispatch_iso = dt.isoformat()
-        except (ValueError, TypeError):
+        except (ValueError, TypeError) as e:
+            logger.warning("[dashboard] malformed dispatch timestamp: %s", e)
             last_dispatch_iso = last_dispatch_ts
 
     return {

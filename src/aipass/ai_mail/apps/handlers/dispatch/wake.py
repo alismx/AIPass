@@ -122,7 +122,8 @@ def _check_lock(branch_path: Path) -> Optional[dict]:
                 return data  # Process alive, lock valid
             except ProcessLookupError:
                 logger.info("[wake] Lock PID %s dead — cleaning stale lock", pid)
-            except PermissionError:
+            except PermissionError as e:
+                logger.warning("[wake] Lock PID %s permission error: %s", pid, e)
                 return data  # Process exists but can't signal — treat as active
         # Stale lock — check age (10 min timeout)
         ts = data.get("timestamp", "")
@@ -139,7 +140,8 @@ def _check_lock(branch_path: Path) -> Optional[dict]:
         # Dead process, remove stale lock
         lock_file.unlink(missing_ok=True)
         return None
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError) as e:
+        logger.warning("[wake] Failed to read lock file %s: %s", lock_file, e)
         return None
 
 
@@ -157,9 +159,11 @@ def _acquire_lock(branch_path: Path, pid: int) -> Tuple[bool, str]:
         with os.fdopen(fd, 'w') as f:
             json.dump(lock_data, f, indent=2)
         return True, "Lock acquired"
-    except FileExistsError:
+    except FileExistsError as e:
+        logger.warning("[wake] Lock file already exists at %s: %s", lock_file, e)
         return False, "Lock file already exists"
     except OSError as e:
+        logger.warning("[wake] Lock acquisition failed at %s: %s", lock_file, e)
         return False, f"Lock failed: {e}"
 
 
@@ -199,7 +203,8 @@ def _set_session_name(branch_path: Path, name: str) -> bool:
         with open(latest, "a", encoding="utf-8") as f:
             f.write(entry + "\n")
         return True
-    except OSError:
+    except OSError as e:
+        logger.warning("[wake] Failed to write session name for %s: %s", branch_path, e)
         return False
 
 
@@ -281,9 +286,11 @@ def _check_pid_alive(pid: int) -> bool:
                     if line.startswith('State:'):
                         return 'Z' not in line
         return True
-    except (ProcessLookupError, FileNotFoundError):
+    except (ProcessLookupError, FileNotFoundError) as e:
+        logger.warning("[wake] PID %s not found: %s", pid, e)
         return False
-    except PermissionError:
+    except PermissionError as e:
+        logger.warning("[wake] PID %s permission denied: %s", pid, e)
         return True  # Exists but can't check — assume alive
 
 
@@ -434,10 +441,12 @@ def wake_branch(branch_email: str, custom_message: Optional[str] = None,
         monitor_pid = process.pid
         status.ok("spawn", f"Monitor started (PID {monitor_pid})")
 
-    except FileNotFoundError:
+    except FileNotFoundError as e:
+        logger.warning("[wake] Spawn failed — script not found: %s", e)
         status.fail("spawn", "Python or monitor script not found")
         return status, False
     except Exception as e:
+        logger.warning("[wake] Spawn failed for %s: %s", branch_email, e)
         status.fail("spawn", f"{type(e).__name__}: {e}")
         return status, False
 
@@ -468,15 +477,6 @@ def wake_branch(branch_email: str, custom_message: Optional[str] = None,
         logger.info("[wake] Desktop notification unavailable")
 
     return status, True
-
-
-# ─── Legacy wrapper for backward compatibility ──────────
-
-def wake_branch_legacy(branch_email: str, custom_message: Optional[str] = None,
-                       fresh: bool = False, auto: bool = False) -> Tuple[bool, str]:
-    """Legacy interface returning (bool, str) for callers not yet updated."""
-    dispatch_status, success = wake_branch(branch_email, custom_message, fresh, auto)
-    return success, dispatch_status.summary
 
 
 # ─── CLI Entry Point ─────────────────────────────────────

@@ -24,7 +24,11 @@ import sys
 import re
 from pathlib import Path
 from typing import Dict, List
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
+
+# Audit scope: all Python files
+AUDIT_SCOPE = "all_files"
 
 def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
     """Check if a violation should be bypassed"""
@@ -37,11 +41,9 @@ def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_r
         if rule_file and rule_file not in file_path:
             continue
         rule_lines = rule.get('lines', [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -85,6 +87,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
             content = f.read()
             lines = content.split('\n')
     except Exception as e:
+        logger.info("Cannot read %s: %s", path, e)
         return {
             'passed': False,
             'checks': [{'name': 'File readable', 'passed': False, 'message': f'Error reading file: {e}'}],
@@ -121,8 +124,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
 
     # Check 2: No raw logging.StreamHandler for log files
     stream_handler_check = check_no_raw_stream_handler(lines, module_path, content, bypass_rules=bypass_rules)
-    if stream_handler_check:
-        checks.append(stream_handler_check)
+    checks.append(stream_handler_check)
 
     # Calculate score
     passed_checks = sum(1 for check in checks if check['passed'])
@@ -171,7 +173,7 @@ def check_no_raw_file_handler(lines: List[str], file_path: str, bypass_rules: li
     }
 
 
-def check_no_raw_stream_handler(lines: List[str], file_path: str, content: str, bypass_rules: list | None = None) -> Dict | None:
+def check_no_raw_stream_handler(lines: List[str], file_path: str, content: str, bypass_rules: list | None = None) -> Dict:
     """
     Check that logging.StreamHandler is not used for log file output.
     StreamHandler attached to loggers that also write to files indicates
@@ -184,7 +186,11 @@ def check_no_raw_stream_handler(lines: List[str], file_path: str, content: str, 
         content
     ))
     if not has_file_logging:
-        return None
+        return {
+            'name': 'No raw StreamHandler with file logging',
+            'passed': True,
+            'message': 'No file-based logging setup found (check not applicable)'
+        }
 
     violations = []
 

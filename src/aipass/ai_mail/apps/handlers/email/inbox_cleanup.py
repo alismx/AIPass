@@ -43,15 +43,6 @@ def _get_console() -> Any:
     return Console()
 
 
-def _get_update_section() -> Any:
-    """Lazy import update_section."""
-    try:
-        from aipass.devpulse.apps.modules.dashboard import update_section  # type: ignore[import-not-found]
-        return update_section
-    except ImportError:
-        return None
-
-
 def _get_push_dashboard_update() -> Any:
     """Lazy import push_dashboard_update from dashboard_sync."""
     from aipass.ai_mail.apps.handlers.email.dashboard_sync import push_dashboard_update
@@ -218,6 +209,7 @@ def mark_read_and_archive(branch_path: Path, message_id: str) -> Tuple[bool, str
         return True, f"Message {message_id} archived"
 
     except Exception as e:
+        logger.warning("[cleanup] mark_read_and_archive failed for %s: %s", message_id, e)
         return False, f"Failed to archive: {e}"
 
 
@@ -274,6 +266,7 @@ def mark_all_read_and_archive(branch_path: Path) -> Tuple[bool, str, int]:
         return True, f"Archived {count} messages", count
 
     except Exception as e:
+        logger.warning("[cleanup] mark_all_read_and_archive failed: %s", e)
         return False, f"Failed to archive: {e}", 0
 
 
@@ -364,6 +357,7 @@ def mark_as_opened(branch_path: Path, message_id: str) -> Tuple[bool, str, Optio
         return True, f"Message {message_id} marked as opened", target_msg
 
     except Exception as e:
+        logger.warning("[cleanup] mark_as_opened failed for %s: %s", message_id, e)
         return False, f"Failed to mark as opened: {e}", None
 
 
@@ -441,6 +435,7 @@ def mark_as_closed_and_archive(branch_path: Path, message_id: str, skip_post_ops
         return True, f"Message {message_id} closed and archived"
 
     except Exception as e:
+        logger.warning("[cleanup] mark_as_closed_and_archive failed for %s: %s", message_id, e)
         return False, f"Failed to close: {e}"
 
 

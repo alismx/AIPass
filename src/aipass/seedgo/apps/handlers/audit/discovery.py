@@ -24,6 +24,7 @@ from typing import List, Dict
 
 import json
 
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
 
 # =============================================================================
@@ -43,7 +44,7 @@ def _is_branch_private(branch_name: str) -> bool:
             if branch.get("name", "").upper() == branch_name.upper():
                 return True
     except (json.JSONDecodeError, IOError):
-        pass
+        logger.info("Cannot read private registry for branch %s", branch_name)
     return False
 
 
@@ -128,6 +129,7 @@ def discover_branches(include_private: bool = False) -> List[Dict[str, str]]:
         return sorted(branches, key=lambda x: x['name'])
 
     except (json.JSONDecodeError, IOError):
+        logger.info("Cannot read registry for branch discovery")
         return branches
 
 

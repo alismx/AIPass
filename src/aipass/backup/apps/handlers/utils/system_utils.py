@@ -51,7 +51,8 @@ if sys.platform == 'win32':
         reconfigure_stderr = getattr(sys.stderr, 'reconfigure', None)
         if reconfigure_stderr:
             reconfigure_stderr(encoding='utf-8', errors='replace')
-    except Exception:
+    except Exception as e:
+        logger.info(f"[system_utils] UTF-8 console setup failed, disabling emoji support: {e}")
         EMOJI_SUPPORT = False
 
 # =============================================
@@ -105,8 +106,8 @@ def temporarily_writable(path):
         if original_mode is not None and path_obj.exists():
             try:
                 path_obj.chmod(original_mode)
-            except Exception:
-                pass
+            except Exception as e:
+                logger.warning(f"[system_utils] Failed to restore permissions on {path_obj}: {e}")
 
 # =============================================
 # FILESYSTEM OPERATIONS
@@ -145,10 +146,13 @@ def ensure_backup_directory(backup_dest: Path, backup_path: Path, is_dynamic: bo
                 backup_path.mkdir(parents=True, exist_ok=True)
         return True, None
     except PermissionError as e:
+        logger.warning(f"[system_utils] Permission denied creating backup directory {backup_dest}: {e}")
         return False, f"Permission denied creating backup directory {backup_dest}: {e}"
     except OSError as e:
+        logger.warning(f"[system_utils] OS error creating backup directory {backup_dest}: {e}")
         return False, f"OS error creating backup directory {backup_dest}: {e}"
     except Exception as e:
+        logger.warning(f"[system_utils] Unexpected error creating backup directory {backup_dest}: {e}")
         return False, f"Unexpected error creating backup directory {backup_dest}: {e}"
 
 
@@ -164,10 +168,10 @@ def remove_empty_dirs(path: Path):
                 remove_empty_dirs(item)
                 try:
                     item.rmdir()
-                except OSError:
-                    pass
-    except Exception:
-        pass
+                except OSError as e:
+                    logger.info(f"[system_utils] Could not remove directory {item}: {e}")
+    except Exception as e:
+        logger.warning(f"[system_utils] Failed to remove empty dirs under {path}: {e}")
 
 
 # =============================================

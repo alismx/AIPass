@@ -24,6 +24,7 @@ import json
 from pathlib import Path
 from typing import List, Dict, Optional
 
+from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.ai_mail.apps.handlers.json import json_handler
 
 
@@ -86,6 +87,7 @@ def get_all_branches() -> List[Dict]:
         return branches
 
     except Exception as e:
+        logger.warning("[registry] get_all_branches failed: %s", e)
         return []
 
 

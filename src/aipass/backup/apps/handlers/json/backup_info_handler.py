@@ -26,6 +26,8 @@ import datetime
 from pathlib import Path
 from typing import Dict
 
+from aipass.prax import logger
+
 # =============================================
 # BACKUP INFO OPERATIONS
 # =============================================
@@ -44,8 +46,8 @@ def load_backup_info(backup_info_file: Path, mode_behavior: str) -> Dict:
         try:
             with open(backup_info_file, 'r', encoding='utf-8', errors='replace') as f:
                 return json.load(f)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[backup_info_handler] Failed to load backup info from {backup_info_file}: {e}")
 
     # Return mode-specific default structure
     if mode_behavior == 'versioned':
@@ -68,7 +70,8 @@ def save_backup_info(backup_info_file: Path, backup_info: Dict) -> bool:
         with open(backup_info_file, 'w', encoding='utf-8') as f:
             json.dump(backup_info, f, indent=2, ensure_ascii=False)
         return True
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[backup_info_handler] Failed to save backup info to {backup_info_file}: {e}")
         return False
 
 

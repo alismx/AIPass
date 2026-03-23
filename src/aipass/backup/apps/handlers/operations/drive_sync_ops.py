@@ -16,6 +16,8 @@ google_drive_sync module. Called by the module orchestrator.
 from pathlib import Path
 from typing import Any, Dict
 
+from aipass.prax import logger
+
 from aipass.backup.apps.handlers.json.drive_sync_json import (
     load_config,
     load_data,
@@ -66,7 +68,8 @@ def clear_file_tracker() -> bool:
             data["runtime_state"]["file_tracker"] = {}
             save_data(_DATA_FILE, data)
         return True
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[drive_sync_ops] Failed to clear file tracker: {e}")
         return False
 
 
@@ -90,7 +93,8 @@ def get_file_tracker_stats() -> Dict[str, Any]:
             "sample": sample,
             "truncated": len(tracker) > 5
         }
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[drive_sync_ops] Failed to get file tracker stats: {e}")
         return {"total": 0, "sample": [], "truncated": False}
 
 

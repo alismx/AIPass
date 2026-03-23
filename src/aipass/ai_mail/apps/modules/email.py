@@ -56,7 +56,8 @@ from aipass.ai_mail.apps.handlers.email.inbox_resolve import resolve_inbox_targe
 
 try:
     from aipass.ai_mail.apps.handlers.central_writer import update_central
-except ImportError:
+except ImportError as e:
+    logger.warning("[email] central_writer import unavailable: %s", e)
     update_central = None
 
 
@@ -159,7 +160,8 @@ def _get_branch_info_fn():
     try:
         from aipass.ai_mail.apps.handlers.users.branch_detection import get_branch_info_from_registry
         return get_branch_info_from_registry
-    except ImportError:
+    except ImportError as e:
+        logger.warning("[email] branch_detection import unavailable: %s", e)
         return None
 
 
@@ -206,8 +208,8 @@ def _send_direct(to_branch, subject, message, auto_execute=False,
             if auto_execute:
                 try:
                     trigger.fire('email_dispatched', to=to_branch, subject=subject)
-                except Exception:
-                    pass
+                except Exception as e:
+                    logger.warning("[email] trigger fire for email_dispatched failed: %s", e)
             return True
         else:
             error(f"Failed to deliver: {error_msg}")
@@ -274,7 +276,8 @@ def handle_inbox(args: List[str]) -> bool:
         console.print("\n" + "=" * 70)
         console.print(f"Showing {len(display)} of {len(messages)} messages")
         return True
-    except BrokenPipeError:
+    except BrokenPipeError as e:
+        logger.warning("[email] inbox view broken pipe: %s", e)
         return True
     except Exception as e:
         logger.error(f"[email] Inbox view failed: {e}")
@@ -304,7 +307,8 @@ def handle_view(args: List[str]) -> bool:
         console.print(f"[dim]To close: drone @ai_mail close {args[0]}[/dim]")
         json_handler.log_operation("email_viewed", {"message_id": args[0]})
         return True
-    except BrokenPipeError:
+    except BrokenPipeError as e:
+        logger.warning("[email] view broken pipe: %s", e)
         return True
     except Exception as e:
         logger.error(f"[email] View failed: {e}")
@@ -342,7 +346,8 @@ def handle_close(args: List[str]) -> bool:
         if len(args) > 1 and closed > 0:
             try:
                 from aipass.ai_mail.apps.handlers.email.purge import purge_deleted_folder
-            except ImportError:
+            except ImportError as e:
+                logger.warning("[email] purge import unavailable: %s", e)
                 purge_deleted_folder = None
             batch_close_post_ops(branch_path, push_dashboard_update, update_central,
                                  purge_deleted_folder)

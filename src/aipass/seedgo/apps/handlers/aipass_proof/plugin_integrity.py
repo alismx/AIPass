@@ -256,6 +256,7 @@ def _scan_file_ast(
     try:
         tree = ast.parse(source, filename=str(file_path))
     except SyntaxError:
+        logger.info("Skipped %s: SyntaxError during parse", file_path.name)
         return []
 
     # Build child -> parent map

@@ -30,6 +30,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
 
 TREE_EXCLUDE = {
@@ -100,6 +101,7 @@ def generate_tree_section(branch_path: str) -> str:
         return f"```\n{tree_text}\n```"
 
     except Exception:
+        logger.info("Failed to generate tree for %s", branch_path)
         return ""
 
 
@@ -178,6 +180,7 @@ def _build_tree(directory: Path, lines: List[str], prefix: str = "",
     try:
         entries = sorted(directory.iterdir(), key=lambda e: (not e.is_dir(), e.name.lower()))
     except PermissionError:
+        logger.info("Permission denied reading directory: %s", directory)
         return
 
     # Filter entries
@@ -237,6 +240,7 @@ def _get_file_comment(file_path: Path) -> str:
             if first_line:
                 return first_line
     except (OSError, UnicodeDecodeError):
+        logger.info("Cannot read file for comment extraction: %s", file_path)
         return ""
 
     return ""
@@ -341,6 +345,7 @@ def _extract_module_description(module_path: Path) -> str:
                     return first_line
 
     except (OSError, UnicodeDecodeError):
+        logger.info("Cannot read module for description extraction: %s", module_path)
         return ""
 
     return ""
@@ -393,8 +398,10 @@ def generate_commands_section(branch_path: str) -> str:
         return _parse_help_output(output)
 
     except subprocess.TimeoutExpired:
+        logger.info("Help command timed out for %s", branch_name)
         return ""
     except Exception:
+        logger.info("Help command failed for %s", branch_name)
         return ""
 
 
@@ -499,6 +506,7 @@ def generate_header_section(branch_path: str) -> str:
     try:
         data = json.loads(id_file.read_text(encoding='utf-8'))
     except (json.JSONDecodeError, OSError):
+        logger.info("Cannot read passport for header generation: %s", id_file)
         return ""
 
     branch_info = data.get('branch_info', {})
@@ -566,6 +574,7 @@ def generate_all_sections(branch_path: str) -> dict:
         try:
             sections[name] = generator()
         except Exception:
+            logger.info("Section generator %s failed for %s", name, branch_path)
             sections[name] = ""
 
     json_handler.log_operation("readme_generated", {"branch": branch_path, "sections": list(sections.keys())})
@@ -615,6 +624,7 @@ def update_readme_auto_sections(branch_path: str, dry_run: bool = False) -> dict
     try:
         content = readme_path.read_text(encoding='utf-8')
     except OSError as e:
+        logger.info("Cannot read README at %s: %s", readme_path, e)
         result['errors'].append(f'Failed to read README.md: {e}')
         return result
 
@@ -657,6 +667,7 @@ def update_readme_auto_sections(branch_path: str, dry_run: bool = False) -> dict
         try:
             readme_path.write_text(updated_content, encoding='utf-8')
         except OSError as e:
+            logger.info("Cannot write README at %s: %s", readme_path, e)
             result['errors'].append(f'Failed to write README.md: {e}')
 
     return result

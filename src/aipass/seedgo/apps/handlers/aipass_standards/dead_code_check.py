@@ -22,6 +22,7 @@ import re
 from pathlib import Path
 from typing import Dict
 
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
 
 AUDIT_SCOPE = "branch_level"
@@ -40,12 +41,7 @@ _SKIP_DIRS = {
 # BYPASS HELPER
 # =============================================
 
-def is_bypassed(
-    file_path: str,
-    standard: str,
-    line: int | None = None,
-    bypass_rules: list | None = None,
-) -> bool:
+def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
     """Check if a violation should be bypassed."""
     if not bypass_rules:
         return False
@@ -56,11 +52,9 @@ def is_bypassed(
         if rule_file and rule_file not in file_path:
             continue
         rule_lines = rule.get("lines", [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -104,6 +98,7 @@ def _collect_source_text(apps_dir: Path) -> str:
         try:
             parts.append(py_file.read_text(encoding="utf-8", errors="ignore"))
         except OSError:
+            logger.info("Skipped unreadable file during source collection: %s", py_file)
             continue
     return "\n".join(parts)
 
@@ -125,6 +120,7 @@ def _build_import_path(py_file: Path, branch_path: Path, branch_name: str) -> st
     try:
         rel = py_file.relative_to(branch_path)
     except ValueError:
+        logger.info("File %s not relative to branch %s, using stem", py_file, branch_path)
         return py_file.stem
 
     parts = list(rel.with_suffix("").parts)
@@ -185,7 +181,7 @@ def _check_file_used(
         if rel_dotted in source_text:
             return True
     except ValueError:
-        pass
+        logger.info("File %s not relative to apps dir, skipping relative path check", py_file)
 
     # Rule 5: stem appears in import statements
     esc = re.escape(stem)
@@ -213,7 +209,7 @@ def _check_file_used(
             if 'glob("*.py")' in source_text or "glob('*.py')" in source_text:
                 return True
     except ValueError:
-        pass
+        logger.info("File %s not relative to apps dir, skipping glob discovery check", py_file)
 
     # Rule 6: filename string reference
     filename = py_file.name
@@ -326,6 +322,7 @@ def check_branch(branch_path: str, bypass_rules: list | None = None) -> dict:
             try:
                 rel = target.relative_to(apps_dir)
             except ValueError:
+                logger.info("File %s not relative to apps dir, using full path", target)
                 rel = target
             if not is_bypassed(str(rel), "dead_code", bypass_rules=bypass_rules):
                 dead_files.append(str(rel))

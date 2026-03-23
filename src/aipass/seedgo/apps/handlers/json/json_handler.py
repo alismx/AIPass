@@ -12,6 +12,8 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 import inspect
 
+from aipass.prax import logger
+
 _BRANCH_ROOT = Path(__file__).resolve().parents[3]   # json/ -> handlers/ -> apps/ -> {branch}/
 _BRANCH_NAME = _BRANCH_ROOT.name
 JSON_DIR = _BRANCH_ROOT / f"{_BRANCH_NAME}_json"
@@ -112,8 +114,7 @@ def ensure_json_exists(module_name: str, json_type: str) -> bool:
                 return True
             # If corrupted, fall through to regenerate
         except Exception:
-            # If unreadable, fall through to regenerate
-            pass
+            logger.info("JSON file unreadable or corrupted, regenerating: %s", json_path)
 
     template = _create_default(json_type, module_name)
 

@@ -60,7 +60,8 @@ def _send_via_dbus(title: str, body: str, source: str,
             capture_output=True, text=True, timeout=5
         )
         return result.returncode == 0
-    except (subprocess.SubprocessError, FileNotFoundError, OSError):
+    except (subprocess.SubprocessError, FileNotFoundError, OSError) as e:
+        logger.warning("[notify] D-Bus notification failed: %s", e)
         return False
 
 
@@ -72,7 +73,8 @@ def _send_via_notify_send(title: str, body: str, icon: str) -> bool:
             capture_output=True, timeout=5
         )
         return True
-    except (subprocess.SubprocessError, FileNotFoundError, OSError):
+    except (subprocess.SubprocessError, FileNotFoundError, OSError) as e:
+        logger.warning("[notify] notify-send fallback failed: %s", e)
         return False
 
 

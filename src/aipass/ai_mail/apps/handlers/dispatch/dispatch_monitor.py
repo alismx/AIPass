@@ -42,7 +42,8 @@ def _send_bounce(branch_email: str, reason: str, sender: str,
         with open(stderr_log, 'r', encoding='utf-8') as f:
             lines = f.readlines()
         stderr_tail = "".join(lines[-20:]).strip()
-    except (OSError, FileNotFoundError):
+    except (OSError, FileNotFoundError) as e:
+        logger.warning("[monitor] Failed to read stderr log %s: %s", stderr_log, e)
         stderr_tail = "(no stderr captured)"
 
     body = (
@@ -61,7 +62,8 @@ def _send_bounce(branch_email: str, reason: str, sender: str,
             cwd=str(Path(lock_file).parent.parent)
         )
         return result.returncode == 0
-    except (subprocess.SubprocessError, OSError):
+    except (subprocess.SubprocessError, OSError) as e:
+        logger.warning("[monitor] Bounce email send failed for %s: %s", branch_email, e)
         # Fallback: write bounce to a file if email fails
         try:
             bounce_file = Path(lock_file).parent / "last_bounce.json"
@@ -111,7 +113,8 @@ def main():
         stderr_fh.write(f"\n--- Monitor for {branch_email} started at "
                         f"{time.strftime('%Y-%m-%dT%H:%M:%S')} (PID {os.getpid()}) ---\n")
         stderr_fh.flush()
-    except OSError:
+    except OSError as e:
+        logger.warning("[monitor] Failed to open stderr log %s: %s", stderr_log, e)
         stderr_fh = subprocess.DEVNULL
 
     # Prepare env — strip CLAUDE* vars and AIPASS_BOT_ID
@@ -145,7 +148,8 @@ def main():
             rotated = stdout_path.with_suffix('.log.1')
             stdout_path.replace(rotated)
         stdout_fh = open(stdout_log, 'w', encoding='utf-8')
-    except OSError:
+    except OSError as e:
+        logger.warning("[monitor] Failed to open stdout log %s: %s", stdout_log, e)
         stdout_fh = subprocess.DEVNULL
     try:
         result = subprocess.run(
@@ -157,11 +161,13 @@ def main():
             timeout=7200  # 2 hour hard timeout
         )
         exit_code = result.returncode
-    except subprocess.TimeoutExpired:
+    except subprocess.TimeoutExpired as e:
+        logger.warning("[monitor] Agent %s timed out after 2 hours: %s", branch_email, e)
         exit_code = -1
         reason = "Agent timed out (2 hour limit)"
         _send_bounce(branch_email, reason, sender, lock_file, stderr_log)
     except Exception as e:
+        logger.warning("[monitor] Agent %s subprocess error: %s", branch_email, e)
         exit_code = -2
         reason = f"Monitor error: {type(e).__name__}: {e}"
         _send_bounce(branch_email, reason, sender, lock_file, stderr_log)
@@ -172,8 +178,8 @@ def main():
     if not isinstance(stdout_fh, int):
         try:
             stdout_fh.close()
-        except OSError:
-            pass
+        except OSError as e:
+            logger.warning("[monitor] Failed to close stdout log: %s", e)
 
     # Check for max-turns hit (Claude exits 0 but output contains stop_reason)
     max_turns_hit = False
@@ -183,8 +189,8 @@ def main():
         if '"stop_reason":"max_turns"' in stdout_content or '"stop_reason": "max_turns"' in stdout_content:
             max_turns_hit = True
             logger.warning("[monitor] %s HIT MAX TURNS after %ds — work may be incomplete", branch_email, duration)
-    except OSError:
-        pass
+    except OSError as e:
+        logger.warning("[monitor] Failed to read stdout log for max-turns check: %s", e)
 
     # Log completion
     if not isinstance(stderr_fh, int):

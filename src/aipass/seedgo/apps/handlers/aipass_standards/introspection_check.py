@@ -21,6 +21,7 @@ Checks:
 import ast
 from pathlib import Path
 from typing import Dict, Optional
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
 
 # Run on ALL .py files so modules (apps/modules/*.py) are checked, not just entry points
@@ -41,11 +42,9 @@ def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_r
             continue
         # Check line-specific bypass
         rule_lines = rule.get('lines', [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -106,6 +105,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
         with open(path, 'r', encoding='utf-8') as f:
             content = f.read()
     except Exception as e:
+        logger.info("Cannot read %s: %s", path, e)
         return {
             'passed': False,
             'checks': [{'name': 'File readable', 'passed': False, 'message': f'Error reading file: {e}'}],
@@ -126,6 +126,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     try:
         tree = ast.parse(content, filename=module_path)
     except SyntaxError as e:
+        logger.info("Skipped %s: SyntaxError during parse", path)
         return {
             'passed': False,
             'checks': [{'name': 'File parseable', 'passed': False, 'message': f'Syntax error: {e}'}],
@@ -332,8 +333,9 @@ def check_module_handle_command_gate(tree: ast.Module, filename: str) -> Optiona
     For modules (apps/modules/*.py), verify that handle_command() contains a
     no-args gate that calls print_introspection().
 
-    The standard pattern is:
-        def handle_command(command, args):
+    The standard pattern is::
+
+        handle_command(command, args):
             ...
             if not args:
                 print_introspection()  # or call a wrapper that shows introspection

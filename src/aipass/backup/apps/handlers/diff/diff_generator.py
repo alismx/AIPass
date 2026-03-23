@@ -21,6 +21,8 @@ import datetime
 import difflib
 from pathlib import Path
 
+from aipass.prax import logger
+
 # Import from handlers
 from aipass.backup.apps.handlers.utils.system_utils import safe_print
 from aipass.backup.apps.handlers.config.config_handler import DIFF_IGNORE_PATTERNS, DIFF_INCLUDE_PATTERNS
@@ -66,7 +68,8 @@ def is_binary_file(file_path: Path) -> bool:
         with open(file_path, 'rb') as f:
             chunk = f.read(1024)
         return b'\0' in chunk
-    except Exception:
+    except Exception as e:
+        logger.info(f"[diff_generator] Could not read {file_path}, assuming binary: {e}")
         return True  # Assume binary if we can't read it
 
 
@@ -106,4 +109,5 @@ def generate_diff_content(old_file: Path, new_file: Path) -> str:
         return '\n'.join(diff_lines)
 
     except Exception as e:
+        logger.warning(f"[diff_generator] Failed to generate diff for {old_file} -> {new_file}: {e}")
         return f"Error generating diff: {e}\n"

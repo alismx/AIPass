@@ -91,7 +91,7 @@ def cleanup_deleted_files(backup_path: Path, source_dir: Path, should_ignore: Ca
                     removed_dirs.add(backup_dir)
             except Exception as e:
                 # Don't fail entire backup on one directory error
-                pass
+                logger.warning(f"[file_cleanup] Error processing directory {backup_dir}: {e}")
 
         # Second pass: delete individual files that no longer exist or should be ignored
         for backup_file in backup_path.rglob('*'):
@@ -142,10 +142,10 @@ def cleanup_deleted_files(backup_path: Path, source_dir: Path, should_ignore: Ca
                                 backup_dir.rmdir()
                             safe_print(f"Deleted empty: {backup_dir}/")
                     # else: Directory is in exceptions, preserve it even if empty
-            except OSError:
-                pass  # Directory not empty or other OS error
+            except OSError as e:
+                logger.info(f"[file_cleanup] Could not remove directory {backup_dir}: {e}")
             except Exception as e:
-                pass  # Silently skip other errors
+                logger.warning(f"[file_cleanup] Unexpected error removing directory {backup_dir}: {e}")
 
     except Exception as e:
         error_msg = f"Error scanning for deleted files: {e}"

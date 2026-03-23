@@ -36,6 +36,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, List, Tuple
 
+from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.ai_mail.apps.handlers.json import json_handler
 
 
@@ -195,6 +196,7 @@ def aggregate_branch_stats() -> Dict[str, Dict[str, int]]:
         except (FileNotFoundError, stdlib_json.JSONDecodeError, KeyError) as e:
             # Skip branches with missing/malformed inbox files
             # Continue processing other branches
+            logger.warning("[central] Skipping branch inbox %s: %s", inbox_path, e)
             continue
         except Exception as e:
             # Handler tier 3: raise unexpected errors for caller to handle

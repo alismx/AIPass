@@ -344,7 +344,7 @@ class TestHandleCustomCommand:
         mock_route.assert_called_once_with(
             "@seedgo", "audit",
             args=["aipass"],
-            interactive=False,
+            interactive=True,
         )
 
     @patch("aipass.drone.apps.drone.route_command")
@@ -364,7 +364,7 @@ class TestHandleCustomCommand:
         mock_route.assert_called_once_with(
             "@seedgo", "audit",
             args=["aipass", "@drone"],
-            interactive=False,
+            interactive=True,
         )
 
     def test_returns_negative_1_on_no_match(self) -> None:
@@ -561,7 +561,7 @@ class TestMainIntegration:
         mock_route.assert_called_once_with(
             "@seedgo", "audit",
             args=["aipass"],
-            interactive=False,
+            interactive=True,
         )
 
     @patch("aipass.drone.apps.drone.route_command")
@@ -583,7 +583,7 @@ class TestMainIntegration:
         mock_route.assert_called_once_with(
             "@seedgo", "audit",
             args=["aipass", "@drone"],
-            interactive=False,
+            interactive=True,
         )
 
     def test_builtin_commands_take_priority(self) -> None:

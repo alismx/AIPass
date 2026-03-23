@@ -21,7 +21,11 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
+
+# Audit scope: all Python files
+AUDIT_SCOPE = "all_files"
 
 def _find_registry() -> Path:
     """Find AIPASS_REGISTRY.json by walking up from this file's location."""
@@ -47,11 +51,9 @@ def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_r
             continue
         # Check line-specific bypass
         rule_lines = rule.get('lines', [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -87,6 +89,7 @@ def get_branch_from_path(file_path: str) -> Optional[Dict]:
 
         return None
     except Exception:
+        logger.info("Cannot determine branch for path: %s", file_path)
         return None
 
 
@@ -219,6 +222,7 @@ def check_handler_guard(module_path: str, bypass_rules: list | None = None) -> O
     try:
         content = init_path.read_text(encoding='utf-8')
     except Exception:
+        logger.info("Cannot read handlers/__init__.py at %s", init_path)
         result = {
             'name': 'Handler security guard',
             'passed': False,
@@ -304,6 +308,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
             content = f.read()
             lines = content.split('\n')
     except Exception as e:
+        logger.info("Cannot read %s: %s", path, e)
         return {
             'passed': False,
             'checks': [{'name': 'File readable', 'passed': False, 'message': f'Error reading file: {e}'}],
