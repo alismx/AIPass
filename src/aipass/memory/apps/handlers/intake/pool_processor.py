@@ -25,6 +25,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Any
 
+from aipass.prax import logger
 from aipass.memory.apps.handlers.json import json_handler
 
 # Paths
@@ -47,8 +48,8 @@ def _notify_failure(subject: str, message: str) -> None:
             timeout=30,
             cwd=str(_MEMORY_ROOT)
         )
-    except Exception:
-        pass  # Best-effort - don't let notification failure break processing
+    except Exception as e:
+        logger.warning(f"[pool_processor] Failed to send failure notification: {e}")
 
 
 def _update_central_and_dashboard() -> None:
@@ -68,8 +69,8 @@ def _update_central_and_dashboard() -> None:
              "update_central()"],
             capture_output=True, text=True, timeout=30
         )
-    except Exception:
-        pass  # Non-critical: central update failure does not break pool processing
+    except Exception as e:
+        logger.warning(f"[pool_processor] Central stats update failed: {e}")
 
     # Push dashboard to all branches
     try:
@@ -79,8 +80,8 @@ def _update_central_and_dashboard() -> None:
              "push_memory_bank_dashboard()"],
             capture_output=True, text=True, timeout=60
         )
-    except Exception:
-        pass  # Non-critical: dashboard push failure does not break pool processing
+    except Exception as e:
+        logger.warning(f"[pool_processor] Dashboard push failed: {e}")
 
 
 def find_source_file(filename: str) -> Path | None:
@@ -115,6 +116,7 @@ def load_config() -> dict:
             config = json.load(f)
         return config.get('memory_pool', {})
     except Exception as e:
+        logger.warning(f"[pool_processor] Failed to load config: {e}")
         return {'enabled': False, 'error': str(e)}
 
 
@@ -166,6 +168,7 @@ def read_file_content(file_path: Path) -> dict:
             }
         }
     except Exception as e:
+        logger.warning(f"[pool_processor] Failed to read file content: {e}")
         return {'success': False, 'error': str(e)}
 
 
@@ -286,6 +289,7 @@ def process_file_to_vectors(file_path: Path, collection_name: str, chunk_size: i
         }
 
     except Exception as e:
+        logger.warning(f"[pool_processor] Failed to process file to vectors: {e}")
         return {'success': False, 'error': str(e)}
 
 
@@ -335,6 +339,7 @@ def archive_old_files(keep_recent: int, archive_path: str = 'memory_pool_archive
             shutil.move(str(file_path), str(dest))
             archived_count += 1
         except Exception as e:
+            logger.warning(f"[pool_processor] Failed to archive {file_path.name}: {e}")
             errors.append(f"{file_path.name}: {e}")
 
     result = {
@@ -464,8 +469,8 @@ def get_pool_status() -> dict:
         if collection_name in [c.name for c in client.list_collections()]:
             collection = client.get_collection(name=collection_name)
             collection_count = collection.count()
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[pool_processor] Failed to get collection count: {e}")
 
     return {
         'enabled': config.get('enabled', False),

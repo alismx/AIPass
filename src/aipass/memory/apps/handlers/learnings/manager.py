@@ -119,7 +119,8 @@ def get_entry_age(value: str) -> int:
         entry_date = datetime.strptime(timestamp, "%Y-%m-%d")
         age = (datetime.now() - entry_date).days
         return max(0, age)
-    except ValueError:
+    except ValueError as e:
+        logger.warning(f"[learnings_manager] Failed to parse entry timestamp: {e}")
         return 999999
 
 
@@ -346,6 +347,7 @@ def _vectorize_learnings(
             return {'success': False, 'error': 'No embeddings generated'}
 
     except Exception as e:
+        logger.warning(f"[learnings_manager] Embedding error for key_learnings: {e}")
         return {'success': False, 'error': f"Embedding error: {e}"}
 
     # Store in ChromaDB via subprocess
@@ -379,10 +381,13 @@ def _vectorize_learnings(
         return json.loads(result.stdout)
 
     except subprocess.TimeoutExpired:
+        logger.warning("[learnings_manager] Key learnings vectorization timed out")
         return {'success': False, 'error': 'Vectorization timed out'}
     except json.JSONDecodeError as e:
+        logger.warning(f"[learnings_manager] Invalid JSON from key_learnings vectorization: {e}")
         return {'success': False, 'error': f'Invalid JSON response: {e}'}
     except Exception as e:
+        logger.warning(f"[learnings_manager] Key learnings vectorization error: {e}")
         return {'success': False, 'error': str(e)}
 
 
@@ -433,6 +438,7 @@ def _vectorize_completed_tasks(
             return {'success': False, 'error': 'No embeddings generated'}
 
     except Exception as e:
+        logger.warning(f"[learnings_manager] Embedding error for recently_completed: {e}")
         return {'success': False, 'error': f"Embedding error: {e}"}
 
     # Store in ChromaDB via subprocess
@@ -466,10 +472,13 @@ def _vectorize_completed_tasks(
         return json.loads(result.stdout)
 
     except subprocess.TimeoutExpired:
+        logger.warning("[learnings_manager] Completed tasks vectorization timed out")
         return {'success': False, 'error': 'Vectorization timed out'}
     except json.JSONDecodeError as e:
+        logger.warning(f"[learnings_manager] Invalid JSON from completed tasks vectorization: {e}")
         return {'success': False, 'error': f'Invalid JSON response: {e}'}
     except Exception as e:
+        logger.warning(f"[learnings_manager] Completed tasks vectorization error: {e}")
         return {'success': False, 'error': str(e)}
 
 
@@ -497,6 +506,7 @@ def ensure_timestamps(file_path: Path) -> Dict[str, Any]:
         if data is None:
             return {'success': False, 'error': f'Failed to parse file: {file_path.name}'}
     except Exception as e:
+        logger.warning(f"[learnings_manager] Failed to read file: {e}")
         return {'success': False, 'error': f'Failed to read file: {e}'}
 
     learnings = _get_learnings(data)
@@ -517,6 +527,7 @@ def ensure_timestamps(file_path: Path) -> Dict[str, Any]:
         try:
             write_memory_file_simple(file_path, data)
         except Exception as e:
+            logger.warning(f"[learnings_manager] Failed to write file: {e}")
             return {'success': False, 'error': f'Failed to write file: {e}'}
 
     return {
@@ -549,6 +560,7 @@ def enforce_limit(file_path: Path) -> Dict[str, Any]:
         if data is None:
             return {'success': False, 'error': f'Failed to parse file: {file_path.name}'}
     except Exception as e:
+        logger.warning(f"[learnings_manager] Failed to read file: {e}")
         return {'success': False, 'error': f'Failed to read file: {e}'}
 
     learnings = _get_learnings(data)
@@ -595,6 +607,7 @@ def enforce_limit(file_path: Path) -> Dict[str, Any]:
     try:
         write_memory_file_simple(file_path, data)
     except Exception as e:
+        logger.warning(f"[learnings_manager] Failed to write file: {e}")
         return {'success': False, 'error': f'Failed to write file: {e}'}
 
     json_handler.log_operation("enforce_limit", {"removed": to_remove_count, "remaining": len(to_keep), "success": True})
@@ -633,6 +646,7 @@ def ensure_timestamps_completed(file_path: Path) -> Dict[str, Any]:
         if data is None:
             return {'success': False, 'error': f'Failed to parse file: {file_path.name}'}
     except Exception as e:
+        logger.warning(f"[learnings_manager] Failed to read file: {e}")
         return {'success': False, 'error': f'Failed to read file: {e}'}
 
     completed = _get_recently_completed(data)
@@ -656,6 +670,7 @@ def ensure_timestamps_completed(file_path: Path) -> Dict[str, Any]:
         try:
             write_memory_file_simple(file_path, data)
         except Exception as e:
+            logger.warning(f"[learnings_manager] Failed to write file: {e}")
             return {'success': False, 'error': f'Failed to write file: {e}'}
 
     return {
@@ -688,6 +703,7 @@ def enforce_limit_completed(file_path: Path) -> Dict[str, Any]:
         if data is None:
             return {'success': False, 'error': f'Failed to parse file: {file_path.name}'}
     except Exception as e:
+        logger.warning(f"[learnings_manager] Failed to read file: {e}")
         return {'success': False, 'error': f'Failed to read file: {e}'}
 
     completed = _get_recently_completed(data)
@@ -732,6 +748,7 @@ def enforce_limit_completed(file_path: Path) -> Dict[str, Any]:
     try:
         write_memory_file_simple(file_path, data)
     except Exception as e:
+        logger.warning(f"[learnings_manager] Failed to write file: {e}")
         return {'success': False, 'error': f'Failed to write file: {e}'}
 
     return {
@@ -770,6 +787,7 @@ def add_learning(
         if data is None:
             return {'success': False, 'error': f'Failed to parse file: {file_path.name}'}
     except Exception as e:
+        logger.warning(f"[learnings_manager] Failed to read file: {e}")
         return {'success': False, 'error': f'Failed to read file: {e}'}
 
     # Get existing learnings or create empty dict
@@ -786,6 +804,7 @@ def add_learning(
     try:
         write_memory_file_simple(file_path, data)
     except Exception as e:
+        logger.warning(f"[learnings_manager] Failed to write file: {e}")
         return {'success': False, 'error': f'Failed to write file: {e}'}
 
     # Enforce limit after adding
@@ -826,6 +845,7 @@ def update_status_counts(file_path: Path) -> Dict[str, Any]:
         if data is None:
             return {'success': False, 'error': f'Failed to parse file: {file_path.name}'}
     except Exception as e:
+        logger.warning(f"[learnings_manager] Failed to read file: {e}")
         return {'success': False, 'error': f'Failed to read file: {e}'}
 
     # Get actual counts
@@ -854,6 +874,7 @@ def update_status_counts(file_path: Path) -> Dict[str, Any]:
         try:
             write_memory_file_simple(file_path, data)
         except Exception as e:
+            logger.warning(f"[learnings_manager] Failed to write file: {e}")
             return {'success': False, 'error': f'Failed to write file: {e}'}
 
     return {
@@ -961,6 +982,7 @@ def process_all_branches() -> Dict[str, Any]:
         with open(registry_path, 'r', encoding='utf-8') as f:
             registry = json.load(f)
     except Exception as e:
+        logger.warning(f"[learnings_manager] Failed to read registry: {e}")
         return {'success': False, 'error': f'Failed to read registry: {e}'}
 
     branches = registry.get('branches', [])

@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 from typing import List
 
+from aipass.prax import logger
 from aipass.cli.apps.modules import console, error
 from aipass.memory.apps.handlers.json import json_handler
 
@@ -127,10 +128,13 @@ def _check_plan_subprocess(plan_label: str) -> dict:
 
         return json.loads(result.stdout)
     except subprocess.TimeoutExpired:
+        logger.warning("[verify] Plan check subprocess timed out")
         return {'success': False, 'error': 'Check operation timed out'}
     except json.JSONDecodeError as e:
+        logger.warning(f"[verify] Invalid JSON from plan check subprocess: {e}")
         return {'success': False, 'error': f'Invalid JSON response: {e}'}
     except Exception as e:
+        logger.error(f"[verify] Plan check subprocess failed: {e}")
         return {'success': False, 'error': str(e)}
 
 

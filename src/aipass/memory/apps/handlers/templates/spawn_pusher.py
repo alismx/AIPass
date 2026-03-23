@@ -101,7 +101,8 @@ def _read_json(path: Path) -> dict | None:
     try:
         with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError) as e:
+        logger.warning(f"[spawn_pusher] Failed to read JSON {path}: {e}")
         return None
 
 
@@ -112,7 +113,8 @@ def _write_json(path: Path, data: dict) -> bool:
             json.dump(data, f, indent=2, ensure_ascii=False)
             f.write("\n")
         return True
-    except OSError:
+    except OSError as e:
+        logger.warning(f"[spawn_pusher] Failed to write JSON {path}: {e}")
         return False
 
 

@@ -78,6 +78,7 @@ def create_rollover_backup(file_path: Path) -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(f"[extractor] Backup failed for {file_path}: {e}")
         return {
             'success': False,
             'error': f'Backup failed: {e}'
@@ -116,6 +117,7 @@ def restore_from_backup(file_path: Path) -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(f"[extractor] Restore from backup failed for {file_path}: {e}")
         return {
             'success': False,
             'error': f'Restore failed: {e}'
@@ -328,6 +330,7 @@ def _extract_items_v2(file_path: Path, data: Dict[str, Any]) -> Dict[str, Any]:
         _write_memory_file(file_path, data)
         new_lines = _count_file_lines(file_path)
     except Exception as e:
+        logger.error(f"[extractor] Failed to write file after v2 extraction: {e}")
         return {
             'success': False,
             'error': f"Failed to write file: {e}"
@@ -388,6 +391,7 @@ def extract_items(
             }
         current_lines = _count_file_lines(file_path)
     except Exception as e:
+        logger.warning(f"[extractor] Failed to read file {file_path}: {e}")
         return {
             'success': False,
             'error': f"Failed to read file: {e}"
@@ -445,6 +449,7 @@ def extract_items(
         _write_memory_file(file_path, data)
         new_line_count = _count_file_lines(file_path)
     except Exception as e:
+        logger.error(f"[extractor] Failed to write file after v1 extraction: {e}")
         return {
             'success': False,
             'error': f"Failed to write file: {e}"

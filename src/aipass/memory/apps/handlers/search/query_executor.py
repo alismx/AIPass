@@ -96,10 +96,13 @@ def encode_query_subprocess(query: str) -> dict:
             'dimension': data.get('dimension', 384)
         }
     except subprocess.TimeoutExpired:
+        logger.warning("[query_executor] Embedding subprocess timed out")
         return {'success': False, 'error': 'Embedding timed out'}
     except json.JSONDecodeError as e:
+        logger.warning(f"[query_executor] Invalid JSON from embedder: {e}")
         return {'success': False, 'error': f'Invalid JSON from embedder: {e}'}
     except Exception as e:
+        logger.error(f"[query_executor] Embedding subprocess failed: {e}")
         return {'success': False, 'error': str(e)}
 
 
@@ -150,10 +153,13 @@ def search_vectors_subprocess(
 
         return json.loads(result.stdout)
     except subprocess.TimeoutExpired:
+        logger.warning("[query_executor] Search subprocess timed out")
         return {'success': False, 'error': 'Search operation timed out'}
     except json.JSONDecodeError as e:
+        logger.warning(f"[query_executor] Invalid JSON from search subprocess: {e}")
         return {'success': False, 'error': f'Invalid JSON response: {e}'}
     except Exception as e:
+        logger.error(f"[query_executor] Search subprocess failed: {e}")
         return {'success': False, 'error': str(e)}
 
 

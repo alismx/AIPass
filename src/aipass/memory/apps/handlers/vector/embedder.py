@@ -71,6 +71,7 @@ class EmbeddingService:
             import torch
             from sentence_transformers import SentenceTransformer
         except ImportError as e:
+            logger.info(f"[embedder] Optional ML dependencies not available: {e}")
             raise ImportError(
                 f"Embedding requires sentence-transformers and torch. "
                 f"Install with: pip install sentence-transformers torch. "
@@ -204,6 +205,7 @@ def encode_batch(texts: List[str]) -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(f"[embedder] Batch encoding failed: {e}")
         return {
             'success': False,
             'error': f"Encoding failed: {e}"
@@ -284,6 +286,7 @@ def get_model_info() -> Dict[str, Any]:
             'gpu_enabled': service.use_gpu
         }
     except Exception as e:
+        logger.warning(f"[embedder] Failed to get model info: {e}")
         return {
             'success': False,
             'error': f"Failed to get model info: {e}"

@@ -22,6 +22,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 
+from aipass.prax import logger
 from aipass.memory.apps.handlers.json import json_handler
 
 # memory/ root resolved from symbolic/extractor.py
@@ -308,7 +309,8 @@ def _parse_llm_json(raw_text: str) -> Optional[List[Dict[str, Any]]]:
         result = json.loads(text)
         if isinstance(result, list):
             return result
-    except (json.JSONDecodeError, ValueError):
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.warning(f"[extractor] Direct JSON parse failed, trying fallback: {e}")
         pass
     # Attempt 2: Strip markdown fences
     match = re.search(r'```(?:json)?\s*\n?(.*?)\n?\s*```', text, re.DOTALL)
@@ -317,7 +319,8 @@ def _parse_llm_json(raw_text: str) -> Optional[List[Dict[str, Any]]]:
             result = json.loads(match.group(1).strip())
             if isinstance(result, list):
                 return result
-        except (json.JSONDecodeError, ValueError):
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"[extractor] Markdown-fenced JSON parse failed: {e}")
             pass
     return None
 
@@ -408,7 +411,7 @@ def extract_fragments_llm(chat_history: List[Dict[str, Any]]) -> Dict[str, Any]:
         except (urllib.error.URLError, json.JSONDecodeError, KeyError, IndexError) as e:
             err_msg = f"Chunk {i+1}/{len(chunks)}: {type(e).__name__}: {e}"
             chunk_errors.append(err_msg)
-            # Error tracked in chunk_errors for module-layer logging
+            logger.warning(f"[extractor] LLM extraction failed for chunk {i+1}/{len(chunks)}: {e}")
             continue
         if not content:
             continue

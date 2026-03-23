@@ -32,6 +32,7 @@ from pathlib import Path
 # Handler imports (domain-organized, no modules)
 from aipass.memory.apps.handlers.vector import embedder
 from aipass.memory.apps.handlers.json import json_handler
+from aipass.prax import logger
 
 
 # =============================================================================
@@ -308,6 +309,7 @@ def store_fragment(
         }
 
     except Exception as e:
+        logger.error(f"[storage] Fragment storage failed: {e}")
         return {
             'success': False,
             'error': f"Storage failed: {e}"
@@ -420,6 +422,7 @@ def store_fragments_batch(
         }
 
     except Exception as e:
+        logger.error(f"[storage] Batch fragment storage failed: {e}")
         return {
             'success': False,
             'error': f"Batch storage failed: {e}"
@@ -540,6 +543,7 @@ def store_llm_fragment(
         }
 
     except Exception as e:
+        logger.error(f"[storage] LLM fragment storage failed: {e}")
         return {
             'success': False,
             'error': f"LLM fragment storage failed: {e}"
@@ -668,6 +672,7 @@ def store_llm_fragments_batch(
         }
 
     except Exception as e:
+        logger.error(f"[storage] Batch LLM fragment storage failed: {e}")
         return {
             'success': False,
             'error': f"Batch LLM fragment storage failed: {e}"
@@ -712,6 +717,7 @@ def delete_fragment(
         }
 
     except Exception as e:
+        logger.error(f"[storage] Fragment deletion failed: {e}")
         return {
             'success': False,
             'error': f"Fragment deletion failed: {e}"

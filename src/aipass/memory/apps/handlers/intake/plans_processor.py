@@ -147,7 +147,8 @@ def _load_manifest() -> Dict[str, str]:
     if _PROCESSED_MANIFEST.exists():
         try:
             return json.loads(_PROCESSED_MANIFEST.read_text(encoding='utf-8'))
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[plans_processor] Failed to load processed manifest: {e}")
             return {}
     return {}
 
@@ -175,6 +176,7 @@ def _embed_texts(texts: List[str]) -> dict:
             return {'success': False, 'error': result.stderr or 'Embedding failed'}
         return json.loads(result.stdout)
     except Exception as e:
+        logger.warning(f"[plans_processor] Embedding subprocess failed: {e}")
         return {'success': False, 'error': str(e)}
 
 
@@ -199,6 +201,7 @@ def _store_vectors(embeddings, documents, metadatas, collection_name="flow_plans
             return {'success': False, 'error': result.stderr or 'Storage failed'}
         return json.loads(result.stdout)
     except Exception as e:
+        logger.warning(f"[plans_processor] Vector storage subprocess failed: {e}")
         return {'success': False, 'error': str(e)}
 
 
@@ -227,6 +230,7 @@ def process_plans() -> Dict[str, Any]:
         config = json.loads(config_path.read_text(encoding='utf-8'))
         plans_config = config.get('plans', {})
     except Exception as e:
+        logger.warning(f"[plans_processor] Config load failed: {e}")
         return {'success': False, 'error': f'Config load failed: {e}'}
 
     if not plans_config.get('enabled', False):
@@ -273,6 +277,7 @@ def process_plans() -> Dict[str, Any]:
         try:
             text = plan_file.read_text(encoding='utf-8')
         except Exception as e:
+            logger.warning(f"[plans_processor] Failed to read plan file {plan_file.name}: {e}")
             errors.append(f'{plan_file.name}: read error: {e}')
             continue
 

@@ -17,6 +17,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict
 
+from aipass.prax import logger
+
 _BRANCH_ROOT = Path(__file__).resolve().parents[3]
 _BRANCH_NAME = _BRANCH_ROOT.name
 JSON_DIR = _BRANCH_ROOT / f"{_BRANCH_NAME}_json"
@@ -27,6 +29,7 @@ def read_json(file_path: Path) -> dict | None:
     try:
         return json.loads(file_path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, FileNotFoundError):
+        logger.info(f"[json_handler] Could not read JSON from {file_path}")
         return None
 
 
@@ -36,7 +39,8 @@ def write_json(file_path: Path, data: Any, indent: int = 2) -> bool:
         file_path.parent.mkdir(parents=True, exist_ok=True)
         file_path.write_text(json.dumps(data, indent=indent) + "\n", encoding="utf-8")
         return True
-    except OSError:
+    except OSError as e:
+        logger.warning(f"[json_handler] Failed to write JSON to {file_path}: {e}")
         return False
 
 
@@ -75,6 +79,7 @@ def log_operation(operation: str, data: Dict[str, Any] | None = None, module_nam
         try:
             log = json.loads(log_path.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, OSError):
+            logger.info(f"[json_handler] Could not read operation log {log_path}, starting fresh")
             log = []
 
     entry: Dict[str, Any] = {
@@ -93,5 +98,6 @@ def log_operation(operation: str, data: Dict[str, Any] | None = None, module_nam
     try:
         log_path.write_text(json.dumps(log, indent=2) + "\n", encoding="utf-8")
         return True
-    except OSError:
+    except OSError as e:
+        logger.warning(f"[json_handler] Failed to write operation log to {log_path}: {e}")
         return False
