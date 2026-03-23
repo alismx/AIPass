@@ -26,6 +26,8 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from aipass.prax import logger
+
 # Audit scope: scan every .py file, not just entry point
 AUDIT_SCOPE = "all_files"
 
@@ -41,11 +43,9 @@ def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_r
         if rule_file and rule_file not in file_path:
             continue
         rule_lines = rule.get('lines', [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -96,6 +96,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     try:
         content = path.read_text(encoding='utf-8')
     except Exception as e:
+        logger.info("Cannot read %s: %s", path, e)
         return {
             'passed': False,
             'checks': [{'name': 'File readable', 'passed': False, 'message': f'Error reading file: {e}'}],
@@ -330,7 +331,7 @@ def detect_branch(file_path: Path) -> Optional[str]:
                 if file_path_str.startswith(str(branch_path)):
                     return branch.get('name', '').lower()
         except (json.JSONDecodeError, IOError):
-            pass
+            logger.info("Cannot read registry for branch detection: %s", registry_path)
 
     # Fallback: path heuristics
     path_parts = file_path.parts
@@ -360,6 +361,6 @@ def get_branch_path(branch_name: str) -> Optional[str]:
                         branch_path = (registry_dir / branch_path).resolve()
                     return str(branch_path)
         except (json.JSONDecodeError, IOError):
-            pass
+            logger.info("Cannot read registry for branch path lookup: %s", registry_path)
 
     return None

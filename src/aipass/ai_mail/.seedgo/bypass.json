@@ -1,0 +1,89 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2026-03-07T22:43:23.230824",
+    "description": "Standards bypass configuration for this branch"
+  },
+  "bypass": [
+    {
+      "file": "apps/modules/email.py",
+      "standard": "introspection",
+      "reason": "Multi-command module where inbox, sent, contacts work without args by design. Adding no-args gate would break primary mail workflow (drone @ai_mail inbox)."
+    },
+    {
+      "file": "apps/handlers/json_utils/json_handler.py",
+      "standard": "json_structure",
+      "reason": "This IS the json_handler implementation — cannot import itself."
+    },
+    {
+      "file": "apps/modules/dispatch.py",
+      "standard": "deep_nesting",
+      "reason": "handle_command() depth 4 — entry point router, nested subcommand dispatch is inherent to the pattern"
+    },
+    {
+      "file": "apps/modules/branch_ping.py",
+      "standard": "deep_nesting",
+      "reason": "handle_command() depth 4 — command routing with multiple subcommands, same dispatch pattern"
+    },
+    {
+      "file": "apps/handlers/dispatch/daemon.py",
+      "standard": "deep_nesting",
+      "reason": "3 functions: check_inbox_for_dispatch() depth 4 (priority scanning with business logic), run_daemon() depth 4 (main daemon loop), _check_lock() depth 4 (lock validation + PID liveness + cleanup)"
+    },
+    {
+      "file": "apps/handlers/dispatch/wake.py",
+      "standard": "deep_nesting",
+      "reason": "2 functions: _check_lock() depth 4 (lock validation with PID checks and age), _is_branch_occupied() depth 5 (process inspection, filters by session type — must check /proc)"
+    },
+    {
+      "file": "apps/handlers/email/send.py",
+      "standard": "deep_nesting",
+      "reason": "collect_interactive_input() depth 4 — multiple input() calls each need independent try/except for EOF and KeyboardInterrupt"
+    },
+    {
+      "file": "apps/handlers/email/inbox_ops.py",
+      "standard": "deep_nesting",
+      "reason": "load_inbox() depth 4 — auto-migration between old and new inbox formats requires nested schema checks"
+    },
+    {
+      "file": "apps/handlers/email/delivery.py",
+      "standard": "deep_nesting",
+      "reason": "2 functions: get_all_branches() depth 6 (registry parsing with format detection, email derivation, collision handling), deliver_email_to_branch() depth 4 (delivery orchestration with lock acquisition)"
+    },
+    {
+      "file": "apps/handlers/email/inbox_cleanup.py",
+      "standard": "deep_nesting",
+      "reason": "mark_read_and_archive() depth 4 — lock context manager + inbox loading + message search + archive"
+    },
+    {
+      "file": "apps/handlers/email/inbox_lock.py",
+      "standard": "deep_nesting",
+      "reason": "inbox_lock() depth 6 — cross-platform file locking context manager (POSIX fcntl vs Windows msvcrt), platform branching is inherent"
+    },
+    {
+      "file": "apps/handlers/users/user.py",
+      "standard": "deep_nesting",
+      "reason": "2 functions: get_user_by_email() depth 4, get_all_users() depth 4 — registry lookup with path normalization and validation"
+    }
+  ],
+  "notes": {
+    "usage": "Add entries to 'bypass' list to exclude specific violations",
+    "example": {
+      "file": "apps/modules/logger.py",
+      "standard": "cli",
+      "lines": [
+        146,
+        177
+      ],
+      "pattern": "if __name__ == '__main__'",
+      "reason": "Circular dependency - logger cannot import CLI"
+    },
+    "fields": {
+      "file": "Relative path from branch root (required)",
+      "standard": "Standard name: cli, imports, naming, etc. (required)",
+      "lines": "Optional - specific line numbers to bypass",
+      "pattern": "Optional - pattern to match (e.g. 'if __name__')",
+      "reason": "Required - why this bypass exists"
+    }
+  }
+}

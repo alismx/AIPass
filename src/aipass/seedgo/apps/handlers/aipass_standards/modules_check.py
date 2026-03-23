@@ -18,7 +18,11 @@ import re
 import ast
 from pathlib import Path
 from typing import Dict, List, Optional
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
+
+# Audit scope: all Python files
+AUDIT_SCOPE = "all_files"
 
 def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
     """Check if a violation should be bypassed"""
@@ -34,11 +38,9 @@ def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_r
             continue
         # Check line-specific bypass
         rule_lines = rule.get('lines', [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -91,6 +93,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
             content = f.read()
             lines = content.split('\n')
     except Exception as e:
+        logger.info("Cannot read %s: %s", path, e)
         return {
             'passed': False,
             'checks': [{'name': 'File readable', 'passed': False, 'message': f'Error reading file: {e}'}],
@@ -437,10 +440,10 @@ def check_no_business_logic(content: str, lines: List[str], module_path: str) ->
             })
 
     except SyntaxError:
-        # If file has syntax errors, skip this check
+        logger.info("Skipped business logic check: SyntaxError in %s", module_path)
         return None
     except Exception:
-        # If AST parsing fails, skip this check
+        logger.info("Skipped business logic check: parse error in %s", module_path)
         return None
 
     if violations:
@@ -531,6 +534,7 @@ def check_thin_orchestration(content: str, module_path: str, bypass_rules: list 
     try:
         tree = ast.parse(content, filename=module_path)
     except SyntaxError:
+        logger.info("Skipped orchestration check: SyntaxError in %s", module_path)
         return None
 
     # Find all top-level function definitions
@@ -549,7 +553,7 @@ def check_thin_orchestration(content: str, module_path: str, bypass_rules: list 
                 continue
 
             # Skip thin wrappers (small functions are orchestration, not implementation)
-            func_lines = node.end_lineno - node.lineno + 1 if hasattr(node, 'end_lineno') else 0
+            func_lines = (node.end_lineno - node.lineno + 1) if node.end_lineno is not None else 0
             if func_lines <= THIN_WRAPPER_MAX_LINES:
                 continue
 

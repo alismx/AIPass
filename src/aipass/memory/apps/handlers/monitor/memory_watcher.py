@@ -30,6 +30,9 @@ if TYPE_CHECKING:
     from watchdog.observers import Observer as _ObserverType
     from watchdog.events import FileSystemEventHandler as _HandlerType
 
+# Temporary logger for module-level import guards (overwritten below by get_system_logger)
+logger = logging.getLogger(__name__)
+
 try:
     from watchdog.observers import Observer
     from watchdog.events import FileSystemEventHandler
@@ -38,6 +41,7 @@ except ImportError:
     WATCHDOG_AVAILABLE = False
     Observer = None
     FileSystemEventHandler = object  # type: ignore[assignment,misc]
+    logger.info("Optional dependency 'watchdog' not available")
 
 # Handler imports (relative within package)
 from aipass.memory.apps.handlers.tracking.line_counter import update_line_count
@@ -95,8 +99,8 @@ def _get_rollover_threshold(branch_name: str, file_path: Path | None = None) -> 
                 file_limit = metadata.get('limits', {}).get('max_lines')
                 if file_limit is not None:
                     return file_limit
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[memory_watcher] Failed to read file-level threshold from {file_path}: {e}")
 
     # 2. Check per-branch config override
     config_path = _MEMORY_ROOT / "config" / "memory_bank.config.json"
@@ -114,8 +118,8 @@ def _get_rollover_threshold(branch_name: str, file_path: Path | None = None) -> 
         if default_limit is not None:
             return default_limit
 
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[memory_watcher] Failed to read rollover config: {e}")
 
     # 4. Final fallback
     return 600
@@ -191,8 +195,8 @@ def check_and_rollover() -> Dict[str, Any]:
                                 lines_synced += 1
                                 # Re-read actual line count after metadata update
                                 line_count = len(memory_file.read_text(encoding='utf-8').splitlines())
-                    except Exception:
-                        pass  # Non-critical - sync is best-effort
+                    except Exception as e:
+                        logger.warning(f"[memory_watcher] Non-critical metadata sync failed for {memory_file}: {e}")
 
                     if line_count > threshold:
                         results['files_over_limit'].append({
@@ -200,8 +204,8 @@ def check_and_rollover() -> Dict[str, Any]:
                             'lines': line_count,
                             'threshold': threshold
                         })
-                except Exception:
-                    pass  # Skip files we can't read
+                except Exception as e:
+                    logger.warning(f"[memory_watcher] Failed to read memory file {memory_file}: {e}")
 
     results['lines_synced'] = lines_synced
 
@@ -215,6 +219,7 @@ def check_and_rollover() -> Dict[str, Any]:
         except ImportError:
             logger.warning("Rollover handler not available")
         except Exception as e:
+            logger.error(f"[memory_watcher] Rollover execution failed: {e}")
             results['rollover_error'] = str(e)
             results['success'] = False
 
@@ -252,7 +257,8 @@ def _check_memory_pool() -> Dict[str, Any]:
         with open(config_path) as f:
             config = json.load(f)
         pool_config = config.get('memory_pool', {})
-    except Exception:
+    except Exception as exc:
+        logger.warning(f"[memory_watcher] Could not load memory pool config: {exc}")
         return {'success': False, 'error': 'Could not load config'}
 
     # Check if enabled
@@ -290,6 +296,7 @@ def _check_memory_pool() -> Dict[str, Any]:
             'action': 'processed'
         }
     except Exception as e:
+        logger.warning(f"[memory_watcher] Memory pool processing failed: {e}")
         return {'success': False, 'error': str(e), 'action': 'failed'}
 
 
@@ -313,7 +320,8 @@ def _check_plans() -> Dict[str, Any]:
         with open(config_path, 'r', encoding='utf-8') as f:
             config = json.load(f)
         plans_config = config.get('plans', {})
-    except Exception:
+    except Exception as exc:
+        logger.warning(f"[memory_watcher] Could not load plans config: {exc}")
         return {'success': False, 'error': 'Could not load config'}
 
     # Check if enabled
@@ -344,8 +352,8 @@ def _check_plans() -> Dict[str, Any]:
     if manifest_path.exists():
         try:
             manifest = json.loads(manifest_path.read_text(encoding='utf-8'))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[memory_watcher] Failed to read plans manifest: {e}")
 
     pending = [f for f in files if f.name not in manifest]
     pending_count = len(pending)
@@ -367,6 +375,7 @@ def _check_code_archive() -> Dict[str, Any]:
         from aipass.memory.apps.handlers.archive.indexer import check_for_new_files
         return check_for_new_files()
     except Exception as e:
+        logger.warning(f"[memory_watcher] Code archive check failed: {e}")
         return {'success': False, 'error': str(e)}
 
 
@@ -415,7 +424,8 @@ def _get_branch_paths() -> list[Path]:
                     paths.append(branch_path)
 
             return paths
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[memory_watcher] Failed to read branch paths from registry: {e}")
         return []
 
 
@@ -546,8 +556,8 @@ def start_memory_watcher() -> Dict[str, Any]:
         try:
             new_observer.schedule(watcher, str(branch_path), recursive=False)
             watched_paths.append(str(branch_path))
-        except Exception:
-            pass  # Skip invalid paths silently
+        except Exception as e:
+            logger.warning(f"[memory_watcher] Failed to schedule watcher for {branch_path}: {e}")
 
     # Start observer
     new_observer.start()
@@ -652,6 +662,7 @@ if __name__ == "__main__":
                 while True:
                     time.sleep(1)
             except KeyboardInterrupt:
+                logger.info("[memory_watcher] Watcher stopped by user (KeyboardInterrupt)")
                 print("\nStopping...")
                 stop_memory_watcher()
         else:

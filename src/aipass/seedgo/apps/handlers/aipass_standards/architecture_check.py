@@ -20,14 +20,18 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from aipass.seedgo.apps.handlers.bypass.ignore_handler import get_template_ignore_patterns
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
+
+# Audit scope: all Python files
+AUDIT_SCOPE = "all_files"
 
 PACK_ROOT = Path(__file__).resolve().parent.parent.parent  # aipass_standards/ -> handlers/ -> apps/ -> seedgo/
 
 # Spawn templates directory — live-scanned, class-aware
-# PACK_ROOT = seedgo/apps, so .parent.parent = src/aipass/
-AIPASS_ROOT = PACK_ROOT.parent.parent  # seedgo/apps -> seedgo -> src/aipass/
-SPAWN_TEMPLATES_DIR = AIPASS_ROOT / "spawn" / "templates"
+# PACK_ROOT = seedgo/apps/, so .parent.parent = src/aipass/
+_SRC_PKG_ROOT = PACK_ROOT.parent.parent  # apps/ -> seedgo/ -> src/aipass/
+SPAWN_TEMPLATES_DIR = _SRC_PKG_ROOT / "spawn" / "templates"
 
 
 def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
@@ -44,11 +48,9 @@ def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_r
             continue
         # Check line-specific bypass
         rule_lines = rule.get('lines', [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -101,6 +103,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
             content = f.read()
             lines = content.split('\n')
     except Exception as e:
+        logger.info("Cannot read %s: %s", path, e)
         return {
             'passed': False,
             'checks': [{'name': 'File readable', 'passed': False, 'message': f'Error reading file: {e}'}],
@@ -361,6 +364,7 @@ def _load_ignore_patterns(template_path: Path) -> Dict:
                 "ignore_patterns": data.get("ignore_patterns", [])
             }
     except Exception:
+        logger.info("Cannot read ignore config: %s", ignore_file)
         return {"ignore_files": [], "ignore_patterns": []}
 
 
@@ -398,6 +402,7 @@ def _get_citizen_class(branch_path: Path) -> Optional[str]:
             data = json.load(f)
             return data.get("identity", {}).get("citizen_class")
     except Exception:
+        logger.info("Cannot read passport: %s", passport)
         return None
 
 

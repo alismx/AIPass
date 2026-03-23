@@ -255,6 +255,7 @@ def process_plans_command() -> None:
         from ..handlers.intake.plans_processor import process_plans
         result = process_plans()
     except Exception as e:
+        logger.error(f"[rollover] Plan processing failed: {e}")
         error(f"Plan processing failed: {e}")
         return
 

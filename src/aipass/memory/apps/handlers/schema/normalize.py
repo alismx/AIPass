@@ -51,6 +51,7 @@ def normalize_memory_file(file_path: Path, dry_run: bool = False) -> Dict[str, A
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
     except Exception as e:
+        logger.warning(f"[normalize] Failed to read {file_path}: {e}")
         return {'success': False, 'error': f"Failed to read: {e}"}
 
     changes = []
@@ -109,8 +110,8 @@ def normalize_memory_file(file_path: Path, dry_run: bool = False) -> Dict[str, A
             with open(file_path, 'r', encoding='utf-8') as f:
                 metadata['status']['current_lines'] = len(f.readlines())
             changes.append("Added current_lines count")
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[normalize] Failed to count lines in {file_path}: {e}")
 
     if 'last_health_check' not in metadata['status']:
         metadata['status']['last_health_check'] = datetime.now().strftime("%Y-%m-%d")
@@ -123,6 +124,7 @@ def normalize_memory_file(file_path: Path, dry_run: bool = False) -> Dict[str, A
                 json.dump(data, f, indent=2, ensure_ascii=False)
                 f.write('\n')
         except Exception as e:
+            logger.error(f"[normalize] Failed to write {file_path}: {e}")
             return {'success': False, 'error': f"Failed to write: {e}"}
 
     json_handler.log_operation("normalize_memory_file", {"file": file_path.name, "changes": len(changes), "success": True})
@@ -156,6 +158,7 @@ def normalize_all_memory_files(dry_run: bool = False) -> Dict[str, Any]:
             registry = json.load(f)
             branches = registry.get('branches', [])
     except Exception as e:
+        logger.warning(f"[normalize] Failed to read registry: {e}")
         return {'success': False, 'error': f"Failed to read registry: {e}"}
 
     results = {

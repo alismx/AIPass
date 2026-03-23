@@ -105,7 +105,8 @@ def _read_json(filepath: Path) -> Optional[Dict[str, Any]]:
     try:
         with open(filepath, 'r', encoding='utf-8') as f:
             return json.load(f)
-    except (json.JSONDecodeError, OSError):
+    except (json.JSONDecodeError, OSError) as e:
+        logger.warning("[daemon] Failed to read JSON %s: %s", filepath, e)
         return None
 
 
@@ -116,7 +117,8 @@ def _write_json(filepath: Path, data: Dict[str, Any]) -> bool:
         with open(filepath, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         return True
-    except OSError:
+    except OSError as e:
+        logger.warning("[daemon] Failed to write JSON %s: %s", filepath, e)
         return False
 
 
@@ -148,7 +150,8 @@ def _set_session_name(branch_path: Path, name: str) -> bool:
         with open(latest, "a", encoding="utf-8") as f:
             f.write(entry + "\n")
         return True
-    except OSError:
+    except OSError as e:
+        logger.warning("[daemon] Failed to write session name for %s: %s", branch_path, e)
         return False
 
 
@@ -167,7 +170,8 @@ def _check_lock(branch_path: Path) -> Optional[Dict[str, Any]]:
                 return data  # Process alive, lock valid
             except ProcessLookupError:
                 logger.info("Lock PID %s dead — stale lock cleanup needed", pid)
-            except PermissionError:
+            except PermissionError as e:
+                logger.warning("[daemon] Lock PID %s permission error: %s", pid, e)
                 return data  # Process exists, can't signal
         # Stale lock — check age (10 min timeout)
         ts = data.get("timestamp", "")
@@ -212,9 +216,11 @@ def _acquire_lock(branch_path: Path, pid: int) -> tuple[bool, str]:
         finally:
             os.close(fd)
         return True, "Lock acquired"
-    except FileExistsError:
+    except FileExistsError as e:
+        logger.warning("[daemon] Lock file already exists at %s: %s", lock_file, e)
         return False, "Lock file already exists"
     except OSError as e:
+        logger.warning("[daemon] Lock acquisition failed at %s: %s", lock_file, e)
         return False, f"Lock failed: {e}"
 
 
@@ -302,7 +308,8 @@ def _remove_pid_file() -> None:
             stored_pid = int(DAEMON_PID_FILE.read_text().strip())
             if stored_pid == os.getpid():
                 DAEMON_PID_FILE.unlink(missing_ok=True)
-    except (ValueError, OSError):
+    except (ValueError, OSError) as e:
+        logger.warning("[daemon] Error reading PID file, removing: %s", e)
         DAEMON_PID_FILE.unlink(missing_ok=True)
 
 
@@ -354,15 +361,6 @@ def check_inbox_for_dispatch(branch_path: Path) -> Optional[Dict[str, Any]]:
                 logger.info("Unparseable timestamp for email %s", msg.get("id", "?"))
                 continue
     return None
-
-
-def count_new_emails(branch_path: Path) -> int:
-    """Count new (unread) emails in a branch's inbox."""
-    inbox_file = branch_path / ".ai_mail.local" / "inbox.json"
-    inbox_data = _read_json(inbox_file)
-    if inbox_data is None:
-        return 0
-    return sum(1 for m in inbox_data.get("messages", []) if m.get("status") == "new")
 
 
 def spawn_agent(

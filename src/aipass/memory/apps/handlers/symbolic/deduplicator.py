@@ -24,6 +24,7 @@ import re
 from typing import Dict, List, Any, Optional
 from pathlib import Path
 
+from aipass.prax import logger
 from aipass.memory.apps.handlers.json import json_handler
 
 # memory/ root resolved from symbolic/deduplicator.py
@@ -153,7 +154,8 @@ def deduplicate_fragment(
         with urllib.request.urlopen(req, timeout=30) as resp:
             result = json.loads(resp.read().decode("utf-8"))
         content = result.get("choices", [{}])[0].get("message", {}).get("content", "")
-    except (urllib.error.URLError, json.JSONDecodeError, KeyError, IndexError):
+    except (urllib.error.URLError, json.JSONDecodeError, KeyError, IndexError) as e:
+        logger.warning(f"[deduplicator] LLM dedup request failed, defaulting to ADD: {e}")
         return {
             'success': True,
             'action': 'ADD',
@@ -320,7 +322,8 @@ def _parse_dedup_response(raw_text: str) -> Optional[Dict[str, Any]]:
         result = json.loads(text)
         if isinstance(result, dict) and _validate_dedup_result(result):
             return result
-    except (json.JSONDecodeError, ValueError):
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.warning(f"[deduplicator] Direct JSON parse failed, trying fallback: {e}")
         pass
 
     # Attempt 2: Strip markdown fences
@@ -330,7 +333,8 @@ def _parse_dedup_response(raw_text: str) -> Optional[Dict[str, Any]]:
             result = json.loads(match.group(1).strip())
             if isinstance(result, dict) and _validate_dedup_result(result):
                 return result
-        except (json.JSONDecodeError, ValueError):
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"[deduplicator] Markdown-fenced JSON parse failed, trying fallback: {e}")
             pass
 
     # Attempt 3: Find JSON object in text
@@ -340,7 +344,8 @@ def _parse_dedup_response(raw_text: str) -> Optional[Dict[str, Any]]:
             result = json.loads(match.group(0))
             if isinstance(result, dict) and _validate_dedup_result(result):
                 return result
-        except (json.JSONDecodeError, ValueError):
+        except (json.JSONDecodeError, ValueError) as e:
+            logger.warning(f"[deduplicator] Regex-extracted JSON parse failed: {e}")
             pass
 
     return None

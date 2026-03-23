@@ -52,6 +52,7 @@ def extract_file_info(file_path: Path) -> Dict[str, Any]:
         try:
             tree = ast.parse(content)
         except SyntaxError:
+            logger.info(f"[indexer] Syntax error parsing {file_path.name}, skipping AST extraction")
             return {
                 'filename': file_path.name,
                 'path': str(file_path.relative_to(CODE_ARCHIVE_PATH)),
@@ -85,6 +86,7 @@ def extract_file_info(file_path: Path) -> Dict[str, Any]:
             'indexed_at': datetime.now().isoformat()
         }
     except Exception as e:
+        logger.warning(f"[indexer] Failed to extract file info from {file_path.name}: {e}")
         return {
             'filename': file_path.name,
             'path': str(file_path),
@@ -120,8 +122,8 @@ def load_index() -> Dict[str, Any]:
         try:
             with open(INDEX_PATH) as f:
                 return json.load(f)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"[indexer] Failed to load index file: {e}")
 
     return {
         'metadata': {
@@ -155,6 +157,7 @@ def save_index(index: Dict[str, Any]) -> Dict[str, Any]:
 
         return {'success': True}
     except Exception as e:
+        logger.error(f"[indexer] Failed to save index: {e}")
         return {'success': False, 'error': str(e)}
 
 

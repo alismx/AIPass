@@ -32,6 +32,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, List, Tuple
 
+from aipass.prax import logger
+
 # Google API imports (optional — not installed in every environment)
 try:
     from googleapiclient.discovery import build  # type: ignore[import-unresolved]
@@ -40,7 +42,8 @@ try:
     from google.oauth2.credentials import Credentials  # type: ignore[import-unresolved]
     from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore[import-unresolved]
     GOOGLE_API_AVAILABLE = True
-except ImportError:
+except ImportError as e:
+    logger.info(f"Google API libraries not available: {e}")
     GOOGLE_API_AVAILABLE = False
     build = None  # type: ignore[assignment]
     MediaFileUpload = None  # type: ignore[assignment]
@@ -111,11 +114,12 @@ def _atomic_json_write(file_path: Path, data: Any):
         with os.fdopen(fd, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2)
         os.replace(tmp_path, str(file_path))
-    except Exception:
+    except Exception as e:
+        logger.warning(f"Atomic JSON write failed for {file_path}: {e}")
         try:
             os.unlink(tmp_path)
-        except OSError:
-            pass
+        except OSError as e:
+            logger.info(f"Failed to clean up temp file {tmp_path}: {e}")
         raise
 
 
@@ -175,7 +179,7 @@ class GoogleDriveSync:
             try:
                 creds = Credentials.from_authorized_user_file(str(self.creds_path), SCOPES)  # type: ignore[union-attr]
             except Exception as e:
-
+                logger.warning(f"Failed to load credentials from {self.creds_path}: {e}")
                 creds = None
 
         # If no valid credentials, start OAuth flow
@@ -185,7 +189,7 @@ class GoogleDriveSync:
                     creds.refresh(Request())  # type: ignore[misc]
 
                 except Exception as e:
-
+                    logger.warning(f"Failed to refresh credentials: {e}")
                     creds = None
 
             if not creds:
@@ -204,7 +208,7 @@ class GoogleDriveSync:
                     creds = flow.run_local_server(port=0)
 
                 except Exception as e:
-
+                    logger.warning(f"OAuth flow failed: {e}")
                     _log_operation("authenticate", {"message": f"OAuth flow failed: {e}", "error_details": {"exception_type": type(e).__name__, "stack_trace": str(e)}}, success=False)
                     return False
 
@@ -218,7 +222,7 @@ class GoogleDriveSync:
                 f.write(creds.to_json())
 
         except Exception as e:
-            pass
+            logger.warning(f"Failed to save credentials to {self.creds_path}: {e}")
 
         # Build Drive service
         try:
@@ -237,7 +241,7 @@ class GoogleDriveSync:
 
             return True
         except Exception as e:
-
+            logger.warning(f"Failed to build Drive service: {e}")
             _log_operation("authenticate", {"message": f"Failed to build Drive service: {e}", "error_details": {"exception_type": type(e).__name__, "stack_trace": str(e)}}, success=False)
             return False
 
@@ -266,7 +270,7 @@ class GoogleDriveSync:
                 'percent_used': percent_used
             }
         except Exception as e:
-
+            logger.warning(f"Failed to get storage quota: {e}")
             return None
 
     def _verify_folder_id(self, folder_id: str) -> bool:
@@ -278,7 +282,8 @@ class GoogleDriveSync:
                 self.drive_service.files().get(fileId=folder_id, fields='id,trashed')
             )
             return not result.get('trashed', False)
-        except Exception:
+        except Exception as e:
+            logger.warning(f"Failed to verify folder {folder_id}: {e}")
             return False
 
     def get_or_create_backup_folder(self) -> Optional[str]:
@@ -343,6 +348,7 @@ class GoogleDriveSync:
             return self.backup_folder_id
 
         except Exception as e:
+            logger.warning(f"Backup folder setup failed: {e}")
             self.last_error = f"Backup folder setup failed: {e}"
             return None
 
@@ -392,6 +398,7 @@ class GoogleDriveSync:
                 return project_folder_id
 
             except Exception as e:
+                logger.warning(f"Failed to get or create project folder '{project_name}': {e}")
                 return None
 
     def get_or_create_nested_folder(self, parent_folder_id: str, folder_path: str) -> Optional[str]:
@@ -461,6 +468,7 @@ class GoogleDriveSync:
                 return current_parent_id
 
             except Exception as e:
+                logger.warning(f"Failed to create nested folder '{folder_path}': {e}")
                 return parent_folder_id  # Fallback to parent folder
 
     def upload_backup_file(self, local_file: Path, project_name: str, note: str = "", backup_root: Optional[Path] = None) -> bool:
@@ -572,7 +580,7 @@ class GoogleDriveSync:
             return True
 
         except Exception as e:
-
+            logger.warning(f"Failed to upload {local_file.name}: {e}")
             # Update failure statistics (ensure statistics exists first)
             if "statistics" not in self.data:
                 self.data["statistics"] = {
@@ -608,7 +616,7 @@ class GoogleDriveSync:
             return files[0] if files else None
 
         except Exception as e:
-
+            logger.warning(f"Failed to find existing file '{filename}' in folder {parent_folder_id}: {e}")
             return None
 
     def _load_file_tracker(self) -> Dict[str, Dict[str, Any]]:
@@ -697,7 +705,7 @@ class GoogleDriveSync:
             return False
 
         except Exception as e:
-
+            logger.warning(f"Failed to check upload status for {local_file}: {e}")
             return True  # On error, assume file needs upload
 
     def _update_file_tracker(self, local_file: Path, backup_root: Path, drive_file_id: str):
@@ -726,7 +734,7 @@ class GoogleDriveSync:
             # Tracker updated in-memory; disk save is batched by sync_backup_files()
 
         except Exception as e:
-            pass
+            logger.warning(f"Failed to update file tracker for {local_file}: {e}")
 
     def _clean_file_tracker(self, existing_files: set):
         """Remove tracker entries for files that no longer exist"""
@@ -743,7 +751,7 @@ class GoogleDriveSync:
                 self._save_file_tracker()
 
         except Exception as e:
-            pass
+            logger.warning(f"Failed to clean file tracker: {e}")
 
     def prepare_sync(self, backup_dir: Path, force_sync: bool = False, limit: int = 0):
         """Scan files and determine what needs uploading. No API calls.
@@ -809,7 +817,7 @@ class GoogleDriveSync:
             return False
 
         except Exception as e:
-
+            logger.warning(f"Failed to check if file needs upload for {local_file}: {e}")
             return True  # Upload on error to be safe
 
     def sync_backup_files(self, backup_dir: Path, project_name: str, note: str = "", force_sync: bool = False,

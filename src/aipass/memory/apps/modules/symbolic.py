@@ -169,8 +169,8 @@ def create_fragment(
             trigger.fire('fragment_created',
                         fragment_id=result['fragment'].get('id'),
                         source_branch=source_branch or 'unknown')
-        except Exception:
-            pass  # Trigger optional
+        except Exception as e:
+            logger.warning(f"[symbolic] Trigger fire for fragment_created failed: {e}")
     return result
 
 
@@ -184,8 +184,8 @@ def store_fragment(
         try:
             from aipass.trigger.apps.modules.core import trigger
             trigger.fire('fragment_stored', fragment_id=result.get('fragment_id'))
-        except Exception:
-            pass  # Trigger optional
+        except Exception as e:
+            logger.warning(f"[symbolic] Trigger fire for fragment_stored failed: {e}")
     return result
 
 
@@ -328,8 +328,8 @@ def extract_and_store_llm(
                 component="memory",
                 severity="high"
             )
-        except Exception:
-            pass  # Trigger unavailable — prax log is the fallback
+        except Exception as e:
+            logger.warning(f"[symbolic] Error report trigger unavailable: {e}")
         return {
             'success': False,
             'processed': 0,
@@ -418,6 +418,7 @@ def extract_and_store_llm(
                 skipped += 1
 
         except Exception as e:
+            logger.error(f"[symbolic] Fragment processing error: {e}")
             errors.append(f"Fragment processing error: {e}")
 
     total_processed = added + updated + skipped
@@ -1004,6 +1005,7 @@ def search_fragments_cli(args: List[str]) -> None:
             try:
                 n_results = int(args[i + 1])
             except ValueError:
+                logger.warning(f"[symbolic] Invalid --n argument: {args[i + 1]}")
                 console.print(f"[red]Error:[/red] Invalid number: {args[i + 1]}")
                 return
             i += 2
@@ -1408,6 +1410,7 @@ def _parse_jsonl_to_chat_history(jsonl_path: Path) -> List[Dict[str, Any]]:
                 try:
                     entry = json.loads(line)
                 except json.JSONDecodeError:
+                    logger.info("[symbolic] Skipping malformed JSONL line during bootstrap parse")
                     continue
 
                 msg_type = entry.get('type', '')
@@ -1638,8 +1641,8 @@ def bootstrap_from_jsonl(max_sessions: int = 8) -> None:
         )
         col = client.get_collection('symbolic_fragments')
         console.print(f"  [bold green]Collection total: {col.count()} fragments[/bold green]")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[symbolic] Failed to read ChromaDB collection count: {e}")
 
     console.print()
     logger.info(

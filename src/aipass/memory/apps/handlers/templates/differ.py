@@ -223,6 +223,7 @@ def diff_template_vs_branch(branch_path: str | Path) -> dict:
             with open(path, 'r', encoding='utf-8') as f:
                 templates[name] = json.load(f)
         except (json.JSONDecodeError, IOError) as e:
+            logger.warning(f"[differ] Failed to load template {path.name}: {e}")
             result["errors"].append(f"Failed to load template {path.name}: {e}")
             return result
 
@@ -241,6 +242,7 @@ def diff_template_vs_branch(branch_path: str | Path) -> dict:
             with open(f, 'r', encoding='utf-8') as fh:
                 current = json.load(fh)
         except (json.JSONDecodeError, IOError) as e:
+            logger.warning(f"[differ] Failed to read {f.name}: {e}")
             result["errors"].append(f"Failed to read {f.name}: {e}")
             continue
 
@@ -279,6 +281,7 @@ def diff_template_vs_branch(branch_path: str | Path) -> dict:
             with open(f, 'r', encoding='utf-8') as fh:
                 current = json.load(fh)
         except (json.JSONDecodeError, IOError) as e:
+            logger.warning(f"[differ] Failed to read {f.name}: {e}")
             result["errors"].append(f"Failed to read {f.name}: {e}")
             continue
 

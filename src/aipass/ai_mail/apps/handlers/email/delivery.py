@@ -303,6 +303,7 @@ def deliver_email_to_branch(
             with open(inbox_file, 'w', encoding='utf-8') as f:
                 json.dump(inbox_data_init, f, indent=2)
         except Exception as e:
+            logger.warning("[delivery] auto-provision inbox failed for %s: %s", to_branch, e)
             return False, f"Failed to auto-provision inbox for {to_branch}: {e}"
 
     # Lock inbox.json for the entire read-modify-write cycle
@@ -312,6 +313,7 @@ def deliver_email_to_branch(
                 with open(inbox_file, 'r', encoding='utf-8') as f:
                     inbox_data = json.load(f)
             except Exception as e:
+                logger.warning("[delivery] failed to read inbox %s: %s", inbox_file, e)
                 return False, f"Failed to read inbox: {e}"
 
             # Auto-migrate old inbox format {"inbox": []} -> v2 schema
@@ -351,9 +353,11 @@ def deliver_email_to_branch(
                 with open(inbox_file, 'w', encoding='utf-8') as f:
                     json.dump(inbox_data, f, indent=2, ensure_ascii=False)
             except Exception as e:
+                logger.warning("[delivery] failed to write inbox %s: %s", inbox_file, e)
                 return False, f"Failed to write inbox: {e}"
 
     except OSError as e:
+        logger.warning("[delivery] failed to acquire inbox lock for %s: %s", to_branch, e)
         return False, f"Failed to acquire inbox lock: {e}"
 
     # Send desktop notification for new email
@@ -368,28 +372,6 @@ def deliver_email_to_branch(
             return True, ""
 
     return True, ""
-
-
-def _get_summary_file_path(branch_path: Path) -> Path:
-    """
-    Get the summary file path for a branch.
-
-    Pattern: [BRANCH_NAME].ai_mail.json
-    Example: src/aipass/drone/DRONE.ai_mail.json
-
-    Args:
-        branch_path: Path to branch directory
-
-    Returns:
-        Path to summary file
-    """
-    branch_name = branch_path.name.upper()
-
-    if branch_path == Path("/") or branch_path == _REPO_ROOT:
-        branch_name = "AIPASS"
-
-    summary_file = branch_path / f"{branch_name}.ai_mail.json"
-    return summary_file
 
 
 def _update_summary_file(summary_file: Path, message: Dict, total: int, unread: int) -> None:

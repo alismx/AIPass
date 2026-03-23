@@ -84,10 +84,11 @@ try:
         get_file_tracker_stats,
         test_drive_connection as _test_drive_connection,
     )
-except ImportError:
+except ImportError as e:
     _clear_file_tracker_handler = None  # type: ignore
     get_file_tracker_stats = None  # type: ignore
     _test_drive_connection = None  # type: ignore
+    logger.info(f"[google_drive_sync] Drive sync ops not available: {e}")
 
 from aipass.backup.apps.handlers.operations.sync_test_ops import (
     create_sync_test_files,

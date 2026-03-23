@@ -80,7 +80,8 @@ def _read_central_stats() -> Dict[str, Any]:
             "total_archives": stats.get("total_archives", 0),
             "last_rollover": stats.get("last_rollover", "")
         }
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[dashboard_push] Failed to read central stats: {e}")
         return {"total_vectors": 0, "total_archives": 0, "last_rollover": ""}
 
 
@@ -104,7 +105,8 @@ def _get_collections_count() -> int:
         count = cursor.fetchone()[0]
         conn.close()
         return count
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[dashboard_push] Failed to count collections: {e}")
         return 0
 
 
@@ -125,7 +127,8 @@ def _get_rollover_config() -> Dict[str, Any]:
             "defaults": rollover.get("defaults", {"max_lines": 600, "buffer": 100}),
             "per_branch": rollover.get("per_branch", {})
         }
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[dashboard_push] Failed to load rollover config: {e}")
         return {"defaults": {"max_lines": 600, "buffer": 100}, "per_branch": {}}
 
 
@@ -237,11 +240,13 @@ def _find_branches_near_rollover() -> List[Dict[str, Any]]:
                             "current_lines": current_lines,
                             "max_lines": max_lines
                         })
-                except Exception:
+                except Exception as e:
                     # Skip files that can't be read
+                    logger.warning(f"[dashboard_push] Failed to read memory file {memory_file}: {e}")
                     continue
 
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[dashboard_push] Failed to scan branches for rollover: {e}")
         return near_rollover  # Return partial results on registry read failure
 
     # Sort by lines_remaining ascending (most urgent first)
@@ -262,7 +267,8 @@ def _get_template_version() -> str:
 
         data = json_loads(TEMPLATE_VERSION_FILE.read_text(encoding="utf-8"))
         return data.get("version", "unknown")
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[dashboard_push] Failed to read template version: {e}")
         return "unknown"
 
 
@@ -283,6 +289,7 @@ def _get_last_rollover_info(central_stats: Dict) -> Dict[str, str]:
             dt = datetime.fromisoformat(last_rollover_ts)
             return {"date": dt.strftime("%Y-%m-%d")}
         except (ValueError, TypeError):
+            logger.info(f"[dashboard_push] Could not parse rollover timestamp: {last_rollover_ts}")
             return {"date": last_rollover_ts}
     return {"date": "never"}
 
@@ -309,7 +316,8 @@ def _get_all_branch_paths() -> List[Path]:
             if branch_path.exists():
                 paths.append(branch_path)
         return paths
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[dashboard_push] Failed to get branch paths: {e}")
         return []
 
 
@@ -401,7 +409,8 @@ def _write_section_to_all_branches(section_name: str, section_data: Dict,
         if result.returncode == 0 and result.stdout.strip().isdigit():
             return int(result.stdout.strip())
         return 0
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[dashboard_push] Failed to write section to branches: {e}")
         return 0
 
 
@@ -435,7 +444,8 @@ def push_memory_bank_dashboard() -> bool:
 
         return success_count > 0
 
-    except Exception:
+    except Exception as e:
+        logger.error(f"[dashboard_push] Failed to push dashboard: {e}")
         return False
 
 

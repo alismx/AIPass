@@ -39,7 +39,6 @@ docs.local/
 .archive/
 .backup/
 .seed/
-.seedgo/
 .spawn/
 
 # Module runtime JSON (config/data/log per command)

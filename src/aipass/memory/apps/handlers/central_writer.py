@@ -89,7 +89,8 @@ def count_chroma_vectors() -> int:
 
         return total
 
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[central_writer] Failed to count chroma vectors: {e}")
         return 0
 
 
@@ -112,6 +113,7 @@ def count_archive_files() -> int:
         return len(archive_files)
 
     except Exception as e:
+        logger.error(f"[central_writer] Failed to count archive files: {e}")
         raise Exception(f"Failed to count archive files: {e}")
 
 
@@ -141,6 +143,7 @@ def get_last_rollover_timestamp() -> str:
         return mtime.isoformat()
 
     except Exception as e:
+        logger.error(f"[central_writer] Failed to get rollover timestamp: {e}")
         raise Exception(f"Failed to get rollover timestamp: {e}")
 
 
@@ -195,6 +198,7 @@ def read_central_file() -> Dict[str, Any]:
             return json_load(f)
 
     except Exception as e:
+        logger.error(f"[central_writer] Failed to read central file: {e}")
         raise Exception(f"Failed to read central file: {e}")
 
 
@@ -216,6 +220,7 @@ def write_central_file(data: Dict[str, Any]) -> None:
             json_dump(data, f, indent=2, ensure_ascii=False)
 
     except Exception as e:
+        logger.error(f"[central_writer] Failed to write central file: {e}")
         raise Exception(f"Failed to write central file: {e}")
 
 
@@ -276,6 +281,7 @@ def update_central(verbose: bool = False) -> Dict[str, Any]:
         return result
 
     except Exception as e:
+        logger.error(f"[central_writer] Failed to update central: {e}")
         return {
             "success": False,
             "error": str(e)
@@ -303,6 +309,7 @@ def get_current_stats() -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.warning(f"[central_writer] Failed to get current stats: {e}")
         return {
             "success": False,
             "error": str(e)

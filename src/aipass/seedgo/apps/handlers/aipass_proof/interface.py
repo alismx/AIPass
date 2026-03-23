@@ -154,6 +154,7 @@ def scan(pack_dir: Path) -> dict:
             source = check_file.read_text(encoding="utf-8")
             tree = ast.parse(source, filename=str(check_file))
         except SyntaxError as exc:
+            logger.info("Skipped %s: SyntaxError during parse", check_file.name)
             err = f"{check_file.name}: SyntaxError: {exc.msg} (line {exc.lineno})"
             entry["issues"].append(err)
             issues.append(err)

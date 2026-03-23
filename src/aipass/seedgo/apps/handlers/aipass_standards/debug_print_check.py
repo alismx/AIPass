@@ -18,6 +18,7 @@ import re
 from pathlib import Path
 from typing import Dict
 
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
 
 AUDIT_SCOPE = "all_files"
@@ -33,12 +34,7 @@ _DOCTEST_RE = re.compile(r"^\s*(\.\.\.|>>>)\s")
 _TEST_FILE_RE = re.compile(r"^(test_.+|.+_test|conftest)\.py$")
 
 
-def is_bypassed(
-    file_path: str,
-    standard: str,
-    line: int | None = None,
-    bypass_rules: list | None = None,
-) -> bool:
+def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
     """Check if a violation should be bypassed."""
     if not bypass_rules:
         return False
@@ -52,11 +48,9 @@ def is_bypassed(
             continue
         # Check line-specific bypass
         rule_lines = rule.get("lines", [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -95,6 +89,7 @@ def _scan_file(file_path: Path) -> tuple[list[int], str | None]:
     try:
         source = file_path.read_text(encoding="utf-8", errors="ignore")
     except OSError as exc:
+        logger.info("Cannot read %s: %s", file_path, exc)
         return [], f"cannot read: {exc}"
 
     lines = source.splitlines()

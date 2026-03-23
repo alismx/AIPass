@@ -63,6 +63,7 @@ def get_client(db_path: Path):
         try:
             import chromadb
         except ImportError:
+            logger.info("[chroma] chromadb not installed, vector storage unavailable")
             raise ImportError(
                 "chromadb is required for vector storage. "
                 "Install with: pip install chromadb"
@@ -202,7 +203,8 @@ class ChromaService:
                 "exists": True,
                 "vector_count": count
             }
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[chroma] Collection stats lookup failed for '{collection_name}': {e}")
             return {
                 "collection": collection_name,
                 "exists": False,
@@ -323,6 +325,7 @@ def store_vectors(
         }
 
     except Exception as e:
+        logger.error(f"[chroma] Vector storage failed: {e}")
         return {
             'success': False,
             'error': f"Storage failed: {e}"
@@ -350,6 +353,7 @@ def get_collection_stats(branch: str, memory_type: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(f"[chroma] Failed to get collection stats: {e}")
         return {
             'success': False,
             'error': f"Failed to get stats: {e}"
@@ -374,6 +378,7 @@ def list_all_collections() -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(f"[chroma] Failed to list collections: {e}")
         return {
             'success': False,
             'error': f"Failed to list collections: {e}"
@@ -399,6 +404,7 @@ def get_database_info() -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(f"[chroma] Failed to get database info: {e}")
         return {
             'success': False,
             'error': f"Failed to get database info: {e}"
@@ -489,6 +495,7 @@ def search_vectors(
 
             except Exception as e:
                 # Collection might not exist - skip it
+                logger.warning(f"[chroma] Skipping collection '{collection_name}' during search: {e}")
                 continue
 
         # Sort by distance (lower is better)
@@ -503,6 +510,7 @@ def search_vectors(
         }
 
     except Exception as e:
+        logger.error(f"[chroma] Vector search failed: {e}")
         return {
             'success': False,
             'error': f"Search failed: {e}"

@@ -20,6 +20,7 @@ import importlib.util
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
 
 # =============================================================================
@@ -73,6 +74,7 @@ def resolve_branch(branch_arg: str) -> Optional[Dict]:
         content = REGISTRY_PATH.read_text(encoding='utf-8')
         registry = json.loads(content)
     except (json.JSONDecodeError, OSError):
+        logger.info("Cannot read registry for branch resolution: %s", REGISTRY_PATH)
         return None
 
     # Strip @ prefix and normalize
@@ -105,6 +107,7 @@ def get_all_branches() -> List[Dict]:
         registry = json.loads(content)
         return registry.get('branches', [])
     except (json.JSONDecodeError, OSError):
+        logger.info("Cannot read registry for branch listing: %s", REGISTRY_PATH)
         return []
 
 
@@ -133,6 +136,7 @@ def load_generator():
         spec.loader.exec_module(generator)
         return generator
     except Exception:
+        logger.info("Failed to load readme generator module")
         return None
 
 

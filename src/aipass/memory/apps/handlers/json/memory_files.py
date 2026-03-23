@@ -85,18 +85,21 @@ def read_memory_file(file_path: Path) -> Dict[str, Any]:
         }
 
     except json.JSONDecodeError as e:
+        logger.warning(f"[memory_files] Corrupt JSON in {file_path.name}: {e}")
         return {
             'success': False,
             'error': f"Corrupt JSON in {file_path.name}: {e}"
         }
 
     except PermissionError:
+        logger.warning(f"[memory_files] Permission denied reading {file_path.name}")
         return {
             'success': False,
             'error': f"Permission denied reading {file_path.name}"
         }
 
     except Exception as e:
+        logger.warning(f"[memory_files] Failed to read {file_path.name}: {e}")
         return {
             'success': False,
             'error': f"Failed to read {file_path.name}: {e}"
@@ -161,16 +164,19 @@ def write_memory_file(file_path: Path, data: Dict[str, Any]) -> Dict[str, Any]:
 
         except Exception as e:
             # Clean up temp file on failure
+            logger.error(f"[memory_files] Write failed for {file_path.name}, cleaning up temp file: {e}")
             Path(temp_path).unlink(missing_ok=True)
             raise e
 
     except PermissionError:
+        logger.warning(f"[memory_files] Permission denied writing {file_path.name}")
         return {
             'success': False,
             'error': f"Permission denied writing {file_path.name}"
         }
 
     except Exception as e:
+        logger.warning(f"[memory_files] Failed to write {file_path.name}: {e}")
         return {
             'success': False,
             'error': f"Failed to write {file_path.name}: {e}"

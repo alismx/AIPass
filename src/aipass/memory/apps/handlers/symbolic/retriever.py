@@ -24,6 +24,8 @@ Key Functions:
 from typing import Dict, List, Any
 from pathlib import Path
 
+from aipass.prax import logger
+
 # Handler imports (domain-organized, no modules)
 from aipass.memory.apps.handlers.vector import embedder
 from aipass.memory.apps.handlers.symbolic.chroma_client import get_chroma_client
@@ -95,7 +97,8 @@ def search_by_vector(
                 COLLECTION_NAME,
                 embedding_function=None
             )
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[retriever] Collection '{COLLECTION_NAME}' not found for vector search: {e}")
             return {
                 'success': True,
                 'results': [],
@@ -119,6 +122,7 @@ def search_by_vector(
         }
 
     except Exception as e:
+        logger.error(f"[retriever] Vector search failed: {e}")
         return {
             'success': False,
             'error': f"Vector search failed: {e}"
@@ -163,7 +167,8 @@ def search_by_dimensions(
                 COLLECTION_NAME,
                 embedding_function=None
             )
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[retriever] Collection '{COLLECTION_NAME}' not found for dimension search: {e}")
             return {
                 'success': True,
                 'results': [],
@@ -200,6 +205,7 @@ def search_by_dimensions(
         }
 
     except Exception as e:
+        logger.error(f"[retriever] Dimension search failed: {e}")
         return {
             'success': False,
             'error': f"Dimension search failed: {e}"
@@ -245,7 +251,8 @@ def search_by_triggers(
                 COLLECTION_NAME,
                 embedding_function=None
             )
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[retriever] Collection '{COLLECTION_NAME}' not found for trigger search: {e}")
             return {
                 'success': True,
                 'results': [],
@@ -300,6 +307,7 @@ def search_by_triggers(
         }
 
     except Exception as e:
+        logger.error(f"[retriever] Trigger search failed: {e}")
         return {
             'success': False,
             'error': f"Trigger search failed: {e}"

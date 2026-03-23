@@ -98,6 +98,7 @@ def scan(pack_dir: Path) -> dict:
         try:
             public_fns = _parse_public_functions(content_file)
         except SyntaxError as exc:
+            logger.info("Skipped %s: SyntaxError during parse", content_file.name)
             incorrect.append(content_file.name)
             issues.append({
                 "file": content_file.name,

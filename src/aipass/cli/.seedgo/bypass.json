@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2026-03-07T22:43:23.757073",
+    "description": "Standards bypass configuration for this branch"
+  },
+  "bypass": [
+    {
+      "file": "apps/handlers/init/bootstrap.py",
+      "standard": "json_structure",
+      "reason": "Pure Python bootstrap — no branch imports by design"
+    },
+    {
+      "file": "apps/modules/display.py",
+      "standard": "silent_catch",
+      "reason": "Circular import — display.py cannot import prax (prax depends on cli). Silent catches are ImportError guard for optional trigger and __main__ error handler."
+    },
+    {
+      "file": "apps/handlers/json/json_handler.py",
+      "standard": "silent_catch",
+      "reason": "Dependency-free by design — json_handler cannot import prax (circular: json_handler → prax → cli.display → json_handler). Catch regenerates corrupted JSON silently."
+    }
+  ],
+  "notes": {
+    "usage": "Add entries to 'bypass' list to exclude specific violations",
+    "example": {
+      "file": "apps/modules/logger.py",
+      "standard": "cli",
+      "lines": [
+        146,
+        177
+      ],
+      "pattern": "if __name__ == '__main__'",
+      "reason": "Circular dependency - logger cannot import CLI"
+    },
+    "fields": {
+      "file": "Relative path from branch root (required)",
+      "standard": "Standard name: cli, imports, naming, etc. (required)",
+      "lines": "Optional - specific line numbers to bypass",
+      "pattern": "Optional - pattern to match (e.g. 'if __name__')",
+      "reason": "Required - why this bypass exists"
+    }
+  }
+}

@@ -1,6 +1,6 @@
 # Seedgo
 
-**Purpose:** Standards compliance platform for AIPass modules. Audits Python code against checker packs, scores each file, and reports violations. Ships with the `aipass_standards` pack (24 checkers covering imports, architecture, naming, logging, documentation, and more).
+**Purpose:** Standards compliance platform for AIPass modules. Audits Python code against checker packs, scores each file, and reports violations. Ships with the `aipass_standards` pack (33 checkers covering imports, architecture, naming, logging, documentation, and more).
 **Module:** `aipass.seedgo`
 **Created:** 2026-03-05
 
@@ -58,9 +58,11 @@ seedgo/
 │   │   ├── standards_query.py       # Pack-aware content query
 │   │   ├── diagnostics_audit.py     # Pyright diagnostics
 │   │   ├── checklist.py             # Per-file standards checklist (hook consumption)
+│   │   ├── seedgo_proof.py          # Proof orchestrator
+│   │   ├── proof_query.py           # Proof content query
 │   │   └── readme_update.py         # README generation
 │   └── handlers/
-│       ├── aipass_standards/        # Built-in checker pack (17 standards)
+│       ├── aipass_standards/        # Built-in checker pack (33 standards)
 │       │   ├── *_check.py           # Checker implementations (score 0-100)
 │       │   ├── *_content.py         # Queryable standard content
 │       │   └── *.md                 # Standard documentation
@@ -68,6 +70,7 @@ seedgo/
 │       │   ├── branch_audit.py      # Per-branch scoring
 │       │   ├── discovery.py         # Branch discovery
 │       │   └── audit_display.py     # Result formatting
+│       ├── aipass_proof/             # Proof pack (README currency, etc.)
 │       ├── bypass/                  # Bypass system
 │       │   ├── bypass_handler.py    # .seedgo/bypass.json loader
 │       │   └── ignore_handler.py    # .seedgo/ignore patterns
@@ -88,7 +91,7 @@ Checker packs live in `handlers/*_standards/` directories. A valid pack must con
 
 ## Checker Packs
 
-The `aipass_standards` pack checks: architecture, CLI, CLI flags, documentation, encapsulation, error handling, handlers, imports, introspection, JSON structure, log handler, log level, log structure, log visibility, meta, modules, naming, permission flags, readme, shebang, stderr routing, testing, trigger, and diagnostics patterns.
+The `aipass_standards` pack checks: architecture, CLI, CLI flags, commented logger, dead code, debug print, deep nesting, documentation, encapsulation, error handling, handlers, hardcoded key, help text, imports, introspection, JSON structure, log handler, log level, log structure, log visibility, meta, modules, naming, permission flags, readme, shebang, silent catch, stderr routing, test coverage, testing, todo, trigger, and unused function.
 
 New packs go in `handlers/<name>_standards/` — add `*_check.py` files that implement scoring functions, and optionally `*_content.py` files that provide `get_<name>_standards()` for content queries.
 
@@ -109,4 +112,4 @@ New packs go in `handlers/<name>_standards/` — add `*_check.py` files that imp
 
 ---
 
-**Last Updated:** 2026-03-17
+**Last Updated:** 2026-03-22

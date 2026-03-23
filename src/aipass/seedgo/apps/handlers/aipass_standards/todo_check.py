@@ -19,6 +19,7 @@ import re
 from pathlib import Path
 from typing import Dict
 
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
 
 AUDIT_SCOPE = "all_files"
@@ -34,12 +35,7 @@ _TAG_RE = re.compile(
 )
 
 
-def is_bypassed(
-    file_path: str,
-    standard: str,
-    line: int | None = None,
-    bypass_rules: list | None = None,
-) -> bool:
+def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
     """Check if a violation should be bypassed."""
     if not bypass_rules:
         return False
@@ -53,11 +49,9 @@ def is_bypassed(
             continue
         # Check line-specific bypass
         rule_lines = rule.get("lines", [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -129,6 +123,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
     except Exception as e:
+        logger.info("Cannot read %s: %s", path, e)
         return {
             "passed": False,
             "checks": [

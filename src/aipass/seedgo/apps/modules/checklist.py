@@ -129,6 +129,7 @@ def run_checklist(file_path: str, pack_name: str = "aipass") -> List[Dict]:
         try:
             r = checker.check_module(resolved, bypass_rules=bypass_rules)  # type: ignore[attr-defined]
         except Exception as e:
+            logger.info("Checker %s failed on %s: %s", name, resolved, e)
             results.append({"standard": name, "passed": False, "detail": f"Checker error: {e}"})
             continue
 

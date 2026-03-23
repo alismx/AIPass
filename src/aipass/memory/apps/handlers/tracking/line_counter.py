@@ -50,7 +50,8 @@ def _count_physical_lines(file_path: Path) -> int:
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             return len(f.readlines())
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[line_counter] Failed to count lines in {file_path}: {e}")
         return 0
 
 

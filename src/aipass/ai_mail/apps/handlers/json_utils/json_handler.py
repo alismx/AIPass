@@ -19,6 +19,8 @@ from datetime import datetime
 from typing import Dict, List, Any, Optional
 import inspect
 
+from aipass.prax.apps.modules.logger import system_logger as logger
+
 # Infrastructure paths (package-relative)
 _AI_MAIL_ROOT = Path(__file__).resolve().parents[3]  # ai_mail/
 
@@ -48,7 +50,8 @@ def _get_caller_module_name() -> str:
 
         # Fallback
         return "unknown"
-    except Exception:
+    except Exception as e:
+        logger.warning("[json] Failed to detect caller module: %s", e)
         return "unknown"
 
 
@@ -69,7 +72,8 @@ def load_template(json_type: str, module_name: str) -> Any:
         template_str = template_str.replace("{{TIMESTAMP}}", datetime.now().date().isoformat())
 
         return json.loads(template_str)
-    except Exception:
+    except Exception as e:
+        logger.warning("[json] Failed to load template: %s", e)
         return None
 
 
@@ -112,8 +116,8 @@ def ensure_json_exists(module_name: str, json_type: str) -> bool:
 
             if validate_json_structure(data, json_type):
                 return True
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[json] Failed to validate existing JSON for %s: %s", module_name, e)
 
     template = load_template(json_type, module_name)
     if template is None:
@@ -123,7 +127,8 @@ def ensure_json_exists(module_name: str, json_type: str) -> bool:
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(template, f, indent=2, ensure_ascii=False)
         return True
-    except Exception:
+    except Exception as e:
+        logger.warning("[json] Failed to write JSON template for %s: %s", module_name, e)
         return False
 
 
@@ -137,7 +142,8 @@ def load_json(module_name: str, json_type: str) -> Optional[Any]:
     try:
         with open(json_path, 'r', encoding='utf-8') as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        logger.warning("[json] Failed to load JSON for %s: %s", module_name, e)
         return None
 
 
@@ -155,7 +161,8 @@ def save_json(module_name: str, json_type: str, data: Any) -> bool:
         with open(json_path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         return True
-    except Exception:
+    except Exception as e:
+        logger.warning("[json] Failed to save JSON for %s: %s", module_name, e)
         return False
 
 

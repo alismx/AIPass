@@ -292,7 +292,8 @@ def _load_registry() -> Optional[List[Dict[str, Any]]]:
                 resolved = _REPO_ROOT / raw_path
             branch['path'] = str(resolved)
         return [b for b in branches if b.get("status") == "active"]
-    except (json.JSONDecodeError, KeyError):
+    except (json.JSONDecodeError, KeyError) as e:
+        logger.warning(f"[pusher] Failed to load registry {REGISTRY_PATH}: {e}")
         return None
 
 
@@ -326,7 +327,8 @@ def _load_templates() -> Optional[Dict[str, dict]]:
         try:
             with open(path, 'r', encoding='utf-8') as f:
                 templates[name] = json.load(f)
-        except (json.JSONDecodeError, IOError):
+        except (json.JSONDecodeError, IOError) as e:
+            logger.warning(f"[pusher] Failed to load template {path}: {e}")
             return None
     return templates
 
@@ -441,7 +443,8 @@ def _update_version_file(branches_pushed: List[str]) -> bool:
             json.dump(version_data, f, indent=2, ensure_ascii=False)
             f.write('\n')
         return True
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[pusher] Failed to update version file: {e}")
         return False
 
 
@@ -463,7 +466,8 @@ def get_template_status() -> dict:
             status["version"] = data.get("version")
             status["last_push"] = data.get("last_push")
             status["last_push_branches"] = data.get("last_push_branches", [])
-        except (json.JSONDecodeError, IOError):
+        except (json.JSONDecodeError, IOError) as e:
+            logger.warning(f"[pusher] Failed to read version file: {e}")
             status["version"] = "error reading version file"
     return status
 

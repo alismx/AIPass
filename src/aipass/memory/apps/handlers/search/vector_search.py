@@ -71,6 +71,7 @@ class QueryEncoder:
             import torch
             from sentence_transformers import SentenceTransformer
         except ImportError as e:
+            logger.info(f"[vector_search] Optional ML dependencies not available: {e}")
             raise ImportError(
                 f"Search requires sentence-transformers and torch. "
                 f"Install with: pip install sentence-transformers torch. "
@@ -183,6 +184,7 @@ class SearchService:
                 embedding_function=None
             )
         except Exception as e:
+            logger.warning(f"[vector_search] Collection lookup failed for '{collection_name}': {e}")
             return {
                 "collection": collection_name,
                 "exists": False,
@@ -325,6 +327,7 @@ def search_collection(
         }
 
     except Exception as e:
+        logger.error(f"[vector_search] Collection search failed for '{collection_name}': {e}")
         return {
             'success': False,
             'error': f"Search failed: {e}"
@@ -368,6 +371,7 @@ def encode_query(query: str) -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(f"[vector_search] Query encoding failed: {e}")
         return {
             'success': False,
             'error': f"Encoding failed: {e}"
@@ -406,6 +410,7 @@ def list_collections(db_path: Path | None = None) -> Dict[str, Any]:
         }
 
     except Exception as e:
+        logger.error(f"[vector_search] Failed to list collections: {e}")
         return {
             'success': False,
             'error': f"Failed to list collections: {e}"
@@ -497,6 +502,7 @@ def search_all_collections(
         }
 
     except Exception as e:
+        logger.error(f"[vector_search] Multi-collection search failed: {e}")
         return {
             'success': False,
             'error': f"Multi-collection search failed: {e}"

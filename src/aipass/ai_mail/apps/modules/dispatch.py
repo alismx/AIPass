@@ -244,7 +244,8 @@ def _orchestrate_dispatch_send(args: List[str]) -> bool:
 
     try:
         from aipass.ai_mail.apps.handlers.central_writer import update_central
-    except ImportError:
+    except ImportError as e:
+        logger.warning("[dispatch] central_writer import unavailable: %s", e)
         update_central = None
 
     _ai_mail_dir = Path(__file__).resolve().parents[2]
@@ -278,8 +279,8 @@ def _orchestrate_dispatch_send(args: List[str]) -> bool:
         try:
             from aipass.trigger.apps.modules.core import trigger
             trigger.fire('email_dispatched', to=target, subject=subject)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning("[dispatch] trigger fire failed: %s", e)
 
     except Exception as e:
         logger.error(f"[dispatch] Send phase failed: {e}")

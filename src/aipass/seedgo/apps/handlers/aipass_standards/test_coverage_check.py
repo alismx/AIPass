@@ -21,6 +21,7 @@ Extracted from devpulse test_scanner_v1 and wrapped as a seedgo checker.
 import re
 from pathlib import Path
 
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
 
 AUDIT_SCOPE = "branch_level"
@@ -50,12 +51,7 @@ RE_IMPORT_DIRECT = re.compile(
 # BYPASS HELPER
 # =============================================
 
-def is_bypassed(
-    file_path: str,
-    standard: str,
-    line: int | None = None,
-    bypass_rules: list | None = None,
-) -> bool:
+def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
     """Check if a violation should be bypassed."""
     if not bypass_rules:
         return False
@@ -66,11 +62,9 @@ def is_bypassed(
         if rule_file and rule_file not in file_path:
             continue
         rule_lines = rule.get("lines", [])
-        if rule_lines and line is not None:
-            if line in rule_lines:
-                return True
-        elif not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -83,6 +77,7 @@ def _read_file_safe(path: Path) -> str:
     try:
         return path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError):
+        logger.info("Cannot read %s for test coverage analysis", path)
         return ""
 
 

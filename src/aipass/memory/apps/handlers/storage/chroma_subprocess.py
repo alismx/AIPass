@@ -20,8 +20,11 @@ Output: JSON on stdout with result
 
 import sys
 import json
+import logging
 from pathlib import Path
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 
 # =============================================================================
@@ -122,7 +125,8 @@ def _check_plan(plan_label, db_path=None):
     collection_name = "flow_flow_plans"
     try:
         collection = client.get_collection(collection_name, embedding_function=None)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[chroma_subprocess] Collection '{collection_name}' not found during plan check: {e}")
         return {
             'success': True,
             'found': False,
@@ -185,7 +189,8 @@ def _search_vectors(query_embedding, branch=None, memory_type=None, n_results=5,
                         'distance': results['distances'][0][i] if results['distances'] else None,
                         'id': results['ids'][0][i] if results['ids'] else None
                     })
-        except Exception:
+        except Exception as e:
+            logger.warning(f"[chroma_subprocess] Skipping collection '{cname}' during search: {e}")
             continue
 
     all_results.sort(key=lambda x: x['distance'] if x['distance'] is not None else float('inf'))
@@ -240,6 +245,7 @@ def main():
         print(json.dumps(result))
 
     except Exception as e:
+        logger.error(f"[chroma_subprocess] Subprocess operation failed: {e}")
         print(json.dumps({'success': False, 'error': str(e)}))
         sys.exit(1)
 

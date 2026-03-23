@@ -471,6 +471,7 @@ class BackupEngine:
                     else:
                         result.files_skipped += 1
                 except Exception as e:
+                    logger.warning(f"[backup_core] Error processing {file_path}: {e}")
                     result.add_error(f"Error processing {file_path}: {e}", is_critical=True)
                     # Use console.print directly for critical errors so they appear above progress bar
                     error(f"CRITICAL: Error processing {file_path}: {e}")

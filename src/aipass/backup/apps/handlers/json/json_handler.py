@@ -12,6 +12,8 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, Any, Optional
 
+from aipass.prax import logger
+
 # Constants
 _BACKUP_ROOT = Path(__file__).resolve().parents[3]  # src/aipass/backup/
 BACKUP_JSON_DIR = _BACKUP_ROOT / "backup_json"
@@ -98,8 +100,8 @@ def ensure_json_exists(module_name: str, json_type: str) -> bool:
             if validate_json_structure(data, json_type):
                 return True
             # If corrupted, fall through to regenerate
-        except Exception:
-            # If unreadable, fall through to regenerate
+        except Exception as e:
+            logger.warning(f"[json_handler] Failed to read {json_path}, regenerating: {e}")
             pass
 
     template = load_template(json_type, module_name)

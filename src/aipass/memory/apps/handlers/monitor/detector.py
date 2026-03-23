@@ -100,7 +100,8 @@ def _read_registry() -> List[Dict[str, Any]]:
                 branch['path'] = str(resolved)
 
             return branches
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[detector] Failed to read registry: {e}")
         return []
 
 
@@ -148,7 +149,8 @@ def _load_config() -> Dict[str, Any]:
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             return json.load(f)
-    except Exception:
+    except Exception as e:
+        logger.warning(f"[detector] Failed to load config: {e}")
         return {}
 
 
@@ -169,8 +171,8 @@ def _count_file_lines(file_path: Path) -> int:
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             return len(f.readlines())
-    except Exception:
-        # Silent failure - handlers don't log (3-tier architecture)
+    except Exception as e:
+        logger.warning(f"[detector] Failed to count lines in {file_path}: {e}")
         return 0
 
 
@@ -194,8 +196,8 @@ def _get_max_lines(file_path: Path, branch_name: str | None = None) -> int:
             file_limit = limits.get('max_lines')
             if file_limit is not None:
                 return file_limit
-    except Exception:
-        pass
+    except Exception as e:
+        logger.warning(f"[detector] Failed to read file-level max_lines from {file_path}: {e}")
 
     # 2. Try branch-level config (if branch_name provided or can be extracted)
     if branch_name is None:
@@ -240,8 +242,9 @@ def _should_rollover(file_path: Path) -> tuple[bool, int, int, str, str]:
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-    except Exception:
+    except Exception as e:
         # Can't parse — fall back to line-based with hardcoded default
+        logger.warning(f"[detector] Failed to parse {file_path} for rollover check: {e}")
         return (current_lines >= 600, current_lines, 600, '1.0.0', '')
 
     metadata = data.get('document_metadata', {})

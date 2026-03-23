@@ -189,6 +189,7 @@ def is_bypassed(file_path: str, branch_path: str, standard: str,
     try:
         rel_path = str(Path(file_path).relative_to(branch_path))
     except ValueError:
+        logger.info("File %s not relative to branch %s, using raw path", file_path, branch_path)
         rel_path = file_path
 
     for rule in bypass_rules:

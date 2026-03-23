@@ -17,6 +17,7 @@ import json
 from pathlib import Path
 from datetime import datetime
 
+from aipass.prax import logger
 from aipass.backup.apps.handlers.json import json_handler
 
 _BACKUP_ROOT = Path(__file__).resolve().parents[3]  # src/aipass/backup/
@@ -35,7 +36,8 @@ def get_timestamps() -> dict:
     if TIMESTAMPS_FILE.exists():
         try:
             data = json.loads(TIMESTAMPS_FILE.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning(f"[backup_timestamps] Failed to read timestamps file: {e}")
             data = {}
     return {mode: data.get(mode) for mode in MODES}
 
@@ -52,7 +54,8 @@ def update_timestamp(mode: str) -> None:
     if TIMESTAMPS_FILE.exists():
         try:
             data = json.loads(TIMESTAMPS_FILE.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning(f"[backup_timestamps] Failed to read timestamps for update: {e}")
             data = {}
 
     data[mode] = datetime.now().isoformat()
@@ -75,7 +78,8 @@ def format_age(iso_str: str | None) -> str:
 
     try:
         then = datetime.fromisoformat(iso_str)
-    except (ValueError, TypeError):
+    except (ValueError, TypeError) as e:
+        logger.info(f"[backup_timestamps] Could not parse timestamp '{iso_str}': {e}")
         return "unknown"
 
     delta = datetime.now() - then

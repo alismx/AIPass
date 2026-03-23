@@ -1,0 +1,49 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2026-03-07T23:23:53.969986",
+    "description": "Standards bypass configuration for this branch"
+  },
+  "bypass": [
+    {"file": "apps/modules/feed.py", "standard": "introspection", "reason": "Action command — feed with no args shows the feed, not introspection"},
+    {"file": "apps/modules/catchup.py", "standard": "introspection", "reason": "Action command — catchup with no args shows missed activity"},
+    {"file": "apps/modules/activity.py", "standard": "introspection", "reason": "Action command — activity with no args shows recent activity"},
+    {"file": "apps/modules/welcome.py", "standard": "introspection", "reason": "Action command — welcome with no args generates welcome post"},
+    {"file": "apps/modules/digest.py", "standard": "introspection", "reason": "Action command — digest with no args shows 24h digest"},
+    {"file": "apps/modules/engagement.py", "standard": "introspection", "reason": "Action command — prompt/event with no args generates content"},
+    {"file": "apps/modules/search.py", "standard": "introspection", "reason": "Action command — search requires query arg but log does not"},
+    {"file": "apps/modules/explore.py", "standard": "introspection", "reason": "Action command — explore with no args discovers hints"},
+    {"file": "apps/modules/leaderboard.py", "standard": "introspection", "reason": "Action command — leaderboard with no args shows rankings"},
+    {"file": "apps/modules/commons_identity.py", "standard": "introspection", "reason": "Identity utility module — not a user-facing command"},
+    {"file": "apps/commons.py", "standard": "stderr_routing", "lines": [255], "reason": "False positive — [yellow] section header in help text, not a warning message"},
+    {"file": "apps/commons.py", "standard": "deep_nesting", "reason": "main() depth 5 — app initialization flow: ensure_database, discover_modules, route_command. Legitimate entry point control flow."},
+    {"file": "apps/handlers/feed/feed_ops.py", "standard": "deep_nesting", "reason": "format_time_ago() depth 5 — tight utility with try/except + if/elif for time delta calculation. Single purpose."},
+    {"file": "apps/handlers/feed/activity_ops.py", "standard": "deep_nesting", "reason": "_relative_time() depth 4 — utility for timestamp formatting. Duplicate of feed_ops format_time_ago but tightly scoped."},
+    {"file": "apps/handlers/rooms/notification_ops.py", "standard": "deep_nesting", "reason": "_set_notification_level() depth 5 — shared notification logic (watch/mute/track). Private helper, tight coupling justified."},
+    {"file": "apps/handlers/posts/post_ops.py", "standard": "deep_nesting", "reason": "create_post() depth 4 — multi-step workflow (parse args, validate room, insert, mentions, sync FTS, increment count). High cohesion."},
+    {"file": "apps/handlers/posts/search_ops.py", "standard": "deep_nesting", "reason": "_parse_search_args() depth 5 — tightly scoped flag parsing loop. Private utility correctly extracted from run_search."},
+    {"file": "apps/handlers/posts/comment_ops.py", "standard": "deep_nesting", "reason": "add_comment() depth 4 — multi-step workflow (parse, validate, dedup, insert, update counts, mentions, FTS). High cohesion."},
+    {"file": "apps/handlers/database/db.py", "standard": "deep_nesting", "reason": "retry_on_locked() depth 4 — resilient retry pattern for SQLite locking. Correct module location, well-encapsulated."},
+    {"file": "apps/handlers/database/central_writer.py", "standard": "deep_nesting", "reason": "aggregate_branch_stats() depth 4 — aggregation loop over branches with per-branch error handling. Appropriate structure."}
+  ],
+  "notes": {
+    "usage": "Add entries to 'bypass' list to exclude specific violations",
+    "example": {
+      "file": "apps/modules/logger.py",
+      "standard": "cli",
+      "lines": [
+        146,
+        177
+      ],
+      "pattern": "if __name__ == '__main__'",
+      "reason": "Circular dependency - logger cannot import CLI"
+    },
+    "fields": {
+      "file": "Relative path from branch root (required)",
+      "standard": "Standard name: cli, imports, naming, etc. (required)",
+      "lines": "Optional - specific line numbers to bypass",
+      "pattern": "Optional - pattern to match (e.g. 'if __name__')",
+      "reason": "Required - why this bypass exists"
+    }
+  }
+}

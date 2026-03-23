@@ -165,6 +165,7 @@ def _handle_module(name: str, args: List[str]) -> int:
     try:
         result = route_module_command(name, command, cmd_args)
     except (ImportError, AttributeError) as exc:
+        logger.error("Module @%s not available: %s", name, exc)
         err_console.print(f"drone: module @{name} is registered but not available: {exc}")
         return 1
 
@@ -252,7 +253,7 @@ def _handle_custom_command(args: list[str]) -> int:
     module_name = target.lstrip("@").lower()
 
     # Interactive detection -- same logic as _handle_target
-    interactive_commands = ("monitor", "snapshot", "versioned")
+    interactive_commands = ("monitor", "snapshot", "versioned", "audit")
     interactive_branches = ("cli",)
     interactive = command in interactive_commands or module_name in interactive_branches
 
@@ -263,6 +264,7 @@ def _handle_custom_command(args: list[str]) -> int:
             interactive=interactive,
         )
     except (BranchNotFoundError, CommandExecutionError, RegistryError) as exc:
+        logger.warning("Custom command failed for target %s: %s", target, exc)
         err_console.print(f"drone: {exc}")
         return 1
 
@@ -279,8 +281,20 @@ def _handle_target(args: List[str]) -> int:
     rest = args[1:]
     module_name = target.lstrip("@").lower()
 
-    # Check if this is a registered internal module
-    if is_module(module_name):
+    # Interactive mode bypasses capture + timeout for human-facing output.
+    # Per-command: specific commands that need live terminal (progress bars, TUI).
+    # Per-branch: all commands from that branch get interactive mode (Rich CLI).
+    interactive_commands = ("monitor", "snapshot", "versioned", "audit")
+    interactive_branches = ("cli",)
+    first_cmd = rest[0] if rest and rest[0] != "--help" else None
+    needs_interactive = (
+        first_cmd in interactive_commands or module_name in interactive_branches
+    )
+
+    # Route to internal module — unless command needs interactive terminal,
+    # in which case fall through to branch (subprocess) routing so Rich
+    # Progress / TUI output renders live instead of being buffered.
+    if is_module(module_name) and not needs_interactive:
         return _handle_module(module_name, rest)
 
     # No args = pass through to branch (introspection)
@@ -288,6 +302,7 @@ def _handle_target(args: List[str]) -> int:
         try:
             result = route_command(target)
         except (BranchNotFoundError, CommandExecutionError, RegistryError) as exc:
+            logger.warning("Introspection failed for %s: %s", target, exc)
             err_console.print(f"drone: {exc}")
             return 1
         if result.stdout:
@@ -305,6 +320,7 @@ def _handle_target(args: List[str]) -> int:
             else:
                 console.print(f"No help available for {target}.")
         except (BranchNotFoundError, CommandExecutionError, RegistryError) as exc:
+            logger.warning("Help lookup failed for %s: %s", target, exc)
             err_console.print(f"drone: {exc}")
             return 1
         return 0
@@ -313,12 +329,8 @@ def _handle_target(args: List[str]) -> int:
     command = rest[0]
     cmd_args = rest[1:]
 
-    # Interactive mode bypasses capture + timeout for human-facing output.
-    # Per-command: specific commands that need live terminal (progress bars, TUI).
-    # Per-branch: all commands from that branch get interactive mode (Rich CLI).
-    interactive_commands = ("monitor", "snapshot", "versioned")
-    interactive_branches = ("cli",)
-    interactive = command in interactive_commands or module_name in interactive_branches
+    # needs_interactive already computed above
+    interactive = needs_interactive
 
     try:
         result = route_command(
@@ -327,6 +339,7 @@ def _handle_target(args: List[str]) -> int:
             interactive=interactive,
         )
     except (BranchNotFoundError, CommandExecutionError, RegistryError) as exc:
+        logger.warning("Command routing failed for %s %s: %s", target, command, exc)
         err_console.print(f"drone: {exc}")
         return 1
 
@@ -350,6 +363,7 @@ def main() -> int:
         try:
             show_introspection()
         except RegistryError as exc:
+            logger.warning("Registry error during introspection: %s", exc)
             err_console.print(f"drone: {exc}")
             return 1
         return 0
@@ -371,6 +385,7 @@ def main() -> int:
         try:
             return _handle_systems()
         except RegistryError as exc:
+            logger.warning("Registry error during systems listing: %s", exc)
             err_console.print(f"drone: {exc}")
             return 1
 

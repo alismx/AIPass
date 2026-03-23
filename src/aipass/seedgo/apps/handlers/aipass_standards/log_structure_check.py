@@ -19,7 +19,11 @@ No hardcoded absolute log paths.
 import re
 from pathlib import Path
 from typing import Dict
+from aipass.prax import logger
 from aipass.seedgo.apps.handlers.json import json_handler
+
+# Audit scope: all Python files
+AUDIT_SCOPE = "all_files"
 
 
 def _find_branch_root(file_path: Path) -> Path:
@@ -46,8 +50,8 @@ def _find_branch_root(file_path: Path) -> Path:
     return file_path.parent
 
 
-def is_bypassed(file_path: str, standard: str, bypass_rules: list | None = None) -> bool:
-    """Check if a violation should be bypassed"""
+def is_bypassed(file_path: str, standard: str, line: int | None = None, bypass_rules: list | None = None) -> bool:
+    """Check if a violation should be bypassed."""
     if not bypass_rules:
         return False
     for rule in bypass_rules:
@@ -57,8 +61,9 @@ def is_bypassed(file_path: str, standard: str, bypass_rules: list | None = None)
         if rule_file and rule_file not in file_path:
             continue
         rule_lines = rule.get('lines', [])
-        if not rule_lines:
-            return True
+        if rule_lines and line is not None and line not in rule_lines:
+            continue
+        return True
     return False
 
 
@@ -113,6 +118,7 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     try:
         content = path.read_text(encoding='utf-8')
     except Exception as e:
+        logger.info("Cannot read %s: %s", path, e)
         checks.append({
             'name': 'File readable',
             'passed': False,
@@ -163,3 +169,41 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     score = int(sum(1 for c in checks if c['passed']) / len(checks) * 100) if checks else 0
     json_handler.log_operation("check_completed", {"file": str(module_path), "score": score, "standard": "log_structure"})
     return {'passed': passed, 'checks': checks, 'score': score, 'standard': 'LOG_STRUCTURE'}
+
+
+def check_branch_post(branch_path: str) -> tuple:
+    """Branch-level log structure post-checks. Called by audit pipeline after file-level checks.
+
+    Two-tier model:
+      - system_logs/ at repo root is managed by prax (runtime dispatch).
+        Having many system logs and few local logs is normal.
+      - logs/ at branch root holds local-only logs. Flat placement is
+        fine — the standard does not prescribe internal organisation.
+
+    Returns:
+        Tuple of (violations_list, scores_list)
+    """
+    bp = Path(branch_path)
+    violations: list[dict] = []
+    scores: list[int] = []
+
+    in_dirs = [f for f in bp.rglob("*.log") if f.parent.name == "logs"]
+
+    repo = next(
+        (p for p in [bp] + list(bp.parents)
+         if (p / "AIPASS_REGISTRY.json").is_file()),
+        None,
+    )
+    if repo and (repo / "system_logs").is_dir():
+        sd = repo / "system_logs"
+        system_count = len(list(sd.glob(f"{bp.name}_*.log")))
+        if in_dirs and system_count == 0:
+            scores.append(50)
+            violations.append({
+                "file": "(branch-level)", "path": str(sd), "score": 50,
+                "issues": [f"Branch has {len(in_dirs)} local log(s) but 0 system logs — prax dispatch may be misconfigured"],
+            })
+        else:
+            scores.append(100)
+
+    return violations, scores

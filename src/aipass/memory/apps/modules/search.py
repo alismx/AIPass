@@ -97,6 +97,7 @@ def handle_command(command: str, args: List[str]) -> bool:
                 try:
                     n_results = int(args[i + 1])
                 except ValueError:
+                    logger.warning(f"[search] Invalid --n argument: {args[i + 1]}")
                     error(f"Invalid number: {args[i + 1]}")
                     return True
                 i += 2

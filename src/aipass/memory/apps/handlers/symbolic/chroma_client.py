@@ -25,6 +25,7 @@ Key Functions:
 from typing import Dict, Any
 from pathlib import Path
 
+from aipass.prax import logger
 from aipass.memory.apps.handlers.json import json_handler
 
 
@@ -128,6 +129,7 @@ def get_collection(
         }
 
     except Exception as e:
+        logger.error(f"[chroma_client] Failed to get collection '{collection_name}': {e}")
         return {
             'success': False,
             'error': str(e)

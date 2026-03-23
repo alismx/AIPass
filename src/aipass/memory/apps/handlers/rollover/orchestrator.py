@@ -124,10 +124,13 @@ def store_vectors_subprocess(branch: str, memory_type: str, embeddings: list,
 
         return json.loads(result.stdout)
     except subprocess.TimeoutExpired:
+        logger.warning("[orchestrator] Vector storage operation timed out")
         return {'success': False, 'error': 'Storage operation timed out'}
     except json.JSONDecodeError as e:
+        logger.warning(f"[orchestrator] Invalid JSON from storage subprocess: {e}")
         return {'success': False, 'error': f'Invalid JSON response: {e}'}
     except Exception as e:
+        logger.warning(f"[orchestrator] Vector storage subprocess error: {e}")
         return {'success': False, 'error': str(e)}
 
 
@@ -161,10 +164,13 @@ def encode_batch_subprocess(texts: list) -> dict:
 
         return json.loads(result.stdout)
     except subprocess.TimeoutExpired:
+        logger.warning("[orchestrator] Embedding subprocess timed out")
         return {'success': False, 'error': 'Embedding timed out'}
     except json.JSONDecodeError as e:
+        logger.warning(f"[orchestrator] Invalid JSON from embedding subprocess: {e}")
         return {'success': False, 'error': f'Invalid JSON from embedder: {e}'}
     except Exception as e:
+        logger.warning(f"[orchestrator] Embedding subprocess error: {e}")
         return {'success': False, 'error': str(e)}
 
 
@@ -469,8 +475,8 @@ def execute_rollover() -> Dict[str, Any]:
                          success_count=success_count,
                          failed_count=len(failed))
             logger.info("[rollover] Fired rollover_complete event")
-        except Exception:
-            pass  # Trigger system optional
+        except Exception as e:
+            logger.warning(f"[orchestrator] Failed to fire rollover_complete event: {e}")
 
         # Post-rollover: update central stats
         try:

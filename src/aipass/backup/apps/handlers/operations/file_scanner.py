@@ -20,6 +20,7 @@ import os
 from pathlib import Path
 from typing import Callable, List, Optional
 
+from aipass.prax import logger
 from aipass.backup.apps.handlers.json import json_handler
 
 # =============================================
@@ -70,8 +71,8 @@ def scan_files(source_dir: Path, should_ignore: Callable, show_progress: bool = 
                 rel_file = str(file_path.relative_to(source_dir))
                 skipped_items["too_large"].add((rel_file, size))
                 return True
-        except OSError:
-            pass
+        except OSError as e:
+            logger.info(f"[file_scanner] Could not stat file for size check: {e}")
         return False
 
     if show_progress:

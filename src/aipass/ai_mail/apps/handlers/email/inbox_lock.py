@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 from contextlib import contextmanager
 
+from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.ai_mail.apps.handlers.json import json_handler
 
 # fcntl is POSIX-only (Linux/macOS). On Windows, use msvcrt for locking.
@@ -75,8 +76,9 @@ def inbox_lock(inbox_file: Path):
                 else:
                     fcntl.flock(lock_fd.fileno(), fcntl.LOCK_UN)
                 lock_fd.close()
-            except Exception:
+            except Exception as e:
+                logger.warning("[lock] lock release failed: %s", e)
                 try:
                     lock_fd.close()
-                except Exception:
-                    pass  # Best-effort close
+                except Exception as e:
+                    logger.warning("[lock] lock file close failed: %s", e)

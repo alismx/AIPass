@@ -140,22 +140,21 @@ COMMANDS:
   thresholds  - Show compression thresholds
 
 USAGE:
-  drone ai_mail branch_ping <command>
-  python3 branch_ping.py <command>
-  python3 branch_ping.py --help
+  drone @ai_mail branch_ping <command>
+  drone @ai_mail branch_ping --help
 
 EXAMPLES:
   # Check memory health and update registry
-  drone ai_mail branch_ping ping
+  drone @ai_mail branch_ping ping
 
   # View current status
-  drone ai_mail branch_ping status
+  drone @ai_mail branch_ping status
 
   # View registry
-  drone ai_mail branch_ping registry
+  drone @ai_mail branch_ping registry
 
   # Show thresholds
-  drone ai_mail branch_ping thresholds
+  drone @ai_mail branch_ping thresholds
         """
     )
     console.print(parser.format_help())
@@ -216,9 +215,8 @@ if __name__ == "__main__":
         console.print("[yellow]Commands:[/yellow] ping, status, registry, thresholds, --help")
         console.print()
         console.print("[bold]USAGE:[/bold]")
-        console.print("  drone ai_mail branch_ping <command>")
-        console.print("  python3 branch_ping.py")
-        console.print("  python3 branch_ping.py --help")
+        console.print("  drone @ai_mail branch_ping <command>")
+        console.print("  drone @ai_mail branch_ping --help")
         console.print()
         console.print("[bold]COMMANDS:[/bold]")
         console.print("  [cyan]ping[/cyan]        - Execute health check")
@@ -232,5 +230,5 @@ if __name__ == "__main__":
     console.print(Panel("[bold cyan]BRANCH PING ORCHESTRATION MODULE[/bold cyan]", expand=False))
     console.print()
     console.print("[yellow]Commands:[/yellow] ping, status, registry, thresholds")
-    console.print("[dim]Usage: drone ai_mail branch_ping [command][/dim]")
+    console.print("[dim]Usage: drone @ai_mail branch_ping [command][/dim]")
     console.print()
