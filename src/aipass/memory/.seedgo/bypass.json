@@ -1,0 +1,44 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2026-03-07T23:23:54.979418",
+    "description": "Standards bypass configuration for this branch"
+  },
+  "bypass": [
+    {
+      "file": "apps/handlers/storage/chroma_subprocess.py",
+      "standard": "cli",
+      "reason": "Subprocess IPC script — print(json.dumps()) outputs JSON to stdout for parent process. Not display output."
+    },
+    {
+      "file": "apps/handlers/storage/chroma_subprocess.py",
+      "standard": "json_structure",
+      "reason": "Self-contained subprocess — no branch imports by design"
+    },
+    {
+      "file": "apps/handlers/vector/embed_subprocess.py",
+      "standard": "json_structure",
+      "reason": "Self-contained subprocess — no branch imports by design"
+    }
+  ],
+  "notes": {
+    "usage": "Add entries to 'bypass' list to exclude specific violations",
+    "example": {
+      "file": "apps/modules/logger.py",
+      "standard": "cli",
+      "lines": [
+        146,
+        177
+      ],
+      "pattern": "if __name__ == '__main__'",
+      "reason": "Circular dependency - logger cannot import CLI"
+    },
+    "fields": {
+      "file": "Relative path from branch root (required)",
+      "standard": "Standard name: cli, imports, naming, etc. (required)",
+      "lines": "Optional - specific line numbers to bypass",
+      "pattern": "Optional - pattern to match (e.g. 'if __name__')",
+      "reason": "Required - why this bypass exists"
+    }
+  }
+}

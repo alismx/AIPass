@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2026-03-07T22:43:23.230824",
+    "description": "Standards bypass configuration for this branch"
+  },
+  "bypass": [
+    {
+      "file": "apps/modules/email.py",
+      "standard": "introspection",
+      "reason": "Multi-command module where inbox, sent, contacts work without args by design. Adding no-args gate would break primary mail workflow (drone @ai_mail inbox)."
+    },
+    {
+      "file": "apps/handlers/json_utils/json_handler.py",
+      "standard": "json_structure",
+      "reason": "This IS the json_handler implementation — cannot import itself."
+    }
+  ],
+  "notes": {
+    "usage": "Add entries to 'bypass' list to exclude specific violations",
+    "example": {
+      "file": "apps/modules/logger.py",
+      "standard": "cli",
+      "lines": [
+        146,
+        177
+      ],
+      "pattern": "if __name__ == '__main__'",
+      "reason": "Circular dependency - logger cannot import CLI"
+    },
+    "fields": {
+      "file": "Relative path from branch root (required)",
+      "standard": "Standard name: cli, imports, naming, etc. (required)",
+      "lines": "Optional - specific line numbers to bypass",
+      "pattern": "Optional - pattern to match (e.g. 'if __name__')",
+      "reason": "Required - why this bypass exists"
+    }
+  }
+}

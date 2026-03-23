@@ -247,6 +247,12 @@ drone @ai_mail send @devpulse "PRODUCTION STOPPED: {plan_number}" "Issue: [descr
 
 ---
 
+## Listen (TTS-friendly summary)
+
+Write a plain English summary of this plan here. No markdown, no symbols, no tables, no code blocks, no asterisks, no bullet points. Just natural sentences that can be read aloud by a text to speech tool. Update this section whenever the plan changes significantly.
+
+---
+
 ## Close Command
 
 When all boxes checked:

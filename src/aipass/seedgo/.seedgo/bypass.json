@@ -1,0 +1,39 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2026-03-07T22:43:24.658755",
+    "description": "Standards bypass configuration for this branch"
+  },
+  "bypass": [
+    {
+      "file": "apps/handlers/aipass_standards/stderr_routing_check.py",
+      "standard": "stderr_routing",
+      "reason": "Console(stderr=True) appears only in documentation strings and comments, not executable code. False positive from text-matching checker."
+    },
+    {
+      "file": "apps/handlers/aipass_standards/stderr_routing_content.py",
+      "standard": "stderr_routing",
+      "reason": "Console(stderr=True) appears only in Rich markup strings demonstrating the standard to users, not executable code. False positive from text-matching checker."
+    }
+  ],
+  "notes": {
+    "usage": "Add entries to 'bypass' list to exclude specific violations",
+    "example": {
+      "file": "apps/modules/logger.py",
+      "standard": "cli",
+      "lines": [
+        146,
+        177
+      ],
+      "pattern": "if __name__ == '__main__'",
+      "reason": "Circular dependency - logger cannot import CLI"
+    },
+    "fields": {
+      "file": "Relative path from branch root (required)",
+      "standard": "Standard name: cli, imports, naming, etc. (required)",
+      "lines": "Optional - specific line numbers to bypass",
+      "pattern": "Optional - pattern to match (e.g. 'if __name__')",
+      "reason": "Required - why this bypass exists"
+    }
+  }
+}

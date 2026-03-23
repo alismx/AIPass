@@ -1,0 +1,65 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2026-03-07T22:43:24.015135",
+    "description": "Standards bypass configuration for this branch"
+  },
+  "bypass": [
+    {
+      "file": "apps/modules/close_plan.py",
+      "standard": "trigger",
+      "category": "handler_layer",
+      "reason": "Thin orchestrator - close_plan/close_all_plans delegate to close_ops handler which fires trigger events"
+    },
+    {
+      "file": "apps/modules/create_plan.py",
+      "standard": "trigger",
+      "category": "handler_layer",
+      "reason": "Thin orchestrator - create_plan delegates to create_ops handler which fires trigger events"
+    },
+    {
+      "file": "apps/modules/restore_plan.py",
+      "standard": "trigger",
+      "category": "handler_layer",
+      "reason": "Thin orchestrator - restore_plan/recover_plan_from_backup delegate to restore_ops handler which fires trigger events"
+    },
+    {
+      "file": "apps/modules/aggregate_central.py",
+      "standard": "trigger",
+      "category": "handler_layer",
+      "reason": "Thin orchestrator - aggregate_central delegates to aggregate_ops handler which fires trigger events"
+    },
+    {
+      "file": "apps/modules/post_close_runner.py",
+      "standard": "trigger",
+      "category": "internal_ops",
+      "reason": "Lock file .unlink() is infrastructure (process locking), not a business state change"
+    },
+    {
+      "file": "apps/modules/dplan_post_close_runner.py",
+      "standard": "trigger",
+      "category": "internal_ops",
+      "reason": "Lock file .unlink() is infrastructure (process locking), not a business state change"
+    }
+  ],
+  "notes": {
+    "usage": "Add entries to 'bypass' list to exclude specific violations",
+    "example": {
+      "file": "apps/modules/logger.py",
+      "standard": "cli",
+      "lines": [
+        146,
+        177
+      ],
+      "pattern": "if __name__ == '__main__'",
+      "reason": "Circular dependency - logger cannot import CLI"
+    },
+    "fields": {
+      "file": "Relative path from branch root (required)",
+      "standard": "Standard name: cli, imports, naming, etc. (required)",
+      "lines": "Optional - specific line numbers to bypass",
+      "pattern": "Optional - pattern to match (e.g. 'if __name__')",
+      "reason": "Required - why this bypass exists"
+    }
+  }
+}
