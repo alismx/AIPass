@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # Seedgo
 
@@ -149,4 +149,4 @@ The `test_map` module and `test_map/` handler directory provide custom function-
 **Last Updated:** 2026-03-29
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)

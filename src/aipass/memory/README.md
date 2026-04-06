@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # MEMORY
 
@@ -124,4 +124,4 @@ The rollover module monitors memory files across all branches registered in `AIP
 *Last Updated: 2026-04-01*
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)

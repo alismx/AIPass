@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # AI_MAIL
 
@@ -84,4 +84,4 @@ ai_mail/
 *Last Updated: 2026-03-24*
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)

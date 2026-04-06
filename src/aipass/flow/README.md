@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # Flow
 
@@ -101,4 +101,4 @@ Plans follow the convention `{PREFIX}-{NNNN}_topic_slug_YYYY-MM-DD.md` where NNN
 *Last Updated: 2026-04-01*
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)

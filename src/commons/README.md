@@ -1,4 +1,4 @@
-[< Back to AIPass](../../README.md)
+[← Back to AIPass](../../README.md)
 
 # COMMONS
 
@@ -290,4 +290,4 @@ drone @commons --help                           # Full help
 *Last Updated: 2026-04-01*
 
 ---
-[< Back to AIPass](../../README.md)
+[← Back to AIPass](../../README.md)

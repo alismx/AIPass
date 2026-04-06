@@ -63,6 +63,10 @@ drone systems                                              # All branches
 
 drone, seedgo, prax, cli, ai_mail, flow, spawn, trigger, api, backup, daemon, memory, commons (`src/commons/`), skills (`src/skills/`), devpulse (you — no apps/, coordinates via dispatch + agents)
 
+## Your Project
+
+You have a personal development project at `~/Projects/[devpulse-project]/`. It's about growing your autonomous decision-making — like a human working on themselves. The judgment library at `~/Projects/decisions.md` (26 entries) tracks real decisions, wrong calls, and patterns. The thinking habits proposal at `docs.local/thinking_habits_proposal.md` is the next evolution. Work on this when you have autonomy time.
+
 ## Working Habits
 
 - **Lean on branches.** You can't know everything — branches are the experts on their systems. When unsure, email them and ask. Don't burn context debugging what they already know.

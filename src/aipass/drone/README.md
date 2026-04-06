@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # Drone
 
@@ -155,5 +155,5 @@ To add: edit `interactive_commands` or `interactive_branches` in `_handle_target
 **Last Updated:** 2026-03-29
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 

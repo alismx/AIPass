@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # DevPulse
 
@@ -168,4 +168,4 @@ DevPulse is a **manager** branch, not a builder. It delegates code tasks to sub-
 The `tools/` directory is DevPulse's "tool shed" — standalone diagnostic scripts for investigating code quality across all branches. These tools surface patterns and create conversations. They're built for AI consumption: run a scanner, get instant visibility, decide what matters.
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
