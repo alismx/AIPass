@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # API
 
@@ -130,4 +130,4 @@ api/
 *Last Updated: 2026-04-03*
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)

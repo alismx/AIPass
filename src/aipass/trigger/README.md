@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # Trigger
 
@@ -132,4 +132,4 @@ trigger/
 *Last Updated: 2026-03-30*
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)

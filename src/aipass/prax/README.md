@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # PRAX
 
@@ -130,4 +130,4 @@ prax/
 *Last Updated: 2026-03-29*
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)

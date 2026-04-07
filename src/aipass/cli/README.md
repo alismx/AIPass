@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # CLI
 
@@ -97,4 +97,4 @@ python -m aipass.cli aipass init /path   # Bootstrap directly
 *Last Updated: 2026-03-17*
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)

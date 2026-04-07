@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # SPAWN
 
@@ -160,4 +160,4 @@ spawn/
 *Last Updated: 2026-03-27*
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)

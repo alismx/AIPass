@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # BACKUP
 
@@ -126,4 +126,4 @@ drone @backup drive-clear-tracker          # Clear Drive file tracker cache
 - **Branch Prompt:** `.aipass/branch_system_prompt.md`
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)

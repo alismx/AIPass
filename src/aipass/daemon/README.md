@@ -1,4 +1,4 @@
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
 
 # DAEMON
 
@@ -132,4 +132,4 @@ drone @daemon <command> --help
 *Last Updated: 2026-03-28*
 
 ---
-[< Back to AIPass](../../../README.md)
+[← Back to AIPass](../../../README.md)
