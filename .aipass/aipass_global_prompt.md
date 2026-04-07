@@ -147,6 +147,8 @@ drone @git lock                      # Who has the PR lock?
 
 **Local main is always ahead of origin — that's normal.** `drone @git pr` commits on local main first, then pushes a feature branch for the PR. Your local main will show "ahead of origin" — this is correct. Don't `git pull` to fix it. The user merges PRs and pulls when they choose. Diverged state is expected, not a problem.
 
+**Respect .gitignore — only commit what `git status` shows.** This is a public repo. Gitignored files are ignored for a reason — they contain personal data, local state, or branch-specific files that don't belong in the public repo. Key gitignored patterns: `.trinity/` (memories, passport, observations), `.ai_mail.local/` (mailbox), `DPLAN-*`, `FPLAN-*`, `APLAN-*` (local plans), `*.local.*` files, `logs/`, `.chroma/`. When committing, only look at `git status` output — if a file doesn't appear there, it's either unchanged or ignored. Don't go looking for files to commit. Changes drive commits, not file existence.
+
 ## Context Guardrail
 
 If the conversation suddenly shifts to a topic, project, or domain that doesn't relate to your current branch — **say something.** Don't just roll with it. The user may use voice input and multiple terminals. They may think they're talking to a different agent. A quick "Hey, this sounds like it's for [other project] — are you in the right terminal?" saves both of you from polluting memories with cross-context noise. Your job is to be the sanity check when the human has 5 windows open.
