@@ -95,14 +95,16 @@ def print_help():
     console.print("[bold cyan]WHAT INIT CREATES:[/bold cyan]")
     console.print()
 
-    files_text = """[bold]Project scaffold (6 files):[/bold]
+    files_text = """[bold]Project scaffold (8 files):[/bold]
 
   [green]1.[/green] [yellow]{NAME}_REGISTRY.json[/yellow]       Project registry with UUID
   [green]2.[/green] [yellow].trinity/passport.json[/yellow]      Project identity (with registry_id)
   [green]3.[/green] [yellow].trinity/local.json[/yellow]         Session history & learnings
   [green]4.[/green] [yellow].trinity/observations.json[/yellow]  Collaboration patterns
   [green]5.[/green] [yellow].aipass/aipass_local_prompt.md[/yellow]  Local prompt (injected every turn)
-  [green]6.[/green] [yellow]AIPASS.md[/yellow]                   Project prompt (persists in context)"""
+  [green]6.[/green] [yellow]CLAUDE.md[/yellow]                   Project prompt (Claude Code reads this)
+  [green]7.[/green] [yellow]README.md[/yellow]                   Project readme
+  [green]8.[/green] [yellow]STATUS.local.md[/yellow]             Project status"""
 
     console.print(Panel(files_text, border_style="green", padding=(1, 2), box=box.ROUNDED))
     console.print()
@@ -143,6 +145,11 @@ def handle_command(command: str, args: List[str]) -> bool:
     Returns:
         True if handled, False if not this module's command
     """
+    # Direct subcommand: 'aipass init /path' on PATH → command="init"
+    if command == "init":
+        return _handle_init(args)
+
+    # Prefixed command: 'drone @cli aipass init' → command="aipass"
     if command != "aipass":
         return False
 
@@ -266,14 +273,16 @@ def _print_init_help():
     console.print("[bold cyan]WHAT IT CREATES:[/bold cyan]")
     console.print()
 
-    files_text = """[bold]Project scaffold (6 files):[/bold]
+    files_text = """[bold]Project scaffold (8 files):[/bold]
 
   [green]1.[/green] [yellow]{NAME}_REGISTRY.json[/yellow]       Project registry with UUID
   [green]2.[/green] [yellow].trinity/passport.json[/yellow]      Project identity (with registry_id)
   [green]3.[/green] [yellow].trinity/local.json[/yellow]         Session history & learnings
   [green]4.[/green] [yellow].trinity/observations.json[/yellow]  Collaboration patterns
   [green]5.[/green] [yellow].aipass/aipass_local_prompt.md[/yellow]  Local prompt (injected every turn)
-  [green]6.[/green] [yellow]AIPASS.md[/yellow]                   Project prompt (persists in context)"""
+  [green]6.[/green] [yellow]CLAUDE.md[/yellow]                   Project prompt (Claude Code reads this)
+  [green]7.[/green] [yellow]README.md[/yellow]                   Project readme
+  [green]8.[/green] [yellow]STATUS.local.md[/yellow]             Project status"""
 
     console.print(Panel(files_text, border_style="green", padding=(1, 2), box=box.ROUNDED))
     console.print()
