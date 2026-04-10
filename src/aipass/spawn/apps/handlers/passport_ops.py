@@ -98,9 +98,14 @@ def grant_passport(
     # Regenerate template registry
     regenerate_template_registry(target)
 
-    # Register in AIPASS_REGISTRY.json
+    # Register in AIPASS_REGISTRY.json (store relative path for portability)
+    try:
+        registry_branch_path = str(target.relative_to(reg_path.parent))
+    except ValueError:
+        logger.warning("[passport] Cannot relativize path %s to registry %s, storing absolute", target, reg_path.parent)
+        registry_branch_path = str(target)
     registry_updated = add_to_registry(
-        reg_path, branch_upper, str(target), detected_profile,
+        reg_path, branch_upper, registry_branch_path, detected_profile,
         f"@{branch_lower}", purpose or "Birthright citizen - purpose TBD",
     )
 

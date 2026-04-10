@@ -49,6 +49,7 @@ GENERATION_ENDPOINT = f"{OPENROUTER_BASE_URL}/generation"
 # Default configuration values
 DEFAULT_GENERATION_CHECK_DELAY = 2  # seconds to wait before querying metrics
 DEFAULT_REQUEST_TIMEOUT = 30  # seconds for HTTP request timeout
+MAX_GENERATION_TRACKING = 500  # Maximum entries in generation_tracking before trimming
 
 
 # =============================================
@@ -161,15 +162,15 @@ def get_generation_metrics(generation_id: str, api_key: str) -> Optional[Dict[st
                 logger.warning(f"[{MODULE_NAME}] Invalid response structure from OpenRouter for generation {generation_id}")
                 return None
 
-            # Extract metrics from response
+            # Extract metrics from response (use `or 0` to handle explicit None values)
             metrics = data["data"]
             result = {
-                "total_cost": float(metrics.get("total_cost", 0)),
-                "tokens_prompt": int(metrics.get("tokens_prompt", 0)),
-                "tokens_completion": int(metrics.get("tokens_completion", 0)),
-                "generation_time": int(metrics.get("generation_time", 0)),
-                "latency": int(metrics.get("latency", 0)),
-                "provider_name": metrics.get("provider_name", "unknown")
+                "total_cost": float(metrics.get("total_cost") or 0),
+                "tokens_prompt": int(metrics.get("tokens_prompt") or 0),
+                "tokens_completion": int(metrics.get("tokens_completion") or 0),
+                "generation_time": int(metrics.get("generation_time") or 0),
+                "latency": int(metrics.get("latency") or 0),
+                "provider_name": metrics.get("provider_name") or "unknown"
             }
 
             # Retrieved metrics for generation_id
@@ -281,6 +282,20 @@ def store_usage_data(caller: str, model: str, generation_id: str, metrics: Dict[
         current_data["daily_totals"][today]["cost"] += metrics["total_cost"]
         current_data["daily_totals"][today]["tokens"] += total_tokens
 
+        # Update monthly totals
+        month = today[:7]  # YYYY-MM
+        if "monthly_totals" not in current_data:
+            current_data["monthly_totals"] = {}
+        if month not in current_data["monthly_totals"]:
+            current_data["monthly_totals"][month] = {
+                "requests": 0,
+                "cost": 0.0,
+                "tokens": 0
+            }
+        current_data["monthly_totals"][month]["requests"] += 1
+        current_data["monthly_totals"][month]["cost"] += metrics["total_cost"]
+        current_data["monthly_totals"][month]["tokens"] += total_tokens
+
         # Store generation details with newest-first ordering
         new_entry = {
             "timestamp": datetime.now().isoformat(),
@@ -292,6 +307,12 @@ def store_usage_data(caller: str, model: str, generation_id: str, metrics: Dict[
         # Create new dict with new entry first, then existing entries
         current_tracking = current_data["generation_tracking"]
         current_data["generation_tracking"] = {generation_id: new_entry, **current_tracking}
+
+        # Trim oldest entries if over the size cap
+        if len(current_data["generation_tracking"]) > MAX_GENERATION_TRACKING:
+            keys = list(current_data["generation_tracking"].keys())
+            for old_key in keys[MAX_GENERATION_TRACKING:]:
+                del current_data["generation_tracking"][old_key]
 
         # Save updated data with proper wrapper structure
         data_wrapper = {

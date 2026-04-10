@@ -26,9 +26,6 @@ from aipass.spawn.apps.handlers.registry import (
 )
 from aipass.spawn.apps.handlers.json import json_handler
 
-# Repo root — resolved from spawn package location
-_REPO_ROOT = Path(__file__).parents[5]  # handlers/apps/spawn/aipass/src/AIPass
-
 # Branches that cannot be deleted (critical infrastructure)
 _PROTECTED_BRANCHES = {"spawn", "devpulse", "drone"}
 
@@ -78,6 +75,7 @@ def delete_branch(
 
     # 1. Resolve branch path from registry
     registry_path = find_registry()
+    project_root = registry_path.parent
     registry = load_registry(registry_path)
     branch_entry = None
     branch_dir = None
@@ -87,7 +85,7 @@ def delete_branch(
             branch_entry = entry
             rel_path = entry.get("path", "")
             if rel_path:
-                branch_dir = (_REPO_ROOT / rel_path).resolve()
+                branch_dir = (project_root / rel_path).resolve()
             break
 
     if branch_entry is None:
@@ -131,7 +129,7 @@ def delete_branch(
 
     # 4. Dry run — report and return
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    archive_dir = _REPO_ROOT / ".archive" / "deleted_branches" / f"{branch_name}_{timestamp}"
+    archive_dir = project_root / ".archive" / "deleted_branches" / f"{branch_name}_{timestamp}"
 
     if dry_run:
         logger.info(f"[delete] Dry run: would archive {branch_name} to {archive_dir}")
@@ -151,6 +149,12 @@ def delete_branch(
     except Exception as exc:
         msg = f"Failed to create archive: {exc}"
         logger.error(f"[delete] {msg}")
+        # Clean up partial archive to avoid stale leftovers
+        if archive_dir.exists():
+            try:
+                shutil.rmtree(str(archive_dir))
+            except Exception as cleanup_exc:
+                logger.warning("[delete] Failed to clean up partial archive %s: %s", archive_dir, cleanup_exc)
         return {
             "branch": branch_name,
             "success": False,

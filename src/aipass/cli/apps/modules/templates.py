@@ -60,7 +60,7 @@ def print_help():
     CONSOLE.print("    Standard operation header with Rich styling")
     CONSOLE.print("    Example: operation_start('Creating branch', target='/path', type='module')")
     CONSOLE.print()
-    CONSOLE.print("  [yellow]operation_complete(success=None, results=None, **summary)[/yellow]")
+    CONSOLE.print("  [yellow]operation_complete(**summary)[/yellow]")
     CONSOLE.print("    Standard completion summary with Rich styling")
     CONSOLE.print("    Example: operation_complete(created=5, skipped=2, time='3.2s')")
     CONSOLE.print()
@@ -174,16 +174,15 @@ def operation_start(operation: str, **details) -> None:
     CONSOLE.print()
 
 
-def operation_complete(success: bool | None = None, **summary) -> None:
+def operation_complete(**summary) -> None:
     """
     Display standard operation completion template with Rich styling
 
     Args:
-        success: True if successful, False if errors
         **summary: Summary statistics
 
     Example:
-        operation_complete(True, created=5, skipped=2, time='3.2s')
+        operation_complete(created=5, skipped=2, time='3.2s')
     """
     CONSOLE.print()
     CONSOLE.print("─" * 50)

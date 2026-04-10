@@ -123,8 +123,6 @@ api/
 
 ### Provides To
 - All branches -- authenticated external API clients
-- `@backup` -- Google Drive service (migration from self-contained auth)
-- `@skills` -- future external API integrations (Telegram, Google services)
 - System-wide API key management and credential validation
 
 ### Credentials

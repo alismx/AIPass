@@ -136,10 +136,12 @@ def show_introspection() -> None:
 # COMMAND HANDLERS
 # =============================================================================
 
-def _cwd_has_registry() -> bool:
+def _cwd_has_registry(max_depth: int = 10) -> bool:
     """Check if CWD is within a project that has a *_REGISTRY.json."""
     cwd = Path.cwd()
-    for parent in [cwd] + list(cwd.parents):
+    for i, parent in enumerate([cwd] + list(cwd.parents)):
+        if i >= max_depth:
+            break
         if list(parent.glob("*_REGISTRY.json")):
             return True
     return False

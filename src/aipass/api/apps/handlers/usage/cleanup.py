@@ -101,7 +101,7 @@ def cleanup_old_data(data_file_path: Path, retention_days: int = DEFAULT_RETENTI
 
     except Exception as e:
         logger.error(f"Cleanup failed: {e}")
-        raise
+        return 0
 
 
 def _identify_old_generations(generation_tracking: Dict, cutoff_date: datetime) -> List[str]:

@@ -201,8 +201,7 @@ class TestUpdateBranch:
         assert not meta_path.exists()
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             result = update_branch("test_branch")
 
@@ -220,8 +219,7 @@ class TestUpdateBranch:
         dashboard_before = (branch_dir / "DASHBOARD.local.json").read_text()
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             result = update_branch("test_branch", dry_run=True)
 
@@ -248,8 +246,7 @@ class TestUpdateBranch:
         original_content = branch_py_content
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             result = update_branch("test_branch")
 
@@ -282,8 +279,7 @@ class TestUpdateBranch:
         reg_path.write_text(json.dumps(reg, indent=2) + "\n")
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             result = update_branch("test_branch")
 
@@ -302,8 +298,7 @@ class TestUpdateBranch:
         from aipass.spawn.apps.handlers.update_ops import update_branch
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             result = update_branch("nonexistent_branch")
 
@@ -329,8 +324,7 @@ class TestUpdateBranch:
         reg_path.write_text(json.dumps(reg, indent=2) + "\n")
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             result = update_branch("test_branch")
 
@@ -373,8 +367,7 @@ class TestUpdateBranch:
         save_branch_meta(branch_dir, meta)
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             result = update_branch("test_branch")
 
@@ -398,8 +391,7 @@ class TestUpdateAll:
         from aipass.spawn.apps.handlers.update_ops import update_all
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             results = update_all()
 
@@ -434,8 +426,7 @@ class TestUpdateAll:
         mock_registry.write_text(json.dumps(reg, indent=2) + "\n")
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             results = update_all()
 
@@ -459,8 +450,7 @@ class TestHandleUpdate:
         from aipass.spawn.apps.modules.update import handle_update
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             result = handle_update(["@test_branch"])
 
@@ -471,8 +461,7 @@ class TestHandleUpdate:
         from aipass.spawn.apps.modules.update import handle_update
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             result = handle_update(["--dry-run", "@test_branch"])
 
@@ -493,8 +482,7 @@ class TestHandleUpdate:
         from aipass.spawn.apps.modules.update import handle_update
 
         with patch("aipass.spawn.apps.handlers.update_ops.get_template_dir", return_value=template_dir), \
-             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry), \
-             patch("aipass.spawn.apps.handlers.update_ops._REPO_ROOT", tmp_path):
+             patch("aipass.spawn.apps.handlers.update_ops.find_registry", return_value=mock_registry):
 
             result = handle_update(["builder", "--all"])
 

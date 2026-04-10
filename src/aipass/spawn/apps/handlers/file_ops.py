@@ -23,6 +23,8 @@ SKIP_NAMES = {"__pycache__", ".git", ".template_registry.json"}
 
 def ensure_directory(path):
     """Create directory and parents if they don't exist."""
+    if path is None:
+        raise ValueError("ensure_directory received None path — caller passed invalid target")
     Path(path).mkdir(parents=True, exist_ok=True)
 
 

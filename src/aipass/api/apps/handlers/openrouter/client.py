@@ -256,12 +256,16 @@ def extract_response(response: Any) -> Optional[Dict[str, Any]]:
             return None
 
         # Extract metadata
+        finish_reason = response.choices[0].finish_reason if hasattr(response.choices[0], 'finish_reason') else None
         result = {
             "content": content,
             "id": response.id if hasattr(response, 'id') else None,
             "model": response.model if hasattr(response, 'model') else None,
-            "finish_reason": response.choices[0].finish_reason if hasattr(response.choices[0], 'finish_reason') else None
+            "finish_reason": finish_reason
         }
+
+        if finish_reason == "content_filter":
+            logger.warning("Response was truncated or blocked by content filter")
 
         logger.info(f"Extracted response - length: {len(content)} chars, id: {result['id']}")
         return result

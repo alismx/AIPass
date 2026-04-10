@@ -225,4 +225,8 @@ Examples:
         return 1
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except Exception as exc:
+        logger.error("Unhandled error in main: %s", exc)
+        sys.exit(1)

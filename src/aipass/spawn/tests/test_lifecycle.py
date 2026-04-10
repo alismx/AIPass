@@ -119,8 +119,7 @@ class TestDeleteBranch:
         """Successful delete should archive the branch and remove from registry."""
         from aipass.spawn.apps.handlers.delete_ops import delete_branch
 
-        with patch("aipass.spawn.apps.handlers.delete_ops._REPO_ROOT", repo_root), \
-             patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
+        with patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
 
             result = delete_branch("test_api", confirm=False)
 
@@ -146,8 +145,7 @@ class TestDeleteBranch:
         """Cannot delete spawn (self-protection)."""
         from aipass.spawn.apps.handlers.delete_ops import delete_branch
 
-        with patch("aipass.spawn.apps.handlers.delete_ops._REPO_ROOT", repo_root), \
-             patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
+        with patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
 
             result = delete_branch("spawn", confirm=False)
 
@@ -158,8 +156,7 @@ class TestDeleteBranch:
         """Cannot delete devpulse (orchestration hub protection)."""
         from aipass.spawn.apps.handlers.delete_ops import delete_branch
 
-        with patch("aipass.spawn.apps.handlers.delete_ops._REPO_ROOT", repo_root), \
-             patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
+        with patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
 
             result = delete_branch("devpulse", confirm=False)
 
@@ -170,8 +167,7 @@ class TestDeleteBranch:
         """Cannot delete drone (routing infrastructure protection)."""
         from aipass.spawn.apps.handlers.delete_ops import delete_branch
 
-        with patch("aipass.spawn.apps.handlers.delete_ops._REPO_ROOT", repo_root), \
-             patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
+        with patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
 
             result = delete_branch("drone", confirm=False)
 
@@ -182,8 +178,7 @@ class TestDeleteBranch:
         """Dry run should NOT delete or archive anything."""
         from aipass.spawn.apps.handlers.delete_ops import delete_branch
 
-        with patch("aipass.spawn.apps.handlers.delete_ops._REPO_ROOT", repo_root), \
-             patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
+        with patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
 
             result = delete_branch("test_api", confirm=False, dry_run=True)
 
@@ -202,8 +197,7 @@ class TestDeleteBranch:
         """Deleting a branch not in registry should fail gracefully."""
         from aipass.spawn.apps.handlers.delete_ops import delete_branch
 
-        with patch("aipass.spawn.apps.handlers.delete_ops._REPO_ROOT", repo_root), \
-             patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
+        with patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
 
             result = delete_branch("nonexistent", confirm=False)
 
@@ -214,8 +208,7 @@ class TestDeleteBranch:
         """Cancelling confirmation should not delete."""
         from aipass.spawn.apps.handlers.delete_ops import delete_branch
 
-        with patch("aipass.spawn.apps.handlers.delete_ops._REPO_ROOT", repo_root), \
-             patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry), \
+        with patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry), \
              patch("builtins.input", return_value="n"):
 
             result = delete_branch("test_api", confirm=True)
@@ -736,8 +729,7 @@ class TestHandleDelete:
         """handle_delete should reject protected branches."""
         from aipass.spawn.apps.modules.delete import handle_delete
 
-        with patch("aipass.spawn.apps.handlers.delete_ops._REPO_ROOT", repo_root), \
-             patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
+        with patch("aipass.spawn.apps.handlers.delete_ops.find_registry", return_value=mock_registry):
 
             result = handle_delete(["--yes", "@spawn"])
 

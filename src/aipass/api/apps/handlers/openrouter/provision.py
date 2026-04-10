@@ -172,9 +172,9 @@ def create_caller_config(caller: str, json_folder: Path) -> Dict[str, Any]:
     Create new caller configuration with defaults
 
     Creates complete 3-file JSON structure:
-    - openrouter_skill_config.json (API settings)
-    - openrouter_skill_data.json (usage tracking)
-    - openrouter_skill_log.json (operation log)
+    - openrouter_config.json (API settings)
+    - openrouter_data.json (usage tracking)
+    - openrouter_log.json (operation log)
 
     Args:
         caller: Name of calling module
@@ -189,7 +189,7 @@ def create_caller_config(caller: str, json_folder: Path) -> Dict[str, Any]:
             return {}
 
         # Create config file
-        config_file = json_folder / "openrouter_skill_config.json"
+        config_file = json_folder / "openrouter_config.json"
         config = get_default_caller_config()
 
         if not write_json(config_file, config):
@@ -199,7 +199,7 @@ def create_caller_config(caller: str, json_folder: Path) -> Dict[str, Any]:
         logger.info(f"Created config: {config_file.name}")
 
         # Create data file
-        data_file = json_folder / "openrouter_skill_data.json"
+        data_file = json_folder / "openrouter_data.json"
         data = get_default_caller_data()
 
         if write_json(data_file, data):
@@ -207,7 +207,7 @@ def create_caller_config(caller: str, json_folder: Path) -> Dict[str, Any]:
             logger.info(f"Created data: {data_file.name}")
 
         # Create log file
-        log_file = json_folder / "openrouter_skill_log.json"
+        log_file = json_folder / "openrouter_log.json"
         log_data = get_default_caller_log()
 
         if write_json(log_file, log_data):
@@ -258,7 +258,7 @@ def ensure_caller_config(caller: str | None = None) -> Dict[str, Any]:
                 return {}
 
         # Check if config already exists
-        config_file = json_folder / "openrouter_skill_config.json"
+        config_file = json_folder / "openrouter_config.json"
 
         if config_file.exists():
             config = read_json(config_file)

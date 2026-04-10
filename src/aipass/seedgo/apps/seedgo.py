@@ -226,32 +226,36 @@ def print_help() -> None:
 
 def main() -> int:
     """Main entry point - routes to modules."""
-    modules = discover_modules()
-    args = sys.argv[1:]
+    try:
+        modules = discover_modules()
+        args = sys.argv[1:]
 
-    # No args → introspection (discovery mode)
-    if not args:
-        print_introspection()
-        return 0
+        # No args → introspection (discovery mode)
+        if not args:
+            print_introspection()
+            return 0
 
-    # Help flag → full help with usage
-    if args[0] in ["--help", "-h", "help"]:
-        print_help()
-        return 0
+        # Help flag → full help with usage
+        if args[0] in ["--help", "-h", "help"]:
+            print_help()
+            return 0
 
-    if args[0] in ["--version", "-V"]:
-        console.print(f"seedgo v{VERSION}")
-        return 0
+        if args[0] in ["--version", "-V"]:
+            console.print(f"seedgo v{VERSION}")
+            return 0
 
-    command = args[0]
-    remaining = args[1:] if len(args) > 1 else []
+        command = args[0]
+        remaining = args[1:] if len(args) > 1 else []
 
-    # Route to modules
-    if route_command(command, remaining, modules):
-        return 0
+        # Route to modules
+        if route_command(command, remaining, modules):
+            return 0
 
-    error(f"Unknown command: {command}", suggestion="Run 'seedgo --help' for usage")
-    return 1
+        error(f"Unknown command: {command}", suggestion="Run 'seedgo --help' for usage")
+        return 1
+    except Exception as exc:
+        logger.error('[seedgo] Unhandled error in main: %s', exc)
+        raise
 
 
 if __name__ == "__main__":
