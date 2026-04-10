@@ -16,7 +16,7 @@ Auto-discovery architecture:
 import sys
 import importlib
 from pathlib import Path
-from typing import List, Any
+from typing import Any
 
 from aipass.prax import logger
 
@@ -31,7 +31,7 @@ console = Console(stderr=True)
 MODULES_DIR = Path(__file__).parent / "modules"
 
 
-def discover_modules() -> List[Any]:
+def discover_modules() -> list[Any]:
     """Auto-discover modules in modules/ directory."""
     modules = []
 
@@ -65,7 +65,7 @@ def print_introspection():
         console.print(f"  {name:20} {desc}")
 
 
-def route_command(command: str, args: List[str], modules: List[Any]) -> bool:
+def route_command(command: str, args: list[str], modules: list[Any]) -> bool:
     """Route command to appropriate module."""
     for module in modules:
         try:
