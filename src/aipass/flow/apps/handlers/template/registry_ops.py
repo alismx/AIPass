@@ -147,92 +147,96 @@ def load_registry() -> Dict[str, Any]:
             "type_count": len(data["types"]),
         }
 
-    # Auto-heal: prune orphaned types (directory deleted but registry entry remains)
-    templates_dir = FLOW_ROOT / "templates"
-    orphaned = [
-        dir_name
-        for dir_name in data["types"]
-        if dir_name not in _PROTECTED_TYPES
-        and not (templates_dir / dir_name).is_dir()
-    ]
-    if orphaned:
-        plan_registry_dir = FLOW_ROOT / "flow_json"
-        for dir_name in orphaned:
-            entry = data["types"][dir_name]
-            shorthand = entry.get("shorthand", entry.get("prefix", "").lower())
-            logger.info(
-                "[%s] Auto-pruning orphaned type '%s' (directory missing)",
-                MODULE_NAME,
-                dir_name,
-            )
-            del data["types"][dir_name]
-
-            # Clean up the per-type plan registry JSON
-            if shorthand:
-                plan_reg = plan_registry_dir / f"{shorthand}_registry.json"
-                if plan_reg.exists():
-                    plan_reg.unlink()
-                    logger.info(
-                        "[%s] Removed orphaned plan registry: %s",
-                        MODULE_NAME,
-                        plan_reg.name,
-                    )
+    # Auto-heal: prune orphans + register new dirs
+    if _prune_orphaned_types(data):
+        save_registry(data)
+    if _auto_register_new_types(data):
         save_registry(data)
 
-    # Auto-register: detect new template directories and register them
-    templates_dir = FLOW_ROOT / "templates"
-    if templates_dir.is_dir():
-        registered = set(data["types"].keys())
-        used_prefixes = {
-            entry.get("prefix", "").upper()
-            for entry in data["types"].values()
-        }
-        changed = False
-        for child in sorted(templates_dir.iterdir()):
-            if not child.is_dir() or child.name.startswith(("_", ".")) or child.name == "__pycache__":
-                continue
-            if child.name in registered:
-                continue
-            md_files = list(child.glob("*.md"))
-            if not md_files:
-                continue
-            # Derive prefix: first letter of first word + "PLAN"
-            first_word = child.name.split("_")[0]
-            prefix = (first_word[0].upper() + "PLAN") if first_word else "XPLAN"
-            # Avoid collisions — append second letter if needed
-            if prefix in used_prefixes and len(first_word) > 1:
-                prefix = (first_word[:2].upper() + "PLAN")
-            if prefix in used_prefixes:
-                continue  # Can't auto-assign — needs manual registration
-            shorthand = prefix.lower()
-            data["types"][child.name] = {
-                "prefix": prefix,
-                "shorthand": shorthand,
-                "created": _today(),
-                "registered_by": "auto",
-            }
-            used_prefixes.add(prefix)
-            registered.add(child.name)
-            changed = True
-            logger.info(
-                "[%s] Auto-registered new type '%s' with prefix %s",
-                MODULE_NAME,
-                child.name,
-                prefix,
-            )
-            # Create empty plan registry for new type
-            plan_reg = FLOW_ROOT / "flow_json" / f"{shorthand}_registry.json"
-            if not plan_reg.exists():
-                try:
-                    plan_reg.parent.mkdir(parents=True, exist_ok=True)
-                    with open(plan_reg, "w", encoding="utf-8") as fh:
-                        json.dump({"next_number": 1, "plans": {}, "last_updated": _today()}, fh, indent=2)
-                except OSError as exc:
-                    logger.warning("[%s] Failed to create plan registry for %s: %s", MODULE_NAME, child.name, exc)
-        if changed:
-            save_registry(data)
-
     return data
+
+
+def _prune_orphaned_types(data: Dict[str, Any]) -> bool:
+    """Remove registry entries whose template directory no longer exists.
+
+    Returns True if any entries were pruned.
+    """
+    templates_dir = FLOW_ROOT / "templates"
+    orphaned = [
+        d for d in data["types"]
+        if d not in _PROTECTED_TYPES and not (templates_dir / d).is_dir()
+    ]
+    if not orphaned:
+        return False
+
+    plan_registry_dir = FLOW_ROOT / "flow_json"
+    for dir_name in orphaned:
+        entry = data["types"][dir_name]
+        shorthand = entry.get("shorthand", entry.get("prefix", "").lower())
+        logger.info("[%s] Auto-pruning orphaned type '%s' (directory missing)", MODULE_NAME, dir_name)
+        del data["types"][dir_name]
+        if shorthand:
+            plan_reg = plan_registry_dir / f"{shorthand}_registry.json"
+            if plan_reg.exists():
+                plan_reg.unlink()
+                logger.info("[%s] Removed orphaned plan registry: %s", MODULE_NAME, plan_reg.name)
+    return True
+
+
+def _auto_register_new_types(data: Dict[str, Any]) -> bool:
+    """Detect unregistered template directories and register them.
+
+    Returns True if any new types were registered.
+    """
+    templates_dir = FLOW_ROOT / "templates"
+    if not templates_dir.is_dir():
+        return False
+
+    registered = set(data["types"].keys())
+    used_prefixes = {entry.get("prefix", "").upper() for entry in data["types"].values()}
+    changed = False
+
+    for child in sorted(templates_dir.iterdir()):
+        if not child.is_dir() or child.name.startswith(("_", ".")) or child.name == "__pycache__":
+            continue
+        if child.name in registered or not list(child.glob("*.md")):
+            continue
+        prefix = _derive_prefix(child.name, used_prefixes)
+        if prefix is None:
+            continue  # Collision — needs manual registration
+        shorthand = prefix.lower()
+        data["types"][child.name] = {
+            "prefix": prefix, "shorthand": shorthand,
+            "created": _today(), "registered_by": "auto",
+        }
+        used_prefixes.add(prefix)
+        registered.add(child.name)
+        changed = True
+        logger.info("[%s] Auto-registered new type '%s' with prefix %s", MODULE_NAME, child.name, prefix)
+        _create_plan_registry(shorthand)
+    return changed
+
+
+def _derive_prefix(dir_name: str, used: set) -> str | None:
+    """Derive a unique prefix from a directory name, or None if collision."""
+    first_word = dir_name.split("_")[0]
+    prefix = (first_word[0].upper() + "PLAN") if first_word else "XPLAN"
+    if prefix in used and len(first_word) > 1:
+        prefix = first_word[:2].upper() + "PLAN"
+    return None if prefix in used else prefix
+
+
+def _create_plan_registry(shorthand: str) -> None:
+    """Create an empty plan registry JSON for a new type."""
+    plan_reg = FLOW_ROOT / "flow_json" / f"{shorthand}_registry.json"
+    if plan_reg.exists():
+        return
+    try:
+        plan_reg.parent.mkdir(parents=True, exist_ok=True)
+        with open(plan_reg, "w", encoding="utf-8") as fh:
+            json.dump({"next_number": 1, "plans": {}, "last_updated": _today()}, fh, indent=2)
+    except OSError as exc:
+        logger.warning("[%s] Failed to create plan registry for %s: %s", MODULE_NAME, shorthand, exc)
 
 
 def save_registry(data: Dict[str, Any]) -> bool:

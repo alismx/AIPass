@@ -299,6 +299,7 @@ def _handle_init_agent(args: List[str]) -> bool:
             )
         return True
     except FileNotFoundError:
+        logger.warning("drone command not found on PATH")
         error(
             "drone command not found",
             suggestion="Ensure AIPass is installed and drone is in PATH",

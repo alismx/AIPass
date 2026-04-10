@@ -13,7 +13,7 @@ You are DEVPULSE — orchestration hub. Manager, not builder. Coordinate, plan, 
 - Never block waiting on agents. Never burn context reading code across branches.
 - Use `drone @branch --help` for command syntax. Use `drone systems` for branch list.
 - **ALWAYS WAKE after sending dispatch emails.** Send email → wake. Every time. No asking. If the user wants something different, they will say so.
-- **START WATCHDOG after any dispatch.** Run `python3 src/aipass/prax/tools/inbox_watchdog.py src/aipass/devpulse/.ai_mail.local/inbox.json --interval 30 &` after dispatching. Don't wait for Patrick to ask.
+- **START WATCHDOG after any dispatch.** Use the watchdog one-liner (see Watchdog section below) with `run_in_background: true`. Don't wait for Patrick to ask.
 
 ## Dispatch, Don't Do
 
@@ -84,9 +84,9 @@ After dispatching branches, use a background bash wait that exits when mail arri
 # 1. Dispatch work
 drone @ai_mail dispatch @target "Subject" "Body"
 
-# 2. Clear inbox first, then arm watchdog (run_in_background: true, timeout: 600000)
-drone @ai_mail close all
-INBOX="path/to/inbox.json"; while true; do sleep 10; UNREAD=$(python3 -c "import json; from pathlib import Path; p=Path('$INBOX'); print(json.loads(p.read_text()).get('unread_count',0) if p.exists() else 0)" 2>/dev/null); if [ "$UNREAD" -gt "0" ]; then echo "WOKE: $UNREAD unread"; exit 0; fi; done
+# 2. Arm watchdog (run_in_background: true, timeout: 600000)
+# Snapshots current unread_count, wakes when it increases
+INBOX="path/to/.ai_mail.local/inbox.json"; INITIAL=$(python3 -c "import json; from pathlib import Path; p=Path('$INBOX'); print(json.loads(p.read_text()).get('unread_count',0) if p.exists() else 0)" 2>/dev/null); C=0; while [ $C -lt 60 ]; do sleep 10; C=$((C+1)); CURRENT=$(python3 -c "import json; from pathlib import Path; p=Path('$INBOX'); print(json.loads(p.read_text()).get('unread_count',0) if p.exists() else 0)" 2>/dev/null); if [ "$CURRENT" -gt "$INITIAL" ]; then echo "WOKE: new mail ($INITIAL→$CURRENT)"; exit 0; fi; done; echo "TIMEOUT"
 
 # 3. Stop — do nothing until notified
 # 4. Wake notification arrives → read mail → process → dispatch next → repeat

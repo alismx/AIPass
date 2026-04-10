@@ -98,7 +98,8 @@ def _check_rate_limited(stderr_log: str) -> bool:
         lower = content.lower()
         return ("rate_limit" in lower or "429" in content or
                 "overloaded" in lower or "529" in content)
-    except OSError:
+    except OSError as e:
+        logger.warning("[monitor] _check_rate_limited failed reading %s: %s", stderr_log, e)
         return False
 
 
@@ -122,10 +123,10 @@ def _snapshot_jsonl_sizes(projects_dir: Path) -> dict:
         for f in projects_dir.glob("*.jsonl"):
             try:
                 sizes[f.name] = f.stat().st_size
-            except OSError:
-                pass
-    except OSError:
-        pass
+            except OSError as e:
+                logger.warning("[monitor] _snapshot_jsonl_sizes stat failed for %s: %s", f.name, e)
+    except OSError as e:
+        logger.warning("[monitor] _snapshot_jsonl_sizes glob failed for %s: %s", projects_dir, e)
     return sizes
 
 
@@ -145,10 +146,10 @@ def _check_jsonl_activity(projects_dir: Path, initial_sizes: dict) -> bool:
                 elif current_size > initial_sizes[name]:
                     # Existing file grew
                     return True
-            except OSError:
-                pass
-    except OSError:
-        pass
+            except OSError as e:
+                logger.warning("[monitor] _check_jsonl_activity stat failed for %s: %s", f.name, e)
+    except OSError as e:
+        logger.warning("[monitor] _check_jsonl_activity glob failed for %s: %s", projects_dir, e)
     return False
 
 

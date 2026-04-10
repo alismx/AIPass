@@ -61,6 +61,19 @@ def handle_command(command: str, args: list) -> bool:
     return handle_passport(args) == 0
 
 
+def _search_src_subdirs(src_dir: Path, dirname: str) -> Path | None:
+    """Search src/*/dirname for an existing directory."""
+    if not src_dir.is_dir():
+        return None
+    for sub in src_dir.iterdir():
+        if not sub.is_dir():
+            continue
+        candidate = sub / dirname
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def _resolve_target(dirname: str) -> Path:
     """Resolve a @dirname to a filesystem path.
 
@@ -87,13 +100,9 @@ def _resolve_target(dirname: str) -> Path:
             if candidate.exists():
                 return candidate
         # Search src/*/dirname (e.g., src/aipass/target)
-        src_dir = project_root / "src"
-        if src_dir.is_dir():
-            for sub in src_dir.iterdir():
-                if sub.is_dir():
-                    candidate = sub / dirname
-                    if candidate.exists():
-                        return candidate
+        found = _search_src_subdirs(project_root / "src", dirname)
+        if found:
+            return found
     except Exception as exc:
         logger.warning("[passport] Registry lookup failed during target resolution: %s", exc)
 

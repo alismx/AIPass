@@ -113,7 +113,8 @@ def deduplicate_fragment(
     try:
         from aipass.api.apps.handlers.auth.keys import get_api_key
         api_key = get_api_key("openrouter")
-    except ImportError:
+    except ImportError as e:
+        logger.warning(f"[deduplicator] api branch not available for key loading: {e}")
         api_key = None
 
     if not api_key:
