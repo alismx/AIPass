@@ -431,6 +431,10 @@ def main() -> int:
             logger.warning("Registry error during systems listing: %s", exc)
             err_console.print(f"drone: {exc}")
             return 1
+        except Exception as exc:
+            logger.error("[drone] Unhandled error in systems: %s", exc)
+            err_console.print(f"drone: unexpected error: {exc}")
+            return 1
 
     # scan — discover available commands in a branch
     if command == "scan":

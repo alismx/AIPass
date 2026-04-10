@@ -55,6 +55,13 @@
       "subject": "DPLAN-0039 prax audit work items — test coverage, JSON corruption, stale cleanup",
       "date_closed": "2026-03-29",
       "location": "prax"
+    },
+    {
+      "plan_id": "FPLAN-0097",
+      "type": "FPLAN",
+      "subject": "Codex + Gemini log monitoring adapters for prax monitor",
+      "date_closed": "2026-04-10",
+      "location": "prax"
     }
   ]
 }

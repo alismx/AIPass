@@ -92,11 +92,11 @@ INBOX="path/to/inbox.json"; while true; do sleep 10; UNREAD=$(python3 -c "import
 # 4. Wake notification arrives → read mail → process → dispatch next → repeat
 ```
 
-**Key:** Use `unread_count > 0` (not total_messages — close resets totals). Always `close all` before arming. 10s poll interval. `run_in_background: true` so the completion notification wakes you. On timeout, wake anyway to check if agent crashed — then either restart watchdog or re-dispatch.
+**Key:** Snapshot unread_count BEFORE arming, then wake when it increases. Don't require empty inbox — works with existing mail. 10s poll interval. `run_in_background: true` so the completion notification wakes you. On timeout, wake anyway to check if agent crashed.
 
 **Watchdog one-liner (copy-paste ready):**
 ```
-INBOX="/home/patrick/Projects/AIPass/src/aipass/devpulse/.ai_mail.local/inbox.json"; C=0; while [ $C -lt 60 ]; do sleep 10; C=$((C+1)); UNREAD=$(python3 -c "import json; from pathlib import Path; p=Path('$INBOX'); print(json.loads(p.read_text()).get('unread_count',0) if p.exists() else 0)" 2>/dev/null); if [ "$UNREAD" -gt "0" ]; then echo "WOKE: $UNREAD unread"; exit 0; fi; done; echo "TIMEOUT: 10min no reply — check if agent crashed"; exit 0
+INBOX="/home/patrick/Projects/AIPass/src/aipass/devpulse/.ai_mail.local/inbox.json"; INITIAL=$(python3 -c "import json; from pathlib import Path; p=Path('$INBOX'); print(json.loads(p.read_text()).get('unread_count',0) if p.exists() else 0)" 2>/dev/null); C=0; while [ $C -lt 60 ]; do sleep 10; C=$((C+1)); CURRENT=$(python3 -c "import json; from pathlib import Path; p=Path('$INBOX'); print(json.loads(p.read_text()).get('unread_count',0) if p.exists() else 0)" 2>/dev/null); if [ "$CURRENT" -gt "$INITIAL" ]; then echo "WOKE: new mail ($INITIAL→$CURRENT)"; exit 0; fi; done; echo "TIMEOUT: 10min no new mail"; exit 0
 ```
 
 ## Memory & Tracking
