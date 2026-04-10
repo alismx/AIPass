@@ -581,8 +581,8 @@ class BranchLogWatcher(WatchdogFileSystemEventHandler if WATCHDOG_AVAILABLE else
                     )
                     json_handler.log_operation("error_detected_in_log", {"branch": branch, "log_path": log_path})
                 return
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.warning("Lazy registry import failed in fallback path: %s", exc)
 
             # Registry truly unavailable — track count locally, fire with count
             _fallback_error_counts[error_hash] = _fallback_error_counts.get(error_hash, 0) + 1

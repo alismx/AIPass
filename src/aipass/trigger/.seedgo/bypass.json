@@ -373,6 +373,24 @@
       "standard": "silent_catch",
       "lines": [247],
       "reason": "Exception is handled: calls error() to display user-facing message with suggestion. Not a silent catch \u2014 the user sees the error output."
+    },
+    {
+      "file": "apps/modules/core.py",
+      "standard": "silent_catch",
+      "lines": [26, 171, 175],
+      "reason": "Line 26: ImportError fallback to rich Console. Lines 171/175: _coerce_value() type-testing try/except — intentional control flow for int/float/str coercion."
+    },
+    {
+      "file": "apps/config.py",
+      "standard": "silent_catch",
+      "lines": [37, 66, 96],
+      "reason": "Line 37: meta-logging _log_warning() — cannot log a failure to log. Line 66: atomic_write_json cleanup of tmp file during error — can't fail on cleanup. Line 96: ImportError fallback with _log_warning + rich Console."
+    },
+    {
+      "file": "apps/handlers/log_watcher.py",
+      "standard": "silent_catch",
+      "lines": [233],
+      "reason": "Timestamp format parsing loop — tries multiple datetime formats, ValueError is expected control flow on non-matching formats."
     }
   ],
   "notes": {
