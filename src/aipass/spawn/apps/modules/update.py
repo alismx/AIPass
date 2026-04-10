@@ -82,6 +82,17 @@ def handle_update(args: list[str]) -> int:
 
     Returns exit code (0=success, 1=failure).
     """
+    # Intercept --help before processing (argparse has add_help=False)
+    if "--help" in args or "-h" in args:
+        warning("Usage: drone @spawn update <@branch|class --all> [--dry-run] [--trace]")
+        console.print()
+        console.print("  [green]@branch[/green]           Update a single branch (uses its own class)")
+        console.print("  [green]builder --all[/green]     Update all builder-class branches")
+        console.print("  [green]birthright --all[/green]  Update all birthright-class branches")
+        console.print("  [green]--dry-run[/green]         Preview changes without modifying files")
+        console.print("  [green]--trace[/green]           Enable verbose logging")
+        return 0
+
     if not args:
         warning("Usage: drone @spawn update <@branch|class --all> [--dry-run] [--trace]")
         console.print()

@@ -61,7 +61,11 @@ def create_rollover_backup(file_path: Path) -> Dict[str, Any]:
     """
     try:
         # Create .backup directory in branch root
-        backup_dir = file_path.parent / '.backup'
+        # For .trinity/ files, go up to branch root; otherwise use file's parent
+        if file_path.parent.name == '.trinity':
+            backup_dir = file_path.parent.parent / '.backup'
+        else:
+            backup_dir = file_path.parent / '.backup'
         backup_dir.mkdir(exist_ok=True)
 
         # Backup filename: rollover_backup.json (always overwrites)
@@ -98,7 +102,11 @@ def restore_from_backup(file_path: Path) -> Dict[str, Any]:
         Dict with restore status
     """
     try:
-        backup_dir = file_path.parent / '.backup'
+        # Match backup location from create_rollover_backup
+        if file_path.parent.name == '.trinity':
+            backup_dir = file_path.parent.parent / '.backup'
+        else:
+            backup_dir = file_path.parent / '.backup'
         backup_name = f'rollover_backup_{file_path.name}'
         backup_path = backup_dir / backup_name
 

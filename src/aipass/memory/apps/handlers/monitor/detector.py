@@ -119,7 +119,10 @@ def _get_memory_file_path(branch: Dict, memory_type: str) -> Path | None:
     Returns:
         Path to memory file, or None if not found
     """
-    branch_path = Path(branch.get('path', ''))
+    raw_path = branch.get('path', '')
+    if not raw_path:
+        return None
+    branch_path = Path(raw_path)
     if not branch_path.exists():
         return None
 

@@ -33,7 +33,16 @@ from aipass.flow.apps.handlers.json import json_handler
 
 _PKG_ROOT = Path(__file__).resolve().parents[4]  # handlers/plan/ -> handlers/ -> apps/ -> flow/ -> aipass/
 FLOW_ROOT = _PKG_ROOT / "flow"
-PROCESSED_PLANS_DIR = _PKG_ROOT / "backup" / "processed_plans"
+
+def _find_repo_root() -> Path:
+    """Walk up to find the repo root (contains AIPASS_REGISTRY.json)."""
+    current = Path(__file__).resolve().parent
+    for parent in [current] + list(current.parents):
+        if (parent / "AIPASS_REGISTRY.json").exists():
+            return parent
+    return Path.cwd()
+
+PROCESSED_PLANS_DIR = _find_repo_root() / ".backup" / "processed_plans"
 
 MODULE_NAME = "restore_plan"
 

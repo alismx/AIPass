@@ -60,9 +60,9 @@ drone @flow list open                                      # Active plans
 drone systems                                              # All branches
 ```
 
-## Branches (15)
+## Branches (10 core)
 
-drone, seedgo, prax, cli, ai_mail, flow, spawn, trigger, api, backup, daemon, memory, commons (`src/commons/`), skills (`src/skills/`), devpulse (you — no apps/, coordinates via dispatch + agents)
+drone, seedgo, prax, cli, ai_mail, flow, spawn, trigger, memory, devpulse (you — no apps/, coordinates via dispatch + agents)
 
 ## Your Project
 

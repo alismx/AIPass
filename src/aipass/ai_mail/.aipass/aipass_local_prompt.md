@@ -28,7 +28,6 @@ apps/
   modules/
     email.py              # Orchestrates send/inbox/view/close/reply/sent/contacts
     dispatch.py           # Orchestrates dispatch (send + wake combined)
-    branch_ping.py        # Memory health monitoring
   handlers/
     paths.py              # Shared find_repo_root() utility
     central_writer.py     # Central inbox stats aggregation
@@ -57,13 +56,9 @@ apps/
       dashboard_sync.py   # Dashboard integration
     registry/
       read.py             # Registry reading + get_all_branches()
-      load.py             # Registry file loading
-      update.py           # Registry health updates
     users/
       user.py             # Current user detection (get_current_user)
       branch_detection.py # CWD/env-based branch identity detection
-    monitoring/
-      memory.py           # Memory file health checks
     json_utils/
       json_handler.py     # Auto-creating JSON system
 ```

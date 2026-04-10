@@ -146,7 +146,6 @@ Commands in the interactive tuple bypass capture and inherit the terminal direct
 | Branch   | Reason                                        |
 |----------|-----------------------------------------------|
 | `cli`    | User-facing CLI with Rich formatted output    |
-| `backup` | Heavy-IO branch (file scanning, Google APIs)  |
 
 To add: edit `interactive_commands` or `interactive_branches` in `_handle_target()` in `apps/drone.py`.
 

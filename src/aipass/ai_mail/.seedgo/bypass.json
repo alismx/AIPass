@@ -21,11 +21,6 @@
       "reason": "handle_command() depth 4 — entry point router, nested subcommand dispatch is inherent to the pattern"
     },
     {
-      "file": "apps/modules/branch_ping.py",
-      "standard": "deep_nesting",
-      "reason": "handle_command() depth 4 — command routing with multiple subcommands, same dispatch pattern"
-    },
-    {
       "file": "apps/handlers/dispatch/daemon.py",
       "standard": "deep_nesting",
       "reason": "3 functions: check_inbox_for_dispatch() depth 4 (priority scanning with business logic), run_daemon() depth 4 (main daemon loop), _check_lock() depth 4 (lock validation + PID liveness + cleanup)"
@@ -191,11 +186,6 @@
       "reason": "spawn_agent() has a full docstring — seedgo AST detection mismatch on multiline function signature."
     },
     {
-      "file": "apps/handlers/registry/update.py",
-      "standard": "documentation",
-      "reason": "ping_registry() has a full docstring — seedgo AST detection mismatch on multiline function signature."
-    },
-    {
       "file": "apps/modules/email.py",
       "standard": "deep_nesting",
       "reason": "_send_direct() depth 5 (arg parsing with branch resolution, --from flag, --dispatch flag), handle_close() depth 4 (close with archive + dashboard update)"
@@ -214,16 +204,6 @@
       "file": "apps/handlers/dispatch/status.py",
       "standard": "deep_nesting",
       "reason": "calculate_age() depth 4 — timestamp parsing with multiple fallback formats"
-    },
-    {
-      "file": "apps/handlers/registry/update.py",
-      "standard": "deep_nesting",
-      "reason": "_calculate_statistics() depth 5 — JSON traversal for registry stats with nested key checking"
-    },
-    {
-      "file": "apps/handlers/monitoring/errors.py",
-      "standard": "handlers",
-      "reason": "Archived — file moved to .archive/errors(disabled).py. No longer in active codebase."
     },
     {
       "file": "apps/handlers/central_writer.py",

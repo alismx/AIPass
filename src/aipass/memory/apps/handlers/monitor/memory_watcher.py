@@ -554,7 +554,7 @@ def start_memory_watcher() -> Dict[str, Any]:
     watched_paths = []
     for branch_path in branch_paths:
         try:
-            new_observer.schedule(watcher, str(branch_path), recursive=False)
+            new_observer.schedule(watcher, str(branch_path), recursive=True)
             watched_paths.append(str(branch_path))
         except Exception as e:
             logger.warning(f"[memory_watcher] Failed to schedule watcher for {branch_path}: {e}")
