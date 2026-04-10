@@ -45,7 +45,7 @@ from typing import Any, Dict, List, Optional
 
 
 from aipass.prax.apps.modules.logger import get_direct_logger
-from aipass.trigger.apps.config import TRIGGER_ROOT, atomic_write_json
+from aipass.trigger.apps.config import TRIGGER_ROOT, atomic_write_json, json_file_lock
 from aipass.trigger.apps.handlers.json import json_handler
 
 logger = get_direct_logger()
@@ -135,17 +135,18 @@ def _save_circuit_breaker_state() -> None:
     under the 'circuit_breaker' key so the state survives process restarts.
     """
     try:
-        data: Dict[str, Any] = {}
-        if TRIGGER_CONFIG_FILE.exists():
-            raw = TRIGGER_CONFIG_FILE.read_text(encoding='utf-8').strip()
-            if raw:
-                data = json.loads(raw)
-        data['circuit_breaker'] = {
-            'state': _circuit_breaker.state,
-            'opened_at': _circuit_breaker.opened_at,
-            'cooldown_seconds': _circuit_breaker.cooldown_seconds,
-        }
-        atomic_write_json(TRIGGER_CONFIG_FILE, data)
+        with json_file_lock(TRIGGER_CONFIG_FILE):
+            data: Dict[str, Any] = {}
+            if TRIGGER_CONFIG_FILE.exists():
+                raw = TRIGGER_CONFIG_FILE.read_text(encoding='utf-8').strip()
+                if raw:
+                    data = json.loads(raw)
+            data['circuit_breaker'] = {
+                'state': _circuit_breaker.state,
+                'opened_at': _circuit_breaker.opened_at,
+                'cooldown_seconds': _circuit_breaker.cooldown_seconds,
+            }
+            atomic_write_json(TRIGGER_CONFIG_FILE, data)
     except Exception as exc:
         logger.warning("Failed to save circuit breaker state: %s", exc)
 
@@ -183,14 +184,15 @@ def _clear_circuit_breaker_state() -> None:
     Deletes the 'circuit_breaker' key so restarts start with a clean slate.
     """
     try:
-        if TRIGGER_CONFIG_FILE.exists():
-            raw = TRIGGER_CONFIG_FILE.read_text(encoding='utf-8').strip()
-            if not raw:
-                return
-            data = json.loads(raw)
-            if 'circuit_breaker' in data:
-                del data['circuit_breaker']
-                atomic_write_json(TRIGGER_CONFIG_FILE, data)
+        with json_file_lock(TRIGGER_CONFIG_FILE):
+            if TRIGGER_CONFIG_FILE.exists():
+                raw = TRIGGER_CONFIG_FILE.read_text(encoding='utf-8').strip()
+                if not raw:
+                    return
+                data = json.loads(raw)
+                if 'circuit_breaker' in data:
+                    del data['circuit_breaker']
+                    atomic_write_json(TRIGGER_CONFIG_FILE, data)
     except Exception as exc:
         logger.warning("Failed to clear circuit breaker state: %s", exc)
 
@@ -576,53 +578,54 @@ def report(
         # invalid arguments are auto-suppressed to avoid noisy dispatch.
         is_user_error = bool(_USER_ERROR_PATTERNS.search(message))
 
-        registry = _load_registry()
-        now = datetime.now().isoformat()
+        with json_file_lock(REGISTRY_FILE):
+            registry = _load_registry()
+            now = datetime.now().isoformat()
 
-        if fingerprint in registry["errors"]:
-            # Existing error - increment count and update last_seen
-            entry = registry["errors"][fingerprint]
-            entry["count"] = entry.get("count", 1) + 1
-            entry["last_seen"] = now
-            # Update log_path if provided (might be from a different log file)
-            if log_path:
-                entry["log_path"] = log_path
-            # Auto-suppress user errors that were previously unsuppressed
-            if is_user_error and entry.get("status") != "suppressed":
-                entry["status"] = "suppressed"
-                entry["suppress_reason"] = "user_error"
-            _save_registry(registry)
-            result = dict(entry)
-            result["is_new"] = False
-            json_handler.log_operation("error_registered", {"fingerprint": fingerprint[:12], "count": entry["count"]})
-            return result
-        else:
-            # New error - create entry
-            initial_status = "suppressed" if is_user_error else "new"
-            initial_suppress_reason = "user_error" if is_user_error else ""
+            if fingerprint in registry["errors"]:
+                # Existing error - increment count and update last_seen
+                entry = registry["errors"][fingerprint]
+                entry["count"] = entry.get("count", 1) + 1
+                entry["last_seen"] = now
+                # Update log_path if provided (might be from a different log file)
+                if log_path:
+                    entry["log_path"] = log_path
+                # Auto-suppress user errors that were previously unsuppressed
+                if is_user_error and entry.get("status") != "suppressed":
+                    entry["status"] = "suppressed"
+                    entry["suppress_reason"] = "user_error"
+                _save_registry(registry)
+                result = dict(entry)
+                result["is_new"] = False
+                json_handler.log_operation("error_registered", {"fingerprint": fingerprint[:12], "count": entry["count"]})
+                return result
+            else:
+                # New error - create entry
+                initial_status = "suppressed" if is_user_error else "new"
+                initial_suppress_reason = "user_error" if is_user_error else ""
 
-            event = ErrorEvent(
-                fingerprint=fingerprint,
-                error_type=error_type,
-                message=message,
-                normalized_message=normalized,
-                component=component,
-                severity=severity,
-                count=1,
-                status=initial_status,
-                first_seen=now,
-                last_seen=now,
-                log_path=log_path,
-                suppress_reason=initial_suppress_reason,
-                source_fix_status="none"
-            )
-            entry_dict = asdict(event)
-            registry["errors"][fingerprint] = entry_dict
-            _save_registry(registry)
-            result = dict(entry_dict)
-            result["is_new"] = True
-            json_handler.log_operation("error_registered", {"fingerprint": fingerprint[:12], "count": 1})
-            return result
+                event = ErrorEvent(
+                    fingerprint=fingerprint,
+                    error_type=error_type,
+                    message=message,
+                    normalized_message=normalized,
+                    component=component,
+                    severity=severity,
+                    count=1,
+                    status=initial_status,
+                    first_seen=now,
+                    last_seen=now,
+                    log_path=log_path,
+                    suppress_reason=initial_suppress_reason,
+                    source_fix_status="none"
+                )
+                entry_dict = asdict(event)
+                registry["errors"][fingerprint] = entry_dict
+                _save_registry(registry)
+                result = dict(entry_dict)
+                result["is_new"] = True
+                json_handler.log_operation("error_registered", {"fingerprint": fingerprint[:12], "count": 1})
+                return result
 
     except Exception as exc:
         logger.warning("Failed to report error for component '%s': %s", component, exc)
