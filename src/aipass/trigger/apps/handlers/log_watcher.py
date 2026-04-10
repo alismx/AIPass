@@ -513,13 +513,9 @@ class BranchLogWatcher(WatchdogFileSystemEventHandler if WATCHDOG_AVAILABLE else
                         severity='medium'
                     )
 
-                    # Fire event for new errors (count == 1) and on second
-                    # occurrence (count == 2) so the handler can apply the
-                    # dispatch threshold.  Subsequent occurrences are silent
-                    # until the per-fingerprint backoff schedule allows.
+                    # Fire event on every occurrence — let the error_detected
+                    # handler decide via circuit breaker, backoff, and rate limiting.
                     error_count = result.get('count', 1)
-                    if not result.get('is_new', False) and error_count != 2:
-                        return
 
                     # Fire error_detected event with registry data
                     if _fire_event is not None:

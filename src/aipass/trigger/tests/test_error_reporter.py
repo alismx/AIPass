@@ -304,8 +304,8 @@ class TestReportError:
         mock_trigger.fire.assert_called_once()
         assert result["dispatched"] is True
 
-    def test_count_3_does_not_fire_event(self, monkeypatch):
-        """report_error does NOT fire event when count>=3 and is_new=False."""
+    def test_count_3_fires_event(self, monkeypatch):
+        """report_error fires event at count=3 — handler decides dispatch via backoff."""
         reporter = _import_reporter()
         registry_report = _get_registry_report()
         registry_report.return_value = {
@@ -324,11 +324,11 @@ class TestReportError:
 
         result = reporter.report_error("ImportError", "No module foo", "FLOW")
 
-        mock_trigger.fire.assert_not_called()
-        assert result["dispatched"] is False
+        mock_trigger.fire.assert_called_once()
+        assert result["dispatched"] is True
 
-    def test_count_5_does_not_fire_event(self, monkeypatch):
-        """report_error does NOT fire event for count=5."""
+    def test_count_5_fires_event(self, monkeypatch):
+        """report_error fires event at count=5 — handler decides dispatch via backoff."""
         reporter = _import_reporter()
         registry_report = _get_registry_report()
         registry_report.return_value = {
@@ -347,8 +347,8 @@ class TestReportError:
 
         result = reporter.report_error("ImportError", "No module foo", "FLOW")
 
-        mock_trigger.fire.assert_not_called()
-        assert result["dispatched"] is False
+        mock_trigger.fire.assert_called_once()
+        assert result["dispatched"] is True
 
     def test_fire_event_false_never_fires(self, monkeypatch):
         """report_error with fire_event=False never fires an event."""
