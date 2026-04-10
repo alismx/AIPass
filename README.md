@@ -19,7 +19,7 @@ A local multi-agent framework where your AI assistants keep their memory between
 - [What AIPass Does](#what-aipass-does)
 - [Quick Start](#quick-start)
 - [How It Works](#how-it-works)
-- [The 10 Agents](#the-10-agents)
+- [The 11 Agents](#the-11-agents)
 - [CLI Support](#cli-support)
 - [Project Status](#project-status)
 - [Requirements](#requirements)
@@ -96,12 +96,12 @@ That's it. Your agent has identity, memory, a mailbox, and knows what AIPass is.
 
 ### Explore the full framework
 
-Clone the repo to see all 10 agents working together — the reference implementation:
+Clone the repo to see all 11 agents working together — the reference implementation:
 
 ```bash
 git clone https://github.com/AIOSAI/AIPass.git
 cd AIPass
-./setup.sh                            # Creates venv, installs, bootstraps 10 agents
+./setup.sh                            # Creates venv, installs, bootstraps 11 agents
 drone systems                         # See all agents
 
 cd src/aipass/devpulse
@@ -148,7 +148,7 @@ drone @ai_mail dispatch @memory "Archive old sessions" "Find sessions older than
 - **Team mode (most of the time):** Talk to `devpulse`, dispatch work across the team. Agents work in parallel and report back.
 - **Direct mode (for deeper work):** `cd src/aipass/memory && claude` — work one-on-one with a specialist when the problem needs focused domain expertise.
 
-**AIPass ships with 10 core agents** that maintain and develop the framework — the reference implementation proving the architecture works at scale:
+**AIPass ships with 11 core agents** that maintain and develop the framework — the reference implementation proving the architecture works at scale:
 
 ```
 devpulse (orchestrator)
@@ -159,6 +159,7 @@ devpulse (orchestrator)
    ├── flow     — plan lifecycle, templates, auto-archival
    ├── spawn    — creates new agents anywhere on your filesystem
    ├── memory   — automatic archival, ChromaDB, semantic search
+   ├── api      — LLM access layer (OpenRouter, multi-provider)
    ├── trigger  — event-driven automation + self-healing
    └── cli      — terminal formatting and rich output
 ```
@@ -167,7 +168,7 @@ These agents work on the **same filesystem, same project, same time** — no san
 
 ---
 
-## The 10 Agents
+## The 11 Agents
 
 You don't need to memorize this list. Start with `devpulse`, use `drone` to reach any agent, and learn the rest as your workflow expands.
 
@@ -180,6 +181,7 @@ You don't need to memorize this list. Start with `devpulse`, use `drone` to reac
 | [**drone**](src/aipass/drone/README.md) | Routes `drone @branch command` to the right agent |
 | [**ai_mail**](src/aipass/ai_mail/README.md) | Agent-to-agent messaging and task dispatch |
 | [**memory**](src/aipass/memory/README.md) | Memory lifecycle — automatic archival, ChromaDB vectors, semantic search |
+| [**api**](src/aipass/api/README.md) | LLM access layer — multi-provider routing (OpenRouter) |
 | [**spawn**](src/aipass/spawn/README.md) | Creates new agents from templates |
 
 **Quality and operations** — how the system stays healthy:
@@ -214,7 +216,7 @@ setup.sh auto-detects which CLIs are installed and configures hooks for each.
 
 | Metric | Value |
 |--------|-------|
-| Agents | 10 |
+| Agents | 11 |
 | Quality standards | 33 automated checks |
 | Tests | 4,900+ (across all agents) |
 | PRs merged | 192+ (created by agents, reviewed by human) |

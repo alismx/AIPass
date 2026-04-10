@@ -18,7 +18,7 @@ src/aipass/{name}/
 └── README.md
 ```
 
-10 core branches: drone, seedgo, prax, cli, flow, ai_mail, trigger, spawn, memory, devpulse
+11 core branches: drone, seedgo, prax, cli, flow, ai_mail, api, trigger, spawn, memory, devpulse
 
 ## Commands
 

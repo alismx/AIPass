@@ -38,6 +38,7 @@ drone scan @branch               # Discover available commands in a branch
 drone activate @branch           # Scan + register all commands from a branch
 drone list                       # List registered custom command shortcuts
 drone remove <name>              # Remove a custom command shortcut
+drone hook-sounds on|off         # Toggle hook notification sounds
 drone --version                  # Show version
 drone --help                     # Show usage information
 ```

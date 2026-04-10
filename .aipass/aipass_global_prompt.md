@@ -39,7 +39,7 @@ src/aipass/{name}/
 ~/.secrets/aipass/          # API keys, tokens, credentials (outside repo, cross-platform)
 ```
 
-**10 core branches:** drone, seedgo, prax, cli, flow, ai_mail, trigger, spawn, memory, devpulse
+**11 core branches:** drone, seedgo, prax, cli, flow, ai_mail, api, trigger, spawn, memory, devpulse
 
 ## Commands
 
