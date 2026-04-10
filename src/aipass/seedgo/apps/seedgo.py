@@ -202,11 +202,21 @@ def print_help() -> None:
     console.print("  [green]drone @seedgo diagnostics @flow[/green]              [dim]# Single branch diagnostics[/dim]")
     console.print()
 
+    console.print("[yellow]Proof (Self-Check):[/yellow]")
+    console.print("  [green]drone @seedgo proof[/green]                          [dim]# List available proof packs[/dim]")
+    console.print("  [green]drone @seedgo proof aipass[/green]                   [dim]# Run all proofs for aipass pack[/dim]")
+    console.print("  [green]drone @seedgo proof_query[/green]                    [dim]# Query proof pack content[/dim]")
+    console.print()
+
+    console.print("[yellow]Test Map:[/yellow]")
+    console.print("  [green]drone @seedgo test_map @flow[/green]                 [dim]# Function test coverage map for branch[/dim]")
+    console.print()
+
     console.print("─" * 70)
     console.print()
 
     # Commands line for drone discovery
-    console.print("[dim]Commands: audit, standards_audit, standards_query, checklist, diagnostics, diagnostics_audit, readme, readme_update, --help[/dim]")
+    console.print("[dim]Commands: audit, standards_audit, standards_query, checklist, diagnostics, diagnostics_audit, proof, proof_query, test_map, readme, readme_update, --help[/dim]")
     console.print()
 
 

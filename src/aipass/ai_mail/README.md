@@ -9,7 +9,7 @@
 
 ---
 
-**Status:** Operational. Core email workflow (send/inbox/reply/close), dispatch system (with startup timeout + auto-retry), daemon, desktop notifications all working. Seedgo 99%. 322 tests.
+**Status:** Operational. Core email workflow (send/inbox/reply/close), dispatch system (with startup timeout + auto-retry), daemon, desktop notifications all working. Seedgo 99%.
 
 ## Commands / Usage
 
@@ -44,8 +44,6 @@ The `dispatch` command sends an email and wakes the target branch in one step. A
 - Startup health check: monitors JSONL session files for 90s, kills if no activity
 - Auto-retry: 3 strikes (resume, resume, fresh) before bounce
 - Failed agents trigger bounce emails back to sender
-- `ping` commands exit 0 but produce no visible output in drone context *(partial)*
-
 ## Architecture
 
 Follows the standard AIPass 3-layer pattern:
@@ -57,14 +55,12 @@ ai_mail/
 │   ├── modules/
 │   │   ├── email.py        # Send, inbox, view, reply, close, contacts
 │   │   ├── dispatch.py     # Dispatch status, daemon, wake
-│   │   └── branch_ping.py  # Branch health monitoring
 │   └── handlers/
 │       ├── email/           # Delivery, formatting, inbox ops, purge, reply
 │       ├── dispatch/        # Daemon, wake, dispatch_monitor, status
-│       ├── registry/        # Branch registry read/update/load
+│       ├── registry/        # Branch registry read
 │       ├── users/           # Branch detection, user lookup
 │       ├── json_utils/      # JSON I/O helpers (load_json, save_json)
-│       ├── monitoring/      # Memory health, error tracking
 │       ├── paths.py         # Shared find_repo_root() utility
 │       ├── notify.py        # Desktop notifications (dbus)
 │       └── central_writer.py # Central inbox stats aggregation

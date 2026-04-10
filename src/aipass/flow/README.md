@@ -14,7 +14,7 @@
 ### What I Do
 - Create numbered plans from type-specific templates via `templates/` plugins
 - Unified create/close/list commands for all plan types (FPLAN, DPLAN, RPLAN, TDPLAN, ...)
-- Close plans with foreground archival to `backup/processed_plans/`
+- Close plans with foreground archival to `.backup/processed_plans/`
 - Vector intake on close via `drone @memory process-plans` with chroma verification
 - List and filter plans across branches and plan types
 - Restore plans from backups
@@ -114,7 +114,7 @@ Plans follow the convention `{PREFIX}-{NNNN}_topic_slug_YYYY-MM-DD.md` where NNN
 On `drone @flow close`:
 1. Template check (fast-delete empty templates)
 2. Mark as closed in registry
-3. Archive to `backup/processed_plans/` (foreground, sets processed/cleanup flags atomically)
+3. Archive to `.backup/processed_plans/` (foreground, sets processed/cleanup flags atomically)
 4. Vector intake: `drone @memory process-plans` + `is_plan_vectorized()` verification
 5. Dashboard updates (local + central + branch)
 6. Append to `CLOSED_PLANS.local.json`

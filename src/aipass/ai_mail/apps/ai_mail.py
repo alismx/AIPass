@@ -65,8 +65,6 @@ COMMANDS:
   close     - Close email(s) without reply (archives)
   sent      - View sent messages
   contacts  - Manage contacts
-  ping      - Memory health check
-
 EMAIL LIFECYCLE (v2):
   new → opened → closed
   - new: Just arrived, never viewed

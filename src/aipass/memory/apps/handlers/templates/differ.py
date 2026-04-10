@@ -34,7 +34,7 @@ from aipass.memory.apps.handlers.json import json_handler
 # PATH SETUP
 # =============================================================================
 
-MEMORY_ROOT = Path(__file__).resolve().parent.parent.parent  # handlers/templates/differ.py -> memory/
+MEMORY_ROOT = Path(__file__).resolve().parent.parent.parent.parent  # handlers/templates/differ.py -> apps -> handlers -> templates -> memory/
 
 # =============================================================================
 # CONSTANTS

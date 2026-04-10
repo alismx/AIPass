@@ -42,7 +42,7 @@ from aipass.memory.apps.handlers.json.memory_files import (
 # PATH SETUP
 # =============================================================================
 
-MEMORY_ROOT = Path(__file__).resolve().parent.parent.parent  # handlers/templates/pusher.py -> memory/
+MEMORY_ROOT = Path(__file__).resolve().parent.parent.parent.parent  # handlers/templates/pusher.py -> apps -> handlers -> templates -> memory/
 
 
 def _find_repo_root() -> Path:

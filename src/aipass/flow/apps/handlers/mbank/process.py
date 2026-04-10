@@ -52,7 +52,7 @@ def _find_repo_root() -> Path:
 
 _REPO_ROOT = _find_repo_root()
 MEMORY_PATH = _REPO_ROOT / "src" / "aipass" / "memory"
-PROCESSED_PLANS_DIR = _PKG_ROOT / "backup" / "processed_plans"
+PROCESSED_PLANS_DIR = _REPO_ROOT / ".backup" / "processed_plans"
 REGISTRY_FILE = FLOW_JSON_DIR / "fplan_registry.json"
 
 # =============================================

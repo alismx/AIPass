@@ -75,6 +75,15 @@ def handle_delete(args: list[str]) -> int:
 
     Returns exit code (0=success, 1=failure).
     """
+    # Intercept --help before processing (argparse has add_help=False)
+    if "--help" in args or "-h" in args:
+        warning("Usage: drone @spawn delete <@branch> [--yes] [--dry-run]")
+        console.print()
+        console.print("  [green]@branch[/green]    Branch to archive and deregister")
+        console.print("  [green]--yes[/green]      Skip confirmation prompt")
+        console.print("  [green]--dry-run[/green]  Preview what would happen without changes")
+        return 0
+
     if not args:
         warning("Usage: drone @spawn delete <@branch> [--yes] [--dry-run]")
         console.print()

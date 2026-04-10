@@ -179,6 +179,59 @@ def load_registry() -> Dict[str, Any]:
                     )
         save_registry(data)
 
+    # Auto-register: detect new template directories and register them
+    templates_dir = FLOW_ROOT / "templates"
+    if templates_dir.is_dir():
+        registered = set(data["types"].keys())
+        used_prefixes = {
+            entry.get("prefix", "").upper()
+            for entry in data["types"].values()
+        }
+        changed = False
+        for child in sorted(templates_dir.iterdir()):
+            if not child.is_dir() or child.name.startswith(("_", ".")) or child.name == "__pycache__":
+                continue
+            if child.name in registered:
+                continue
+            md_files = list(child.glob("*.md"))
+            if not md_files:
+                continue
+            # Derive prefix: first letter of first word + "PLAN"
+            first_word = child.name.split("_")[0]
+            prefix = (first_word[0].upper() + "PLAN") if first_word else "XPLAN"
+            # Avoid collisions — append second letter if needed
+            if prefix in used_prefixes and len(first_word) > 1:
+                prefix = (first_word[:2].upper() + "PLAN")
+            if prefix in used_prefixes:
+                continue  # Can't auto-assign — needs manual registration
+            shorthand = prefix.lower()
+            data["types"][child.name] = {
+                "prefix": prefix,
+                "shorthand": shorthand,
+                "created": _today(),
+                "registered_by": "auto",
+            }
+            used_prefixes.add(prefix)
+            registered.add(child.name)
+            changed = True
+            logger.info(
+                "[%s] Auto-registered new type '%s' with prefix %s",
+                MODULE_NAME,
+                child.name,
+                prefix,
+            )
+            # Create empty plan registry for new type
+            plan_reg = FLOW_ROOT / "flow_json" / f"{shorthand}_registry.json"
+            if not plan_reg.exists():
+                try:
+                    plan_reg.parent.mkdir(parents=True, exist_ok=True)
+                    with open(plan_reg, "w", encoding="utf-8") as fh:
+                        json.dump({"next_number": 1, "plans": {}, "last_updated": _today()}, fh, indent=2)
+                except OSError as exc:
+                    logger.warning("[%s] Failed to create plan registry for %s: %s", MODULE_NAME, child.name, exc)
+        if changed:
+            save_registry(data)
+
     return data
 
 
