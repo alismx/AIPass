@@ -51,6 +51,7 @@ from aipass.trigger.apps.handlers.json import json_handler
 logger = get_direct_logger()
 REGISTRY_FILE = TRIGGER_ROOT / "trigger_json" / "error_registry.json"
 TRIGGER_CONFIG_FILE = TRIGGER_ROOT / "trigger_json" / "trigger_config.json"
+CB_STATE_FILE = TRIGGER_ROOT / "trigger_json" / "trigger_cb_state.json"
 
 VALID_STATUSES = ('new', 'investigating', 'suppressed', 'resolved')
 VALID_SEVERITIES = ('low', 'medium', 'high', 'critical')
@@ -129,40 +130,48 @@ class CircuitBreakerState:
 # ---------------------------------------------------------------------------
 
 def _save_circuit_breaker_state() -> None:
-    """Persist circuit breaker state to trigger_config.json.
+    """Persist full circuit breaker + per-fingerprint state to trigger_cb_state.json.
 
-    Saves the current breaker state, opened_at timestamp, and cooldown
-    under the 'circuit_breaker' key so the state survives process restarts.
+    Saves CB state (including recent_errors, half_open_allow) and per-fingerprint
+    dispatch tracking so the full state survives process restarts.
     """
     try:
-        with json_file_lock(TRIGGER_CONFIG_FILE):
-            data: Dict[str, Any] = {}
-            if TRIGGER_CONFIG_FILE.exists():
-                raw = TRIGGER_CONFIG_FILE.read_text(encoding='utf-8').strip()
-                if raw:
-                    data = json.loads(raw)
-            data['circuit_breaker'] = {
-                'state': _circuit_breaker.state,
-                'opened_at': _circuit_breaker.opened_at,
-                'cooldown_seconds': _circuit_breaker.cooldown_seconds,
+        with json_file_lock(CB_STATE_FILE):
+            state_data = {
+                'circuit_breaker': {
+                    'state': _circuit_breaker.state,
+                    'opened_at': _circuit_breaker.opened_at,
+                    'cooldown_seconds': _circuit_breaker.cooldown_seconds,
+                    'recent_errors': _circuit_breaker.recent_errors,
+                    'summary_sent': _circuit_breaker.summary_sent,
+                    'half_open_allow': _circuit_breaker.half_open_allow,
+                },
+                'per_fingerprint': {
+                    fp: {
+                        'last_dispatch': max(times) if times else 0.0,
+                        'count': _fingerprint_dispatch_count.get(fp, 0),
+                    }
+                    for fp, times in _fingerprint_dispatch_times.items()
+                },
             }
-            atomic_write_json(TRIGGER_CONFIG_FILE, data)
+            atomic_write_json(CB_STATE_FILE, state_data)
     except Exception as exc:
         logger.warning("Failed to save circuit breaker state: %s", exc)
 
 
 def _load_circuit_breaker_state() -> CircuitBreakerState:
-    """Load persisted circuit breaker state from trigger_config.json.
+    """Load full circuit breaker state from trigger_cb_state.json.
 
-    If a valid persisted state exists, restores it into a new
-    CircuitBreakerState. Otherwise returns a fresh default instance.
+    Restores CB state including recent_errors and half_open_allow,
+    plus per-fingerprint dispatch tracking into module-level dicts.
 
     Returns:
         CircuitBreakerState populated from disk or defaults.
     """
+    global _fingerprint_dispatch_times, _fingerprint_dispatch_count
     try:
-        if TRIGGER_CONFIG_FILE.exists():
-            raw = TRIGGER_CONFIG_FILE.read_text(encoding='utf-8').strip()
+        if CB_STATE_FILE.exists():
+            raw = CB_STATE_FILE.read_text(encoding='utf-8').strip()
             if not raw:
                 return CircuitBreakerState()
             data = json.loads(raw)
@@ -172,6 +181,17 @@ def _load_circuit_breaker_state() -> CircuitBreakerState:
                 breaker.state = cb_data['state']
                 breaker.opened_at = float(cb_data.get('opened_at', 0.0))
                 breaker.cooldown_seconds = int(cb_data.get('cooldown_seconds', breaker.base_cooldown))
+                breaker.recent_errors = [float(t) for t in cb_data.get('recent_errors', [])]
+                breaker.summary_sent = bool(cb_data.get('summary_sent', False))
+                breaker.half_open_allow = bool(cb_data.get('half_open_allow', True))
+                # Restore per-fingerprint tracking
+                pf_data = data.get('per_fingerprint', {})
+                for fp, info in pf_data.items():
+                    last = float(info.get('last_dispatch', 0.0))
+                    count = int(info.get('count', 0))
+                    if last > 0:
+                        _fingerprint_dispatch_times[fp] = [last]
+                    _fingerprint_dispatch_count[fp] = count
                 return breaker
     except Exception as exc:
         logger.warning("Failed to load circuit breaker state: %s", exc)
@@ -179,30 +199,20 @@ def _load_circuit_breaker_state() -> CircuitBreakerState:
 
 
 def _clear_circuit_breaker_state() -> None:
-    """Remove persisted circuit breaker state from trigger_config.json.
-
-    Deletes the 'circuit_breaker' key so restarts start with a clean slate.
-    """
+    """Remove persisted circuit breaker state file."""
     try:
-        with json_file_lock(TRIGGER_CONFIG_FILE):
-            if TRIGGER_CONFIG_FILE.exists():
-                raw = TRIGGER_CONFIG_FILE.read_text(encoding='utf-8').strip()
-                if not raw:
-                    return
-                data = json.loads(raw)
-                if 'circuit_breaker' in data:
-                    del data['circuit_breaker']
-                    atomic_write_json(TRIGGER_CONFIG_FILE, data)
+        if CB_STATE_FILE.exists():
+            CB_STATE_FILE.unlink()
     except Exception as exc:
         logger.warning("Failed to clear circuit breaker state: %s", exc)
 
 
-# Module-level circuit breaker state (restored from disk if available)
-_circuit_breaker = _load_circuit_breaker_state()
-
 # Module-level dicts for per-fingerprint dispatch tracking
 _fingerprint_dispatch_times: Dict[str, List[float]] = {}  # fingerprint -> [dispatch_timestamps]
 _fingerprint_dispatch_count: Dict[str, int] = {}  # fingerprint -> total dispatch count
+
+# Module-level circuit breaker state (restored from disk if available)
+_circuit_breaker = _load_circuit_breaker_state()
 
 
 # ---------------------------------------------------------------------------
@@ -413,6 +423,7 @@ def record_dispatch(fingerprint: str) -> None:
     _fingerprint_dispatch_times[fingerprint].append(now)
     _fingerprint_dispatch_count[fingerprint] = \
         _fingerprint_dispatch_count.get(fingerprint, 0) + 1
+    _save_circuit_breaker_state()
 
 
 # ---------------------------------------------------------------------------
