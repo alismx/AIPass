@@ -516,9 +516,16 @@ def handle_error_detected(
             subject=email_subject,
             message=notification_message,
             auto_execute=True,
-            reply_to='@trigger',
+            reply_to='@devpulse',
             from_branch='@trigger'
         )
+
+        # Wake the target branch so the email is processed immediately
+        try:
+            from aipass.ai_mail.apps.handlers.dispatch.wake import wake_branch
+            wake_branch(recipient, fresh=False, sender='@trigger')
+        except Exception:
+            pass  # Silent — email in inbox as fallback
 
         json_handler.log_operation("dispatch_sent", {"recipient": recipient})
 
