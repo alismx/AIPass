@@ -81,6 +81,7 @@ def show_help() -> None:
     console.print("  drone activate @target         Register all commands from a branch")
     console.print("  drone list                     List registered custom commands")
     console.print("  drone remove <name>            Remove a custom command")
+    console.print("  drone hook-sounds on|off       Toggle hook notification sounds")
     console.print("  drone --help                   Show this help")
     console.print("  drone --version                Show version")
     console.print()
@@ -457,6 +458,13 @@ def main() -> int:
     # list — show registered custom commands
     if command == "list":
         return _handle_list()
+
+    # hook-sounds — toggle hook notification sounds
+    if command == "hook-sounds":
+        from aipass.drone.apps.plugins.hook_sounds.hook_sounds_plugin import handle_command as hs_handle
+        cmd = args[1] if len(args) > 1 else None
+        hs_handle(cmd)
+        return 0
 
     # remove — remove a custom command by name
     if command == "remove":
