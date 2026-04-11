@@ -76,8 +76,11 @@ LEVEL_COLORS = {
     'success': 'green',
 }
 
-# Branch-specific colors for visual distinction
+# Branch-specific colors for visual distinction.
+# For three-tier labels (AIPASS/DEVPULSE/OPUS), the base key is the first segment (AIPASS).
+# Internal AIPass branches also appear as bare names for non-session events.
 BRANCH_COLORS = {
+    # Internal AIPass branches — individually colored for non-session events
     'SEEDGO': 'green',
     'DRONE': 'cyan',
     'FLOW': 'blue',
@@ -89,11 +92,15 @@ BRANCH_COLORS = {
     'DEVPULSE': 'bright_yellow',
     'API': 'bright_red',
     'SECURITY': 'red',
-    'AIPASS': 'bold white',
     'TRIGGER': 'bright_red',
     'SPEAKEASY': 'bright_white',
     'THE_COMMONS': 'bright_green',
     'ASSISTANT': 'bright_yellow',
+    # Project-level keys — used for three-tier labels (first segment of PROJECT/AGENT/MODEL)
+    'AIPASS': 'bold white',      # All internal AIPass agent sessions
+    'AIPL': 'bright_blue',       # AIPL external project
+    'VERA-STUDIO': 'bright_cyan', # Vera Studio external project
+    'COMPASS': 'bright_green',   # Compass external project
 }
 
 

@@ -45,6 +45,7 @@ class BranchDetector:
         self.module_map: Dict[str, str] = {}  # module -> branch
         self.known_branches: Set[str] = set()
         self._repo_root: Optional[Path] = None
+        self._external_project_cache: Dict[str, str] = {}  # dir_name -> project_name
         self._load_registry()
         json_handler.log_operation("branch_detected", {"known_branches": len(self.known_branches)})
 
@@ -243,6 +244,63 @@ class BranchDetector:
                         return branch_upper
         return None
 
+    def _detect_from_external_project_path(self, path: Path) -> Optional[str]:
+        """Detect project/agent label from a file path under ~/Projects/.
+
+        Covers external AIPass projects (AIPL, Vera-Studio, etc.) whose files
+        are not in branch_map but live under a directory containing *_REGISTRY.json.
+        AIPass itself is skipped — its branches are handled by branch_map.
+
+        Returns labels like 'AIPL/POLYGLOT', 'VERA-STUDIO', 'AIPL/POLYGLOT TESTS'.
+        """
+        projects_base = Path.home() / 'Projects'
+        try:
+            rel = path.relative_to(projects_base)
+        except ValueError:
+            return None
+
+        parts = rel.parts
+        if not parts:
+            return None
+
+        project_dir_name = parts[0]
+
+        # Skip AIPass — handled by registry/branch_map (Strategy 2)
+        if project_dir_name.lower() == 'aipass':
+            return None
+
+        # Look up project name (cached)
+        if project_dir_name in self._external_project_cache:
+            project_name = self._external_project_cache[project_dir_name]
+        else:
+            project_dir = projects_base / project_dir_name
+            project_name = None
+            try:
+                for item in project_dir.iterdir():
+                    if item.is_file() and item.name.endswith('_REGISTRY.json'):
+                        project_name = item.stem.replace('_REGISTRY', '')
+                        break
+            except (OSError, PermissionError):
+                pass
+            if not project_name:
+                return None  # Not an external AIPass project
+            self._external_project_cache[project_dir_name] = project_name
+
+        # Extract agent from path: {project}/src/{agent}/...
+        agent_name = None
+        if len(parts) > 2 and parts[1].lower() == 'src':
+            agent_name = parts[2].upper()
+
+        # Append TESTS suffix when path is clearly test output
+        path_str_lower = str(path).lower()
+        is_test = ('/tests/' in path_str_lower or '/test_' in path_str_lower
+                   or path_str_lower.endswith('_test.py') or path_str_lower.endswith('_test.log'))
+        test_suffix = ' TESTS' if is_test else ''
+
+        if agent_name:
+            return f"{project_name}/{agent_name}{test_suffix}"
+        return f"{project_name}{test_suffix}"
+
     def _extract_branch_from_central(self, path_str: str, path: Path) -> Optional[str]:
         """Extract branch name from ai_mail central filename patterns."""
         if not ('AI_MAIL' in path_str or '.ai_mail' in path_str or 'ai_mail' in path_str.lower()):
@@ -292,6 +350,12 @@ class BranchDetector:
                     result = self.branch_map[parent_str]
                     self.log_map[path_str] = result
                     return result
+
+            # Strategy 2.5: External AIPass project files (AIPL, Vera-Studio, etc.)
+            result = self._detect_from_external_project_path(path)
+            if result:
+                self.log_map[path_str] = result
+                return result
 
             # Strategy 3: Claude Code project files
             if '.claude/projects/' in path_str:
