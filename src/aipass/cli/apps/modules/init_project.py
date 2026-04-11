@@ -327,7 +327,7 @@ def _handle_init_update(args: List[str]) -> bool:
     from rich.table import Table
     from rich import box
 
-    if not args or args[0] in ("--help", "-h", "help"):
+    if args and args[0] in ("--help", "-h", "help"):
         console.print()
         header("aipass init update — Refresh Scaffold Files")
         console.print("[dim]Updates managed prompt and config files with the latest templates[/dim]")
@@ -348,8 +348,7 @@ def _handle_init_update(args: List[str]) -> bool:
         return True
 
     caller_cwd = os.environ.get("AIPASS_CALLER_CWD", os.getcwd())
-    target_arg = args[0]
-    target = Path(target_arg)
+    target = Path(args[0]) if args else Path(caller_cwd)
     if not target.is_absolute():
         target = Path(caller_cwd) / target
 
@@ -368,28 +367,42 @@ def _handle_init_update(args: List[str]) -> bool:
     console.print()
     header("Project Updated")
 
+    already_current = result.get("already_current", [])
     summary = (
         f"[bold]{result['project_name']}[/bold]\n"
         f"\n"
-        f"  [yellow]Target:[/yellow]   [dim]{result['target']}[/dim]\n"
-        f"  [yellow]Updated:[/yellow]  {len(result['updated_files'])} files\n"
-        f"  [yellow]Skipped:[/yellow]  {len(result['skipped_files'])} files"
+        f"  [yellow]Target:[/yellow]          [dim]{result['target']}[/dim]\n"
+        f"  [yellow]Updated:[/yellow]         {len(result['updated_files'])} files\n"
+        f"  [yellow]Already current:[/yellow] {len(already_current)} files\n"
+        f"  [yellow]User-owned:[/yellow]      {len(result['skipped_files'])} files (skipped)"
     )
     console.print(Panel(summary, border_style="green", box=box.ROUNDED))
 
-    # Updated files table
-    updated_table = Table(
-        show_header=True, header_style="bold cyan", border_style="dim", title="Updated"
-    )
-    updated_table.add_column("#", style="green", width=3)
-    updated_table.add_column("File", style="yellow")
-    for i, f in enumerate(result["updated_files"], 1):
-        updated_table.add_row(str(i), f)
-    console.print(updated_table)
+    # Updated files table (only show if something changed)
+    if result["updated_files"]:
+        updated_table = Table(
+            show_header=True, header_style="bold cyan", border_style="dim", title="Updated"
+        )
+        updated_table.add_column("#", style="green", width=3)
+        updated_table.add_column("File", style="yellow")
+        for i, f in enumerate(result["updated_files"], 1):
+            updated_table.add_row(str(i), f)
+        console.print(updated_table)
+
+    # Already current table
+    if already_current:
+        current_table = Table(
+            show_header=True, header_style="bold cyan", border_style="dim", title="Already current"
+        )
+        current_table.add_column("#", style="dim", width=3)
+        current_table.add_column("File", style="dim")
+        for i, f in enumerate(already_current, 1):
+            current_table.add_row(str(i), f)
+        console.print(current_table)
 
     # Skipped files table
     skipped_table = Table(
-        show_header=True, header_style="bold cyan", border_style="dim", title="Skipped"
+        show_header=True, header_style="bold cyan", border_style="dim", title="User-owned (skipped)"
     )
     skipped_table.add_column("#", style="dim", width=3)
     skipped_table.add_column("File", style="dim")
@@ -398,12 +411,16 @@ def _handle_init_update(args: List[str]) -> bool:
     console.print(skipped_table)
     console.print()
 
-    success(f"Updated {len(result['updated_files'])} files")
+    if result["updated_files"]:
+        success(f"Updated {len(result['updated_files'])} files")
+    else:
+        success("All files already up to date")
 
     json_handler.log_operation("aipass_init_update", {
         "project_name": result["project_name"],
         "target": result["target"],
         "files_updated": len(result["updated_files"]),
+        "files_already_current": len(already_current),
         "files_skipped": len(result["skipped_files"]),
     })
 

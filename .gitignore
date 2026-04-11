@@ -28,6 +28,7 @@ AIPASS_REGISTRY.json
 .trinity/
 .ai_mail.local/
 ai_mail.local/
+.feedback.local/
 DASHBOARD.local.json
 dev.local.md
 STATUS.local.md

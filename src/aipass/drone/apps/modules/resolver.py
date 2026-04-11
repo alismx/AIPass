@@ -135,6 +135,9 @@ def normalize_branch_arg(target: str) -> str:
 def resolve_branch(symbolic_name: str) -> str:
     """Resolve a symbolic branch name to its absolute path.
 
+    Checks primary (local) registry first, then falls back to AIPASS_HOME
+    registry for cross-project resolution.
+
     Args:
         symbolic_name: Branch name with @ prefix (e.g. "@seedgo")
 
@@ -149,10 +152,9 @@ def resolve_branch(symbolic_name: str) -> str:
         raise BranchNotFoundError(
             f"Branch name must use @ prefix: '@{symbolic_name}' (got '{symbolic_name}')"
         )
-    registry = load_registry()
 
     name = normalize_branch_name(symbolic_name).lower()
-    branch = registry.get("branches", {}).get(name)
+    branch = get_branch_by_name(name)
 
     if branch is None:
         raise BranchNotFoundError(

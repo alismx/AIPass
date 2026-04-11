@@ -11,7 +11,7 @@ from pathlib import Path
 
 import pytest
 
-from aipass.cli.apps.handlers.init.bootstrap import _sanitize_name, init_project
+from aipass.cli.apps.handlers.init.bootstrap import _sanitize_name, init_project, update_project
 
 
 # ---------------------------------------------------------------------------
@@ -415,3 +415,142 @@ def test_init_project_agents_md_no_trinity(tmp_path):
     content = (target / "AGENTS.md").read_text(encoding="utf-8")
     assert ".trinity/" not in content
     assert "KEEP_REGISTRY.json" in content
+
+
+# ---------------------------------------------------------------------------
+# update_project tests
+# ---------------------------------------------------------------------------
+
+
+def test_update_project_raises_if_no_registry(tmp_path):
+    """ValueError when target has no *_REGISTRY.json (not an AIPass project)."""
+    target = tmp_path / "bare"
+    target.mkdir()
+
+    with pytest.raises(ValueError, match="No AIPass project found"):
+        update_project(target)
+
+
+def test_update_project_return_dict_structure(tmp_path):
+    """Return dict contains all required keys."""
+    target = tmp_path / "proj"
+    target.mkdir()
+    init_project(target, project_name="upd")
+
+    result = update_project(target)
+
+    assert set(result.keys()) == {
+        "project_name",
+        "target",
+        "updated_files",
+        "already_current",
+        "skipped_files",
+    }
+    assert result["project_name"] == "UPD"
+    assert result["target"] == str(target.resolve())
+    assert isinstance(result["updated_files"], list)
+    assert isinstance(result["already_current"], list)
+    assert isinstance(result["skipped_files"], list)
+
+
+def test_update_project_already_current_after_init(tmp_path):
+    """Running update immediately after init reports all managed files as already current."""
+    target = tmp_path / "proj"
+    target.mkdir()
+    init_project(target, project_name="fresh")
+
+    result = update_project(target)
+
+    assert len(result["updated_files"]) == 0
+    assert len(result["already_current"]) == 5
+
+
+def test_update_project_idempotent(tmp_path):
+    """Running update twice in a row produces no changes on second run."""
+    target = tmp_path / "proj"
+    target.mkdir()
+    init_project(target, project_name="idem")
+
+    result1 = update_project(target)
+    result2 = update_project(target)
+
+    # Both runs should be identical
+    assert result1["updated_files"] == result2["updated_files"]
+    assert result1["already_current"] == result2["already_current"]
+
+
+def test_update_project_updates_modified_managed_file(tmp_path):
+    """A managed file with altered content is re-written on update."""
+    target = tmp_path / "proj"
+    target.mkdir()
+    init_project(target, project_name="mod")
+
+    # Corrupt a managed file
+    claude_md = target / "CLAUDE.md"
+    claude_md.write_text("# Corrupted\n", encoding="utf-8")
+
+    result = update_project(target)
+
+    # CLAUDE.md must appear in updated, not already_current
+    assert str(claude_md.resolve()) in result["updated_files"]
+    assert str(claude_md.resolve()) not in result["already_current"]
+
+    # Content is restored
+    restored = claude_md.read_text(encoding="utf-8")
+    assert "MOD" in restored
+    assert "## What is AIPass" in restored
+
+
+def test_update_project_never_touches_user_owned_files(tmp_path):
+    """Registry, README, STATUS, .gitignore are always in skipped_files."""
+    target = tmp_path / "proj"
+    target.mkdir()
+    init_project(target, project_name="skip")
+
+    # Modify user-owned files
+    (target / "README.md").write_text("# My custom README\n", encoding="utf-8")
+    (target / "STATUS.local.md").write_text("# Custom status\n", encoding="utf-8")
+    (target / ".gitignore").write_text("# custom\n", encoding="utf-8")
+
+    result = update_project(target)
+
+    skipped = result["skipped_files"]
+    assert any("REGISTRY" in s for s in skipped)
+    assert any("README.md" in s for s in skipped)
+    assert any("STATUS.local.md" in s for s in skipped)
+    assert any(".gitignore" in s for s in skipped)
+
+    # User customisations are preserved
+    assert (target / "README.md").read_text(encoding="utf-8") == "# My custom README\n"
+    assert (target / "STATUS.local.md").read_text(encoding="utf-8") == "# Custom status\n"
+
+
+def test_update_project_creates_missing_managed_dirs(tmp_path):
+    """update_project recreates .aipass/ and .claude/ if they were deleted."""
+    target = tmp_path / "proj"
+    target.mkdir()
+    init_project(target, project_name="recover")
+
+    # Delete only the managed subdirectories (not root files like CLAUDE.md)
+    import shutil
+    shutil.rmtree(target / ".aipass")
+    shutil.rmtree(target / ".claude")
+
+    result = update_project(target)
+
+    assert (target / ".aipass" / "aipass_global_prompt.md").exists()
+    assert (target / ".claude" / "settings.json").exists()
+    # The 2 files inside deleted dirs are re-written; root files still match
+    assert len(result["updated_files"]) == 2
+    assert len(result["already_current"]) == 3
+
+
+def test_update_project_skipped_files_count(tmp_path):
+    """update_project always skips exactly 4 user-owned files."""
+    target = tmp_path / "proj"
+    target.mkdir()
+    init_project(target, project_name="count")
+
+    result = update_project(target)
+
+    assert len(result["skipped_files"]) == 4

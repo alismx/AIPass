@@ -109,12 +109,106 @@ class BranchDetector:
         self.known_branches.update(fallback)
         logger.info(f"Using fallback branches: {fallback}")
 
+    def _detect_external_project(self, decoded_path: str) -> Optional[str]:
+        """Detect branch from an external AIPass project directory.
+
+        Looks for {PROJECT}_REGISTRY.json in the decoded path.
+
+        Args:
+            decoded_path: Actual filesystem path decoded from Claude project folder
+
+        Returns:
+            Project name in uppercase if registry found (e.g., 'VERA-STUDIO', 'AIPL')
+        """
+        try:
+            project_dir = Path(decoded_path)
+            if not project_dir.exists():
+                return None
+
+            # Walk the directory tree looking for *_REGISTRY.json
+            for item in project_dir.iterdir():
+                if item.is_file() and item.name.endswith('_REGISTRY.json'):
+                    # Extract project name from filename
+                    # VERA-STUDIO_REGISTRY.json -> VERA-STUDIO
+                    project_name = item.stem.replace('_REGISTRY', '')
+                    return project_name
+
+            # If no registry found, use directory name as fallback
+            # /home/patrick/Projects/Vera-Studio -> VERA-STUDIO
+            return project_dir.name.upper().replace('-', '-')
+        except Exception:
+            return None
+
+    def _decode_claude_project_path(self, encoded_folder: str) -> Optional[str]:
+        """Decode Claude Code project folder name to actual filesystem path.
+
+        Claude encodes paths by replacing "/" with "-" and prepending "-".
+        But directory names with hyphens make simple decoding ambiguous.
+
+        Strategy: Try all possible decodings and return the project root
+        (closest parent with _REGISTRY.json).
+
+        Args:
+            encoded_folder: Folder name like "-home-patrick-Projects-Vera-Studio"
+
+        Returns:
+            Project root directory path or None if no valid external project found
+        """
+        if not encoded_folder.startswith('-'):
+            return None
+
+        # Remove leading dash
+        name = encoded_folder[1:]
+        segments = name.split('-')
+
+        # Try progressively joining segments from right to left
+        # This handles "Vera-Studio" which shouldn't be split
+        for i in range(len(segments)):
+            # Try path with i segments from left kept separate, rest joined
+            if i == 0:
+                path_parts = segments
+            else:
+                path_parts = segments[:i] + ['-'.join(segments[i:])]
+
+            project_path = '/' + '/'.join(path_parts)
+            project_dir = Path(project_path)
+
+            # Check if this path or any parent has a registry
+            if project_dir.exists():
+                # Walk up from this path looking for _REGISTRY.json
+                current = project_dir
+                while current != current.parent:
+                    try:
+                        for item in current.iterdir():
+                            if item.is_file() and item.name.endswith('_REGISTRY.json'):
+                                return str(current)
+                    except (OSError, PermissionError):
+                        pass
+                    current = current.parent
+                    # Stop at /home or root to avoid traversing too far
+                    if current.name == 'home' or str(current) == '/':
+                        break
+
+        return None
+
     def _detect_from_claude_project(self, path_str: str) -> Optional[str]:
         """Detect branch from Claude Code project path encoding."""
         projects_idx = path_str.index('.claude/projects/') + len('.claude/projects/')
         remaining = path_str[projects_idx:]
         project_folder = remaining.split('/')[0]
-        project_path = '/' + project_folder.replace('-', '/')
+
+        # Try external project detection first (covers Vera-Studio, AIPL, etc.)
+        decoded_path = self._decode_claude_project_path(project_folder)
+        if decoded_path:
+            external_result = self._detect_external_project(decoded_path)
+            if external_result:
+                return external_result
+
+        # Fallback: simple decoding for internal AIPass projects
+        if project_folder.startswith('-'):
+            project_path = '/' + project_folder[1:].replace('-', '/')
+        else:
+            project_path = '/' + project_folder.replace('-', '/')
 
         for registered_path, branch_name in self.branch_map.items():
             registered_normalized = registered_path.replace('_', '/')
