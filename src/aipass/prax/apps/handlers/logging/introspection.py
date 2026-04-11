@@ -124,7 +124,7 @@ def detect_branch_from_path(module_path: str) -> Optional[str]:
         # relative is like: flow/apps/module.py → parts[0] = "flow"
         if len(relative.parts) >= 2:
             branch = relative.parts[0]
-            json_handler.log_operation("introspection_resolved", {"module_path": module_path, "branch": branch})
+            json_handler.log_operation("introspection_resolved", {"module_path": module_path, "branch": branch}, module_name="prax_introspection")
             return branch
     except ValueError:
         logger.info("Path %s is not relative to aipass package root", module_path)
@@ -134,7 +134,7 @@ def detect_branch_from_path(module_path: str) -> Optional[str]:
         relative = path.relative_to(_SRC_ROOT)
         if len(relative.parts) >= 2 and relative.parts[0] != "aipass":
             branch = relative.parts[0]
-            json_handler.log_operation("introspection_resolved", {"module_path": module_path, "branch": branch, "outside_aipass": True})
+            json_handler.log_operation("introspection_resolved", {"module_path": module_path, "branch": branch, "outside_aipass": True}, module_name="prax_introspection")
             return branch
     except ValueError:
         logger.info("Path %s is not relative to src root", module_path)

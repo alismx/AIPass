@@ -18,10 +18,13 @@ from __future__ import annotations
 
 import importlib
 import sys
+import threading
 from io import StringIO
 
 from aipass.prax import logger
 from aipass.drone.apps.handlers.json import json_handler
+
+_capture_lock = threading.Lock()
 
 
 def capture_main(
@@ -54,33 +57,35 @@ def capture_main(
         argv_parts.append(command)
     argv_parts.extend(args)
 
-    original_argv = sys.argv
-    old_stdout = sys.stdout
-    old_stderr = sys.stderr
     captured_out = StringIO()
     captured_err = StringIO()
 
-    try:
-        sys.argv = argv_parts
-        sys.stdout = captured_out
-        sys.stderr = captured_err
+    with _capture_lock:
+        original_argv = sys.argv
+        old_stdout = sys.stdout
+        old_stderr = sys.stderr
 
-        mod = importlib.import_module(entry_point_module)
-        main_fn = getattr(mod, "main")
-        exit_code = main_fn()
-    except SystemExit as exc:
-        exit_code = exc.code if exc.code is not None else 0
-        logger.info("capture_main: SystemExit(%s) from '%s'", exit_code, entry_point_module)
-    except Exception as exc:
-        captured_err.write(str(exc))
-        exit_code = 1
-        logger.warning(
-            "capture_main: exception from '%s': %s", entry_point_module, exc
-        )
-    finally:
-        sys.argv = original_argv
-        sys.stdout = old_stdout
-        sys.stderr = old_stderr
+        try:
+            sys.argv = argv_parts
+            sys.stdout = captured_out
+            sys.stderr = captured_err
+
+            mod = importlib.import_module(entry_point_module)
+            main_fn = getattr(mod, "main")
+            exit_code = main_fn()
+        except SystemExit as exc:
+            exit_code = exc.code if exc.code is not None else 0
+            logger.info("capture_main: SystemExit(%s) from '%s'", exit_code, entry_point_module)
+        except Exception as exc:
+            captured_err.write(str(exc))
+            exit_code = 1
+            logger.warning(
+                "capture_main: exception from '%s': %s", entry_point_module, exc
+            )
+        finally:
+            sys.argv = original_argv
+            sys.stdout = old_stdout
+            sys.stderr = old_stderr
 
     result = {
         "stdout": captured_out.getvalue(),

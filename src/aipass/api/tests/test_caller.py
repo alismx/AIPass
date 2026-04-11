@@ -12,9 +12,7 @@ Tests for openrouter.caller — caller detection handler.
 Tests:
 - detect_caller_category for flow paths
 - detect_caller_category for prax paths
-- detect_caller_category for skills paths
-- detect_caller_category for unknown paths
-- detect_caller_category with 'skills' as substring in a part
+- detect_caller_category for unknown paths (including former skills paths)
 """
 
 from unittest.mock import patch, MagicMock
@@ -43,18 +41,13 @@ class TestDetectCallerCategory:
         path = Path("/home/user/projects/aipass/src/aipass/prax/monitor.py")
         assert detect_caller_category(path) == "prax"
 
-    def test_skills_exact_part_returns_skills(self):
-        """Path with exact 'skills' directory should return 'skills'."""
+    def test_skills_path_returns_unknown(self):
+        """Skills branch was removed — skills paths now return 'unknown'."""
         path = Path("/home/user/projects/aipass/src/aipass/skills/skills_api/tool.py")
-        assert detect_caller_category(path) == "skills"
-
-    def test_skills_substring_returns_skills(self):
-        """Path with 'skills' as substring in a part (e.g., 'skills_api') should return 'skills'."""
-        path = Path("/home/user/projects/aipass/src/aipass/modules/skills_custom/handler.py")
-        assert detect_caller_category(path) == "skills"
+        assert detect_caller_category(path) == "unknown"
 
     def test_unknown_path_returns_unknown(self):
-        """Path without flow, prax, or skills should return 'unknown'."""
+        """Path without flow or prax should return 'unknown'."""
         path = Path("/home/user/projects/aipass/src/aipass/api/apps/handler.py")
         assert detect_caller_category(path) == "unknown"
 
@@ -63,9 +56,9 @@ class TestDetectCallerCategory:
         path = Path("/home/user/flow/prax/script.py")
         assert detect_caller_category(path) == "flow"
 
-    def test_prax_takes_priority_over_skills(self):
-        """If 'prax' appears before a skills part, should return 'prax'."""
-        path = Path("/home/user/prax/skills_module/script.py")
+    def test_prax_in_mixed_path(self):
+        """'prax' in path should return 'prax' regardless of other parts."""
+        path = Path("/home/user/prax/other_module/script.py")
         assert detect_caller_category(path) == "prax"
 
     def test_root_path_returns_unknown(self):

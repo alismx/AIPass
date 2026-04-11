@@ -92,18 +92,53 @@ def handle_command(command: str, args: list) -> bool:
     return True
 
 
-def _acquire_lock() -> bool:
-    """Try to acquire lock file. Returns True if acquired, False if another instance is running."""
-    if LOCK_FILE.exists():
-        try:
-            pid = int(LOCK_FILE.read_text().strip())
-            os.kill(pid, 0)  # Signal 0 = check if process exists
-            logger.info(f"[{MODULE_NAME}] Another instance running (PID {pid}), exiting")
-            return False
-        except (ValueError, ProcessLookupError, PermissionError):
-            logger.info(f"[{MODULE_NAME}] Stale lock found, taking over")
+def _try_create_lock() -> bool:
+    """Atomically create lock file with current PID. Returns True on success."""
+    try:
+        fd = os.open(str(LOCK_FILE), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+        os.write(fd, str(os.getpid()).encode())
+        os.close(fd)
+        return True
+    except FileExistsError:
+        logger.info("[%s] Lock file already exists, cannot acquire", MODULE_NAME)
+        return False
 
-    LOCK_FILE.write_text(str(os.getpid()))
+
+def _is_lock_stale() -> bool:
+    """Check if existing lock file belongs to a dead process."""
+    try:
+        pid = int(LOCK_FILE.read_text(encoding="utf-8").strip())
+        os.kill(pid, 0)
+        logger.info("[%s] Another instance running (PID %d), exiting", MODULE_NAME, pid)
+        return False  # Process alive — lock is valid
+    except (ValueError, ProcessLookupError, PermissionError):
+        logger.info("[%s] Stale lock found, taking over", MODULE_NAME)
+        return True
+
+
+def _acquire_lock() -> bool:
+    """Try to acquire lock file. Returns True if acquired, False if another instance is running.
+
+    Uses atomic O_CREAT | O_EXCL to avoid TOCTOU race between existence check and write.
+    """
+    if _try_create_lock():
+        return True
+
+    # Lock exists — check if stale
+    if not _is_lock_stale():
+        return False
+
+    # Remove stale lock and retry
+    try:
+        LOCK_FILE.unlink()
+    except OSError as exc:
+        logger.warning("[%s] Failed to remove stale lock: %s", MODULE_NAME, exc)
+        return False
+
+    if not _try_create_lock():
+        logger.info("[%s] Another process grabbed lock during retry", MODULE_NAME)
+        return False
+
     return True
 
 

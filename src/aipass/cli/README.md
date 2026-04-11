@@ -5,8 +5,8 @@
 **Purpose:** Display and output formatting service for AIPass modules. Provides consistent terminal output — headers, success/error/warning messages, section breaks, and operation templates — so every module looks the same without duplicating Rich formatting code.
 **Module:** `aipass.cli`
 **Seedgo:** 100%
-**Tests:** 138 passing (6 files, 5/5 modules covered)
-**Last Updated:** 2026-04-07
+**Tests:** 142 passing (6 files, 5/5 modules covered)
+**Last Updated:** 2026-04-10
 
 ## Usage
 
@@ -66,7 +66,7 @@ cli/
 ├── cli_json/                   # Auto-created JSON output (three-file pattern)
 ├── dropbox/                    # Inbound file drop
 ├── logs/                       # Branch-level logs
-├── tests/                      # 138 tests across 6 files
+├── tests/                      # 142 tests across 6 files
 │   ├── test_bootstrap.py       # bootstrap.py handler tests
 │   ├── test_json_handler.py    # json_handler tests
 │   ├── test_display.py         # display module tests
@@ -90,6 +90,7 @@ drone @cli aipass                        # Show aipass subcommands
 drone @cli aipass init                   # Bootstrap AIPass project in current dir
 drone @cli aipass init /path             # Bootstrap in target directory
 drone @cli aipass init /path MyProject   # Bootstrap with custom name
+drone @cli aipass init agent <name>       # Create agent in project (routes to spawn)
 drone @cli aipass init --help            # Detailed init usage
 drone @cli display                       # Display module introspection
 drone @cli display demo                  # Run display function showcase
@@ -119,7 +120,7 @@ aipass --help                            # Via console_scripts entry point
 
 ---
 
-*Last Updated: 2026-04-07*
+*Last Updated: 2026-04-10*
 
 ---
 [← Back to AIPass](../../../README.md)

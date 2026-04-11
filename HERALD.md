@@ -4,7 +4,7 @@
 
 > The living record. What happened, what's changing, what matters.
 
-**Last updated:** 2026-04-10 | **Session:** 84 | **PRs merged:** 185
+**Last updated:** 2026-04-10 | **Session:** 86 | **PRs merged:** 230+
 
 ---
 
@@ -12,8 +12,8 @@
 
 - **11 core agents** operational (streamlined from 15 — backup, daemon, commons, skills split to standalone projects; api reinstated)
 - **3,500+ tests** system-wide
-- **185 PRs** merged
-- **84 sessions** of development
+- **230+ PRs** merged
+- **86 sessions** of development
 - **Multi-CLI support** — Claude Code, Codex (GPT-5.4), Gemini all integrated with hooks, identity, skills
 - **Vera Studio** — standalone AI-driven brand studio for promotion (separate from devpulse construction)
 - **aipass init v2** — real templates, next steps, `aipass init agent` command
@@ -22,8 +22,20 @@
 
 ## Recent Sessions
 
-### S82 — Core 10 Split: Dependency Audit + README Update (2026-04-09)
-Decided to split 5 agents to standalone projects (backup, daemon, api, commons, skills). 6 parallel agents verified zero code dependencies from core 10 → split 5. Updated README from 15 → 10 agents. All agent tables, tree diagrams, TOC, metrics updated. CLI dispatched for src/ directory in init + CWD-aware sync-registry for spawn.
+### S86 — Autonomous APLAN Fix Sweep (2026-04-10)
+6-hour autonomous session (DPLAN-0111). 11 CRITICALs resolved, 35+ BUGs fixed across flow, api, cli, trigger, drone. Logger catch-all added to all 10 entry points. Seedgo full audit dispatched. Spawn 12 BUGs dispatched.
+
+### S85 — Trigger Medic v2 Self-Healing Pipeline (2026-04-10)
+Full autonomous error cycle proven: detect → dispatch → wake → fix → report. Trigger Medic v2 fixed (log_watcher dedup, count gate, wake_branch). Drone git fix/sync upgraded (merge not reset). OSS Health badge. 13 stale plans closed. PRs #229-230.
+
+### S84 — API Key Incident Recovery + Branch Purge (2026-04-09)
+Watchdog fixed. Night shift: 4 DPLANs (0107-0110), 10 branches dispatched, PRs #214-226. API key incident recovery. 28 stale branches purged.
+
+### S83 — Adversarial Audit (2026-04-09)
+22 Opus adversarial audit agents: 350+ findings across all 11 branches, 11 CRITICALs identified. All 11 APLANs updated by builder agents. Hook-sounds plugin built. PRs #211-212.
+
+### S82 — Core Split: Dependency Audit + README Update (2026-04-09)
+Decided to split 4 agents to standalone projects (backup, daemon, commons, skills); api reinstated as infrastructure. 6 parallel agents verified zero code dependencies. Updated README from 15 → 11 agents. All agent tables, tree diagrams, TOC, metrics updated. CLI dispatched for src/ directory in init + CWD-aware sync-registry for spawn.
 
 ### S81 — aipass init v2 + Vera Studio (2026-04-08)
 TDPLAN-0002: Complete init overhaul. CLI, spawn, drone worked in parallel. Init now creates 10 items with real content (CLAUDE.md, AGENTS.md, GEMINI.md, global prompt, README, .gitignore, hooks, settings). `aipass init agent` routes to spawn. Spawn added --template flag + CLAUDE.md to builder template. Drone added spawn to routing_config.json. Prax fixed watchdog with --daemon mode + statusline indicator. Vera Studio project created. Patrick testing as real first-time user — found .trinity shouldn't be in project root, local prompt is agent-level only. CLI fixed both. DPLAN-0105 (promotion prep), DPLAN-0106 (watchdog v2). PRs #204-205.
@@ -101,6 +113,10 @@ Every branch, every standard, 100%. PR #137 (167 files, +12,843 lines).
 
 | Date | Milestone |
 |------|-----------|
+| 2026-04-10 | S86: Autonomous APLAN fix sweep — 11 CRITICALs resolved, 35+ BUGs fixed |
+| 2026-04-10 | S85: Trigger Medic v2 self-healing pipeline live |
+| 2026-04-09 | S84: API key incident recovery + 28 stale branches purged |
+| 2026-04-09 | S83: Adversarial audit (22 agents, 350+ findings, 11 CRITICALs) |
 | 2026-04-05 | Multi-CLI integration — Codex + Gemini fully integrated with hooks, skills, prax model tags |
 | 2026-04-05 | README overhaul — grouped branch tables, compliance section, navigation |
 | 2026-04-03 | S73 night shift — 1,120 new tests, 7 branches at 100% module coverage |
@@ -124,10 +140,10 @@ Every branch, every standard, 100%. PR #137 (167 files, +12,843 lines).
 ```
 Branches:        11
 Standards:       33
-Tests:           3,500+
-PRs merged:      185
-Sessions:        84
-Diagnostic tools: 21
+Tests:           ~3,500
+PRs merged:      230+
+Sessions:        86
+Diagnostic tools: 26
 CLIs supported:  3 (Claude Code, Codex, Gemini)
 ```
 

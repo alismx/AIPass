@@ -45,12 +45,13 @@ from typing import Any, Dict, List, Optional
 
 
 from aipass.prax.apps.modules.logger import get_direct_logger
-from aipass.trigger.apps.config import TRIGGER_ROOT, atomic_write_json
+from aipass.trigger.apps.config import TRIGGER_ROOT, atomic_write_json, json_file_lock
 from aipass.trigger.apps.handlers.json import json_handler
 
 logger = get_direct_logger()
 REGISTRY_FILE = TRIGGER_ROOT / "trigger_json" / "error_registry.json"
 TRIGGER_CONFIG_FILE = TRIGGER_ROOT / "trigger_json" / "trigger_config.json"
+CB_STATE_FILE = TRIGGER_ROOT / "trigger_json" / "trigger_cb_state.json"
 
 VALID_STATUSES = ('new', 'investigating', 'suppressed', 'resolved')
 VALID_SEVERITIES = ('low', 'medium', 'high', 'critical')
@@ -129,78 +130,94 @@ class CircuitBreakerState:
 # ---------------------------------------------------------------------------
 
 def _save_circuit_breaker_state() -> None:
-    """Persist circuit breaker state to trigger_config.json.
+    """Persist full circuit breaker + per-fingerprint state to trigger_cb_state.json.
 
-    Saves the current breaker state, opened_at timestamp, and cooldown
-    under the 'circuit_breaker' key so the state survives process restarts.
+    Saves CB state (including recent_errors, half_open_allow) and per-fingerprint
+    dispatch tracking so the full state survives process restarts.
     """
     try:
-        data: Dict[str, Any] = {}
-        if TRIGGER_CONFIG_FILE.exists():
-            raw = TRIGGER_CONFIG_FILE.read_text(encoding='utf-8').strip()
-            if raw:
-                data = json.loads(raw)
-        data['circuit_breaker'] = {
-            'state': _circuit_breaker.state,
-            'opened_at': _circuit_breaker.opened_at,
-            'cooldown_seconds': _circuit_breaker.cooldown_seconds,
-        }
-        atomic_write_json(TRIGGER_CONFIG_FILE, data)
+        with json_file_lock(CB_STATE_FILE):
+            state_data = {
+                'circuit_breaker': {
+                    'state': _circuit_breaker.state,
+                    'opened_at': _circuit_breaker.opened_at,
+                    'cooldown_seconds': _circuit_breaker.cooldown_seconds,
+                    'recent_errors': _circuit_breaker.recent_errors,
+                    'summary_sent': _circuit_breaker.summary_sent,
+                    'half_open_allow': _circuit_breaker.half_open_allow,
+                },
+                'per_fingerprint': {
+                    fp: {
+                        'last_dispatch': max(times) if times else 0.0,
+                        'count': _fingerprint_dispatch_count.get(fp, 0),
+                    }
+                    for fp, times in _fingerprint_dispatch_times.items()
+                },
+            }
+            atomic_write_json(CB_STATE_FILE, state_data)
     except Exception as exc:
         logger.warning("Failed to save circuit breaker state: %s", exc)
 
 
-def _load_circuit_breaker_state() -> CircuitBreakerState:
-    """Load persisted circuit breaker state from trigger_config.json.
+def _restore_fingerprint_tracking(pf_data: dict) -> None:
+    """Restore per-fingerprint dispatch tracking from persisted data."""
+    global _fingerprint_dispatch_times, _fingerprint_dispatch_count
+    for fp, info in pf_data.items():
+        last = float(info.get('last_dispatch', 0.0))
+        count = int(info.get('count', 0))
+        if last > 0:
+            _fingerprint_dispatch_times[fp] = [last]
+        _fingerprint_dispatch_count[fp] = count
 
-    If a valid persisted state exists, restores it into a new
-    CircuitBreakerState. Otherwise returns a fresh default instance.
+
+def _load_circuit_breaker_state() -> CircuitBreakerState:
+    """Load full circuit breaker state from trigger_cb_state.json.
+
+    Restores CB state including recent_errors and half_open_allow,
+    plus per-fingerprint dispatch tracking into module-level dicts.
 
     Returns:
         CircuitBreakerState populated from disk or defaults.
     """
     try:
-        if TRIGGER_CONFIG_FILE.exists():
-            raw = TRIGGER_CONFIG_FILE.read_text(encoding='utf-8').strip()
-            if not raw:
-                return CircuitBreakerState()
-            data = json.loads(raw)
-            cb_data = data.get('circuit_breaker')
-            if isinstance(cb_data, dict) and cb_data.get('state') in ('closed', 'open', 'half_open'):
-                breaker = CircuitBreakerState()
-                breaker.state = cb_data['state']
-                breaker.opened_at = float(cb_data.get('opened_at', 0.0))
-                breaker.cooldown_seconds = int(cb_data.get('cooldown_seconds', breaker.base_cooldown))
-                return breaker
+        if not CB_STATE_FILE.exists():
+            return CircuitBreakerState()
+        raw = CB_STATE_FILE.read_text(encoding='utf-8').strip()
+        if not raw:
+            return CircuitBreakerState()
+        data = json.loads(raw)
+        cb_data = data.get('circuit_breaker')
+        if not isinstance(cb_data, dict) or cb_data.get('state') not in ('closed', 'open', 'half_open'):
+            return CircuitBreakerState()
+        breaker = CircuitBreakerState()
+        breaker.state = cb_data['state']
+        breaker.opened_at = float(cb_data.get('opened_at', 0.0))
+        breaker.cooldown_seconds = int(cb_data.get('cooldown_seconds', breaker.base_cooldown))
+        breaker.recent_errors = [float(t) for t in cb_data.get('recent_errors', [])]
+        breaker.summary_sent = bool(cb_data.get('summary_sent', False))
+        breaker.half_open_allow = bool(cb_data.get('half_open_allow', True))
+        _restore_fingerprint_tracking(data.get('per_fingerprint', {}))
+        return breaker
     except Exception as exc:
         logger.warning("Failed to load circuit breaker state: %s", exc)
     return CircuitBreakerState()
 
 
 def _clear_circuit_breaker_state() -> None:
-    """Remove persisted circuit breaker state from trigger_config.json.
-
-    Deletes the 'circuit_breaker' key so restarts start with a clean slate.
-    """
+    """Remove persisted circuit breaker state file."""
     try:
-        if TRIGGER_CONFIG_FILE.exists():
-            raw = TRIGGER_CONFIG_FILE.read_text(encoding='utf-8').strip()
-            if not raw:
-                return
-            data = json.loads(raw)
-            if 'circuit_breaker' in data:
-                del data['circuit_breaker']
-                atomic_write_json(TRIGGER_CONFIG_FILE, data)
+        if CB_STATE_FILE.exists():
+            CB_STATE_FILE.unlink()
     except Exception as exc:
         logger.warning("Failed to clear circuit breaker state: %s", exc)
 
 
-# Module-level circuit breaker state (restored from disk if available)
-_circuit_breaker = _load_circuit_breaker_state()
-
 # Module-level dicts for per-fingerprint dispatch tracking
 _fingerprint_dispatch_times: Dict[str, List[float]] = {}  # fingerprint -> [dispatch_timestamps]
 _fingerprint_dispatch_count: Dict[str, int] = {}  # fingerprint -> total dispatch count
+
+# Module-level circuit breaker state (restored from disk if available)
+_circuit_breaker = _load_circuit_breaker_state()
 
 
 # ---------------------------------------------------------------------------
@@ -411,6 +428,7 @@ def record_dispatch(fingerprint: str) -> None:
     _fingerprint_dispatch_times[fingerprint].append(now)
     _fingerprint_dispatch_count[fingerprint] = \
         _fingerprint_dispatch_count.get(fingerprint, 0) + 1
+    _save_circuit_breaker_state()
 
 
 # ---------------------------------------------------------------------------
@@ -576,53 +594,54 @@ def report(
         # invalid arguments are auto-suppressed to avoid noisy dispatch.
         is_user_error = bool(_USER_ERROR_PATTERNS.search(message))
 
-        registry = _load_registry()
-        now = datetime.now().isoformat()
+        with json_file_lock(REGISTRY_FILE):
+            registry = _load_registry()
+            now = datetime.now().isoformat()
 
-        if fingerprint in registry["errors"]:
-            # Existing error - increment count and update last_seen
-            entry = registry["errors"][fingerprint]
-            entry["count"] = entry.get("count", 1) + 1
-            entry["last_seen"] = now
-            # Update log_path if provided (might be from a different log file)
-            if log_path:
-                entry["log_path"] = log_path
-            # Auto-suppress user errors that were previously unsuppressed
-            if is_user_error and entry.get("status") != "suppressed":
-                entry["status"] = "suppressed"
-                entry["suppress_reason"] = "user_error"
-            _save_registry(registry)
-            result = dict(entry)
-            result["is_new"] = False
-            json_handler.log_operation("error_registered", {"fingerprint": fingerprint[:12], "count": entry["count"]})
-            return result
-        else:
-            # New error - create entry
-            initial_status = "suppressed" if is_user_error else "new"
-            initial_suppress_reason = "user_error" if is_user_error else ""
+            if fingerprint in registry["errors"]:
+                # Existing error - increment count and update last_seen
+                entry = registry["errors"][fingerprint]
+                entry["count"] = entry.get("count", 1) + 1
+                entry["last_seen"] = now
+                # Update log_path if provided (might be from a different log file)
+                if log_path:
+                    entry["log_path"] = log_path
+                # Auto-suppress user errors that were previously unsuppressed
+                if is_user_error and entry.get("status") != "suppressed":
+                    entry["status"] = "suppressed"
+                    entry["suppress_reason"] = "user_error"
+                _save_registry(registry)
+                result = dict(entry)
+                result["is_new"] = False
+                json_handler.log_operation("error_registered", {"fingerprint": fingerprint[:12], "count": entry["count"]})
+                return result
+            else:
+                # New error - create entry
+                initial_status = "suppressed" if is_user_error else "new"
+                initial_suppress_reason = "user_error" if is_user_error else ""
 
-            event = ErrorEvent(
-                fingerprint=fingerprint,
-                error_type=error_type,
-                message=message,
-                normalized_message=normalized,
-                component=component,
-                severity=severity,
-                count=1,
-                status=initial_status,
-                first_seen=now,
-                last_seen=now,
-                log_path=log_path,
-                suppress_reason=initial_suppress_reason,
-                source_fix_status="none"
-            )
-            entry_dict = asdict(event)
-            registry["errors"][fingerprint] = entry_dict
-            _save_registry(registry)
-            result = dict(entry_dict)
-            result["is_new"] = True
-            json_handler.log_operation("error_registered", {"fingerprint": fingerprint[:12], "count": 1})
-            return result
+                event = ErrorEvent(
+                    fingerprint=fingerprint,
+                    error_type=error_type,
+                    message=message,
+                    normalized_message=normalized,
+                    component=component,
+                    severity=severity,
+                    count=1,
+                    status=initial_status,
+                    first_seen=now,
+                    last_seen=now,
+                    log_path=log_path,
+                    suppress_reason=initial_suppress_reason,
+                    source_fix_status="none"
+                )
+                entry_dict = asdict(event)
+                registry["errors"][fingerprint] = entry_dict
+                _save_registry(registry)
+                result = dict(entry_dict)
+                result["is_new"] = True
+                json_handler.log_operation("error_registered", {"fingerprint": fingerprint[:12], "count": 1})
+                return result
 
     except Exception as exc:
         logger.warning("Failed to report error for component '%s': %s", component, exc)

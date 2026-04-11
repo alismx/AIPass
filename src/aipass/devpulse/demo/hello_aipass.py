@@ -104,7 +104,7 @@ def animate_startup():
         ("Connecting AI Mail network", 0.3),
         ("Mounting .trinity/ memories", 0.4),
         ("Starting Prax logging", 0.2),
-        ("Seedgo standards: 21 loaded", 0.3),
+        ("Seedgo standards: 33 loaded", 0.3),
         ("System ready", 0.1),
     ]
 
@@ -199,8 +199,8 @@ def show_stats():
     """Final stats box."""
     stats = [
         f"{WHITE}Branches:    {CYAN}11 registered, 11 operational{RESET}",
-        f"{WHITE}Standards:   {GREEN}21 seedgo checks active{RESET}",
-        f"{WHITE}Sessions:    {YELLOW}32 completed (devpulse alone){RESET}",
+        f"{WHITE}Standards:   {GREEN}33 seedgo checks active{RESET}",
+        f"{WHITE}Sessions:    {YELLOW}86 completed (devpulse alone){RESET}",
         f"{WHITE}Architecture:{MAGENTA} Citizens + Agents + Dispatch{RESET}",
         f"{WHITE}Built with:  {CYAN}Python, Rich, Claude Code{RESET}",
         f"{WHITE}Memory:      {GREEN}.trinity/ — persistent identity{RESET}",

@@ -36,8 +36,6 @@ from aipass.spawn.apps.handlers.placeholders import build_replacements_dict, rep
 from aipass.spawn.apps.handlers.registry import find_registry, load_registry, _branches_as_list
 from aipass.spawn.apps.handlers.json import json_handler
 
-# Repo root — resolved from spawn package location
-_REPO_ROOT = Path(__file__).parents[5]  # handlers/apps/spawn/aipass/src/AIPass
 
 
 # =============================================================================
@@ -347,9 +345,10 @@ def _resolve_branch_path(branch_name: str) -> Path | None:
     """Resolve a branch name to its absolute directory path via the registry.
 
     Tries both the exact name and common case variants.
-    Registry paths are relative to repo root.
+    Registry paths are relative to registry parent (project root).
     """
     registry_path = find_registry()
+    project_root = registry_path.parent
     registry = load_registry(registry_path)
 
     for branch in _branches_as_list(registry.get("branches", [])):
@@ -357,7 +356,7 @@ def _resolve_branch_path(branch_name: str) -> Path | None:
         if reg_name.lower() == branch_name.lower():
             rel_path = branch.get("path", "")
             if rel_path:
-                return (_REPO_ROOT / rel_path).resolve()
+                return (project_root / rel_path).resolve()
 
     return None
 

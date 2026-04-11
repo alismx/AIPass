@@ -5,7 +5,7 @@
 **Purpose:** Orchestration hub for the AIPass ecosystem
 **Module:** `aipass.devpulse`
 **Status:** Active
-**Last Updated:** 2026-03-22
+**Last Updated:** 2026-04-10
 
 ---
 
@@ -56,21 +56,25 @@ devpulse/
 ├── .aipass/               # AI context
 │   └── aipass_local_prompt.md
 ├── .spawn/                # Spawn metadata
-├── tools/                 # Diagnostic scanner suite (20 tools)
+├── apps/                  # Entry point scaffold (minimal — devpulse.py + stubs)
+├── tools/                 # Diagnostic scanner suite (26 tools)
+├── branch_audits _only/   # Living audit plans for all 11 branches + patrick
+├── dropbox/               # Incoming files from other branches/users
 ├── docs/                  # Tracked documentation
 ├── docs.local/            # Working files (gitignored)
-├── tests/
+├── DPLAN-*.md             # Active design plans (8-10 at any time)
+├── CLOSED_PLANS.local.json # Archive of completed plans
 ├── STATUS.local.md        # Current work, issues, todos
 └── README.md
 ```
 
-DevPulse has no `apps/` directory — it's a **manager** branch, not a builder. It coordinates via dispatch and sub-agents rather than implementing code.
+DevPulse has a minimal `apps/` scaffold but is primarily a **manager** branch, not a builder. It coordinates via dispatch and sub-agents rather than implementing code.
 
 ---
 
 ## Diagnostic Tools
 
-DevPulse maintains a suite of 20 standalone diagnostic scanners in `tools/`. Each follows the `{concern}_scanner_v1.py` naming convention and supports `@branch`, `--all`, and `--summary` flags.
+DevPulse maintains a suite of 26 standalone diagnostic scanners in `tools/`. Each follows the `{concern}_scanner_v1.py` naming convention and supports `@branch`, `--all`, and `--summary` flags.
 
 ### Code Quality
 | Tool | What it checks |
@@ -104,13 +108,50 @@ DevPulse maintains a suite of 20 standalone diagnostic scanners in `tools/`. Eac
 | `magic_number_scanner_v1.py` | Hardcoded numbers (cross-file consistency) |
 | `stale_scanner_v1.py` | Outdated terminology (17 tracked keywords) |
 
+### Infrastructure
+| Tool | What it checks |
+|------|---------------|
+| `log_scanner_v1.py` | Prax log files for errors/warnings |
+| `key_exposure_scanner_v1.py` | API key exposure patterns in code |
+| `meta_header_scanner_v1.py` | Module metadata headers compliance |
+| `scanner_v1.py` | Base scanner framework |
+
 ### Utilities
 | Tool | What it does |
 |------|-------------|
 | `dev_central_to_devpulse.py` | Rename stale terms across files |
 | `verify_branch.py` | Verify branch structure compliance |
+| `git_lock_tool.py` | Manage git lock state for PRs |
 
 **Tool classification:** Hard checks (pass/fail) vs Advisory (flag for investigation). See DPLAN-0030 for full details.
+
+---
+
+## Branch Audits
+
+DevPulse maintains living audit plans for every branch in `branch_audits _only/`. These are comprehensive health assessments created during adversarial audit sessions (S83 Wave 1-3) and continuously updated.
+
+Each audit tracks:
+- **CRITICAL** — Must-fix issues (security, data loss, broken core features)
+- **BUG** — Functional defects
+- **STALE/DEAD** — Outdated references, dead code
+- **QUALITY** — Performance, thread safety, architectural debt
+- **DOCS** — Documentation gaps and inaccuracies
+
+| Branch | Audit File | Health |
+|--------|-----------|--------|
+| drone | DPLAN-0053 | YELLOW (23 BUG) |
+| seedgo | DPLAN-0084 | GREEN |
+| prax | DPLAN-0039 | GREEN |
+| cli | DPLAN-0074 | YELLOW (2 CRITICAL) |
+| flow | DPLAN-0082 | YELLOW (5 CRITICAL) |
+| ai_mail | DPLAN-0036 | GREEN |
+| api | DPLAN-0029 | YELLOW (3 CRITICAL) |
+| trigger | DPLAN-0075 | YELLOW (1 CRITICAL) |
+| spawn | DPLAN-0035 | YELLOW (12 BUG) |
+| memory | DPLAN-0038 | GREEN |
+| devpulse | DPLAN-0037 | RED |
+| patrick | DPLAN-0086 | N/A |
 
 ---
 
@@ -160,7 +201,9 @@ drone @spawn delete @branch      # Archive + deregister branch
 
 DevPulse is a **manager** branch, not a builder. It delegates code tasks to sub-agents and branch agents. Its context window is reserved for coordination, planning, and architecture — not for reading and editing files across the codebase.
 
-The `tools/` directory is DevPulse's "tool shed" — standalone diagnostic scripts for investigating code quality across all branches. These tools surface patterns and create conversations. They're built for AI consumption: run a scanner, get instant visibility, decide what matters.
+The `tools/` directory is DevPulse's "tool shed" — 26 standalone diagnostic scripts for investigating code quality across all branches. These tools surface patterns and create conversations. They're built for AI consumption: run a scanner, get instant visibility, decide what matters.
+
+The `branch_audits _only/` directory is DevPulse's health dashboard — living audit documents for every branch, updated during adversarial audit sessions and fix sweeps. Each audit tracks CRITICALs, BUGs, quality debt, and documentation gaps with current health ratings.
 
 ---
 [← Back to AIPass](../../../README.md)

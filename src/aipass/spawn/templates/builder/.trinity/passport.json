@@ -19,7 +19,7 @@
   "identity": {
     "citizen_class": "builder",
     "role": "{{ROLE}}",
-    "purpose": "",
+    "purpose": "{{PURPOSE_BRIEF}}",
     "what_i_do": [],
     "what_i_dont_do": []
   },

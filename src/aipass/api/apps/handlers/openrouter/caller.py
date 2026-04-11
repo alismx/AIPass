@@ -42,7 +42,6 @@ MODULE_VERSION = "1.0.0"
 CALLER_PATTERNS = {
     "flow": "flow_json",
     "prax": "prax_json",
-    "skills": "{category}_json",
 }
 
 # =============================================
@@ -70,11 +69,6 @@ def get_caller_info() -> Optional[Dict[str, Any]]:
                 result = _detect_prax_caller(frame_path)
                 json_handler.log_operation("caller_detected", {"caller": result.get("caller_name"), "category": "prax"})
                 return result
-            elif any("skills" in part for part in frame_path.parts):
-                result = _detect_skills_caller(frame_path)
-                json_handler.log_operation("caller_detected", {"caller": result.get("caller_name"), "category": "skills"})
-                return result
-
         logger.info(f"[{MODULE_NAME}] Could not detect caller from stack trace")
         return None
 
@@ -105,8 +99,6 @@ def detect_caller_category(caller_path: Path) -> str:
             return "flow"
         elif "prax" in path_parts:
             return "prax"
-        elif any("skills" in part for part in path_parts):
-            return "skills"
         else:
             return "unknown"
 
@@ -162,38 +154,6 @@ def _detect_prax_caller(frame_path: Path) -> Dict[str, Any]:
 
     except Exception as e:
         logger.error(f"Failed to detect prax caller: {e}")
-        return _create_fallback_info(frame_path)
-
-
-def _detect_skills_caller(frame_path: Path) -> Dict[str, Any]:
-    """
-    Detect skills module caller from stack frame path.
-    Skills have category subdirectories (e.g., /skills/skills_api/skill.py)
-    """
-    try:
-        for i, part in enumerate(frame_path.parts):
-            if "skills" in part:
-                skills_path = Path(*frame_path.parts[:i + 2])
-                category = frame_path.parts[i + 1] if i + 1 < len(frame_path.parts) else "skills_api"
-                json_folder_path = skills_path / f"{category}_json"
-                caller_name = frame_path.stem
-
-                logger.info(f"[{MODULE_NAME}] Detected skills caller: {caller_name} (category: {category})")
-
-                return {
-                    "caller_name": caller_name,
-                    "caller_path": frame_path,
-                    "json_folder": json_folder_path,
-                    "category": "skills",
-                    "skills_category": category,
-                    "detection_method": "stack"
-                }
-
-        logger.info(f"[{MODULE_NAME}] Could not find skills directory in path: {frame_path}")
-        return _create_fallback_info(frame_path)
-
-    except Exception as e:
-        logger.error(f"Failed to detect skills caller: {e}")
         return _create_fallback_info(frame_path)
 
 

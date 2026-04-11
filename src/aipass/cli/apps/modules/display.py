@@ -14,6 +14,7 @@ Provides display functions for all branches:
 - success() - Green checkmark + message
 - error() - Red X + error message
 - warning() - Yellow warning + message
+- fatal() - Error + sys.exit(1)
 - section() - Visual section breaks
 
 Uses Rich library for beautiful terminal output.
@@ -97,7 +98,7 @@ def print_help():
     CONSOLE.print("Display is the [bold]CLI's universal output service[/bold] that provides:")
     # RICH FORMATTING TIP: Use [green]✓[/green] for checkmarks in lists
     CONSOLE.print("  [green]✓[/green] Consistent Rich-formatted output across all branches")
-    CONSOLE.print("  [green]✓[/green] Five core display functions ([green]header, success, error, warning, section[/green])")
+    CONSOLE.print("  [green]✓[/green] Six core display functions ([green]header, success, error, warning, fatal, section[/green])")
     CONSOLE.print("  [green]✓[/green] Beautiful terminal output with colors, panels, and formatting")
     CONSOLE.print("  [green]✓[/green] Integration with CLI error handler for advanced error display")
     CONSOLE.print()
@@ -106,7 +107,7 @@ def print_help():
     # RICH FORMATTING TIP: Tables are powerful for structured data
     # Create with Table(), add columns, add rows, then print
     # =========================================================================
-    CONSOLE.print("[bold cyan]PUBLIC API FUNCTIONS (5 total):[/bold cyan]")
+    CONSOLE.print("[bold cyan]PUBLIC API FUNCTIONS (6 total):[/bold cyan]")
     CONSOLE.print()
 
     # RICH FORMATTING TIP: Table styling - show_header, header_style, border_style
@@ -119,6 +120,7 @@ def print_help():
     table.add_row("success()", "message, **kwargs", "Success messages with green checkmark + optional details")
     table.add_row("error()", "message, suggestion=None", "Error messages with red X + optional suggestion")
     table.add_row("warning()", "message, details=None", "Warning messages with yellow symbol + optional details")
+    table.add_row("fatal()", "message, suggestion=None", "Error message + sys.exit(1) for unrecoverable failures")
     table.add_row("section()", "title", "Visual section separators with title and line")
 
     # RICH FORMATTING TIP: Print the table after adding all rows

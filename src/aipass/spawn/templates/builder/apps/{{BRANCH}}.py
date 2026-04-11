@@ -32,7 +32,7 @@ def discover_modules() -> List[Any]:
         if file_path.name.startswith("_"):
             continue
 
-        module_name = f"apps.modules.{file_path.stem}"
+        module_name = f"aipass.{{BRANCH}}.apps.modules.{file_path.stem}"
 
         try:
             module = importlib.import_module(module_name)

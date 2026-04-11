@@ -136,10 +136,12 @@ def show_introspection() -> None:
 # COMMAND HANDLERS
 # =============================================================================
 
-def _cwd_has_registry() -> bool:
+def _cwd_has_registry(max_depth: int = 10) -> bool:
     """Check if CWD is within a project that has a *_REGISTRY.json."""
     cwd = Path.cwd()
-    for parent in [cwd] + list(cwd.parents):
+    for i, parent in enumerate([cwd] + list(cwd.parents)):
+        if i >= max_depth:
+            break
         if list(parent.glob("*_REGISTRY.json")):
             return True
     return False
@@ -430,6 +432,10 @@ def main() -> int:
         except RegistryError as exc:
             logger.warning("Registry error during systems listing: %s", exc)
             err_console.print(f"drone: {exc}")
+            return 1
+        except Exception as exc:
+            logger.error("[drone] Unhandled error in systems: %s", exc)
+            err_console.print(f"drone: unexpected error: {exc}")
             return 1
 
     # scan — discover available commands in a branch

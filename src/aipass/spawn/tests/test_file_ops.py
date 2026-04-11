@@ -13,6 +13,8 @@ import json
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 from aipass.spawn.apps.handlers.file_ops import (
     SKIP_NAMES,
     _replace_path_placeholders,
@@ -67,6 +69,11 @@ class TestEnsureDirectory:
 
         assert target.exists()
         assert target.is_dir()
+
+    def test_ensure_directory_none_raises_valueerror(self) -> None:
+        """Passing None raises ValueError with clear message."""
+        with pytest.raises(ValueError, match="ensure_directory received None path"):
+            ensure_directory(None)
 
 
 # ---------------------------------------------------------------------------

@@ -82,6 +82,15 @@ def _load_external_modules() -> dict[str, _ExternalModuleConfig]:
 _EXTERNAL_MODULES: dict[str, _ExternalModuleConfig] = _load_external_modules()
 
 
+def refresh_external_modules() -> None:
+    """Reload external module declarations from routing_config.json.
+
+    Call after modifying routing_config.json at runtime.
+    """
+    global _EXTERNAL_MODULES
+    _EXTERNAL_MODULES = _load_external_modules()
+
+
 @dataclass
 class ModuleInfo:
     """Metadata about a registered module."""
@@ -163,6 +172,9 @@ def route_module_command(
     mod = importlib.import_module(adapter_path)
     handler = getattr(mod, "handle_command")
     result = handler(command, args)
+    # Internal modules may return bool (standard) instead of dict (adapter)
+    if isinstance(result, bool):
+        result = {"stdout": "", "stderr": "", "exit_code": 0 if result else 1}
     json_handler.log_operation(
         "route_module_command", {"module": name, "command": command}
     )

@@ -48,6 +48,9 @@ class Trigger:
     _deferred_queue = []  # Queue for events fired during handling
     _draining_deferred = False  # Prevents nested deferred processing
     _log_watcher_started = False  # Lazy-start flag for log watcher
+    _handler_failures = {}  # handler -> consecutive failure count
+    _disabled_handlers = set()  # handlers auto-disabled after repeated failures
+    _HANDLER_FAILURE_THRESHOLD = 5  # consecutive failures before auto-disable
 
     @classmethod
     def _ensure_initialized(cls):
@@ -96,12 +99,25 @@ class Trigger:
     def _fire_to_handlers(cls, event: str, data: dict) -> None:
         """Fire a single event to its registered handlers."""
         handlers = cls._handlers.get(event, [])
+        data = dict(data)  # Copy to avoid mutating caller's dict
         data['fire_event'] = cls.fire
         for handler in handlers:
+            if handler in cls._disabled_handlers:
+                continue
             try:
                 handler(**data)
+                cls._handler_failures.pop(handler, None)  # Reset on success
             except Exception as e:
-                logger.error(f"[TRIGGER] Handler error for {event}: {e}")
+                count = cls._handler_failures.get(handler, 0) + 1
+                cls._handler_failures[handler] = count
+                if count >= cls._HANDLER_FAILURE_THRESHOLD:
+                    cls._disabled_handlers.add(handler)
+                    logger.error(
+                        f"[TRIGGER] Handler {getattr(handler, '__name__', handler)} "
+                        f"disabled after {count} consecutive failures"
+                    )
+                else:
+                    logger.error(f"[TRIGGER] Handler error for {event}: {e}")
 
     @classmethod
     def _drain_deferred(cls) -> None:

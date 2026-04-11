@@ -142,11 +142,10 @@ def report_error(
     )
     result["dispatched"] = False
 
-    # Fire event on first occurrence (count==1) for registration and on
-    # second occurrence (count==2) so the handler can apply the dispatch
-    # threshold.  Skip all other counts (backoff handles later dispatches).
+    # Fire event on every call — let the error_detected handler decide
+    # when to dispatch via circuit breaker, backoff, and rate limiting.
     error_count = result.get("count", 1)
-    if not fire_event or (not result.get("is_new", False) and error_count != 2):
+    if not fire_event:
         return result
 
     try:

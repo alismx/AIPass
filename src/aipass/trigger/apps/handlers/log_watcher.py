@@ -29,7 +29,7 @@ import hashlib
 from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, Set, Optional, Callable
-from aipass.trigger.apps.config import TRIGGER_ROOT, AIPASS_PKG_ROOT, atomic_write_json
+from aipass.trigger.apps.config import TRIGGER_ROOT, AIPASS_PKG_ROOT, atomic_write_json, json_file_lock
 from aipass.trigger.apps.handlers.json import json_handler
 
 from aipass.prax.apps.modules.logger import get_direct_logger
@@ -97,6 +97,7 @@ except ImportError:
 _branch_log_observer: Any = None
 _active_watcher: Any = None  # Reference to BranchLogWatcher for position persistence
 _seen_error_hashes: Set[str] = set()
+_fallback_error_counts: Dict[str, int] = {}  # Local count per hash when registry unavailable
 MAX_SEEN_HASHES = 2000  # Limit memory usage
 
 # Explicit mapping of system_logs filenames to their owning branch.
@@ -111,9 +112,9 @@ SYSTEM_LOGS_DIR = AIPASS_PKG_ROOT.parent.parent / "system_logs"
 # Known branch prefixes that appear in system_logs filenames (<prefix>_<module>.log).
 # Sorted longest-first so longer prefixes match before shorter ones.
 _SYSTEM_LOGS_BRANCH_PREFIXES: list = sorted([
-    'ai_mail', 'api', 'backup', 'cli', 'drone', 'flow',
-    'prax', 'trigger', 'seedgo', 'memory', 'The_Commons',
-    'aipass_os', 'aipass_business',
+    'ai_mail', 'api', 'cli', 'drone', 'flow',
+    'prax', 'trigger', 'seedgo', 'memory',
+    'spawn', 'devpulse',
 ], key=len, reverse=True)
 
 # Event fire callback (set by module, avoids handler importing from modules)
@@ -146,11 +147,12 @@ def _save_seen_hashes() -> None:
     Merges with existing trigger_data.json content to preserve other keys.
     """
     try:
-        data: Dict[str, Any] = {}
-        if TRIGGER_DATA_FILE.exists():
-            data = json.loads(TRIGGER_DATA_FILE.read_text(encoding='utf-8'))
-        data['seen_error_hashes'] = list(_seen_error_hashes)
-        atomic_write_json(TRIGGER_DATA_FILE, data)
+        with json_file_lock(TRIGGER_DATA_FILE):
+            data: Dict[str, Any] = {}
+            if TRIGGER_DATA_FILE.exists():
+                data = json.loads(TRIGGER_DATA_FILE.read_text(encoding='utf-8'))
+            data['seen_error_hashes'] = list(_seen_error_hashes)
+            atomic_write_json(TRIGGER_DATA_FILE, data)
     except Exception as exc:
         logger.warning("Failed to save seen hashes: %s", exc)
         return  # Write failure - hashes remain in memory only
@@ -188,11 +190,12 @@ def _save_log_positions(positions: Dict[str, int]) -> None:
         positions: Dict mapping file paths to byte offsets
     """
     try:
-        data: Dict[str, Any] = {}
-        if TRIGGER_DATA_FILE.exists():
-            data = json.loads(TRIGGER_DATA_FILE.read_text(encoding='utf-8'))
-        data['log_positions'] = positions
-        atomic_write_json(TRIGGER_DATA_FILE, data)
+        with json_file_lock(TRIGGER_DATA_FILE):
+            data: Dict[str, Any] = {}
+            if TRIGGER_DATA_FILE.exists():
+                data = json.loads(TRIGGER_DATA_FILE.read_text(encoding='utf-8'))
+            data['log_positions'] = positions
+            atomic_write_json(TRIGGER_DATA_FILE, data)
     except Exception as exc:
         logger.warning("Failed to save log positions: %s", exc)
         return  # Write failure - positions remain in memory only
@@ -512,13 +515,9 @@ class BranchLogWatcher(WatchdogFileSystemEventHandler if WATCHDOG_AVAILABLE else
                         severity='medium'
                     )
 
-                    # Fire event for new errors (count == 1) and on second
-                    # occurrence (count == 2) so the handler can apply the
-                    # dispatch threshold.  Subsequent occurrences are silent
-                    # until the per-fingerprint backoff schedule allows.
+                    # Fire event on every occurrence — let the error_detected
+                    # handler decide via circuit breaker, backoff, and rate limiting.
                     error_count = result.get('count', 1)
-                    if not result.get('is_new', False) and error_count != 2:
-                        return
 
                     # Fire error_detected event with registry data
                     if _fire_event is not None:
@@ -551,11 +550,43 @@ class BranchLogWatcher(WatchdogFileSystemEventHandler if WATCHDOG_AVAILABLE else
                         branch, module, e
                     )
 
-            # Fallback path: Medic v1 hash-based dedup
+            # Fallback path: retry lazy import of registry, else track count locally
             error_hash = _generate_error_hash(module, message)
 
-            if _is_duplicate_error(error_hash):
+            # Retry registry import — may have failed at module load but be available now
+            try:
+                from aipass.trigger.apps.handlers.error_registry import report as _lazy_report
+                result = _lazy_report(
+                    error_type=parsed['level'],
+                    message=message,
+                    component=branch,
+                    log_path=log_path,
+                    severity='medium'
+                )
+                error_count = result.get('count', 1)
+                if not result.get('is_new', False) and error_count != 2:
+                    return
+                if _fire_event is not None:
+                    _fire_event(
+                        'error_detected',
+                        branch=branch, module=module, message=message,
+                        log_path=log_path,
+                        error_hash=result.get('id', error_hash),
+                        timestamp=parsed['timestamp'],
+                        fingerprint=result.get('fingerprint', ''),
+                        registry_id=result.get('id', ''),
+                        first_seen=result.get('first_seen', ''),
+                        last_seen=result.get('last_seen', ''),
+                        count=error_count,
+                    )
+                    json_handler.log_operation("error_detected_in_log", {"branch": branch, "log_path": log_path})
                 return
+            except Exception as exc:
+                logger.warning("Lazy registry import failed in fallback path: %s", exc)
+
+            # Registry truly unavailable — track count locally, fire with count
+            _fallback_error_counts[error_hash] = _fallback_error_counts.get(error_hash, 0) + 1
+            local_count = _fallback_error_counts[error_hash]
 
             if _fire_event is not None:
                 _fire_event(
@@ -565,7 +596,8 @@ class BranchLogWatcher(WatchdogFileSystemEventHandler if WATCHDOG_AVAILABLE else
                     message=message,
                     log_path=log_path,
                     error_hash=error_hash,
-                    timestamp=parsed['timestamp']
+                    timestamp=parsed['timestamp'],
+                    count=local_count,
                 )
                 json_handler.log_operation("error_detected_in_log", {"branch": branch, "log_path": log_path})
             else:

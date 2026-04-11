@@ -46,9 +46,9 @@ def test_create_caller_config_creates_three_files(tmp_path: Path):
     result = create_caller_config("test_caller", json_folder)
 
     assert result != {}
-    assert (json_folder / "openrouter_skill_config.json").exists()
-    assert (json_folder / "openrouter_skill_data.json").exists()
-    assert (json_folder / "openrouter_skill_log.json").exists()
+    assert (json_folder / "openrouter_config.json").exists()
+    assert (json_folder / "openrouter_data.json").exists()
+    assert (json_folder / "openrouter_log.json").exists()
 
 
 def test_create_caller_config_defaults(tmp_path: Path):
@@ -57,7 +57,7 @@ def test_create_caller_config_defaults(tmp_path: Path):
 
     create_caller_config("test_caller", json_folder)
 
-    config = read_json(json_folder / "openrouter_skill_config.json")
+    config = read_json(json_folder / "openrouter_config.json")
     assert config is not None
     assert config["config"]["ai_temperature"] == 0.7
     assert config["config"]["ai_max_tokens"] == 4000
@@ -72,7 +72,7 @@ def test_create_caller_config_data_defaults(tmp_path: Path):
 
     create_caller_config("test_caller", json_folder)
 
-    data = read_json(json_folder / "openrouter_skill_data.json")
+    data = read_json(json_folder / "openrouter_data.json")
     assert data is not None
     assert data["data"]["total_requests"] == 0
     assert data["data"]["successful_requests"] == 0
@@ -87,7 +87,7 @@ def test_create_caller_config_log_defaults(tmp_path: Path):
 
     create_caller_config("test_caller", json_folder)
 
-    log = read_json(json_folder / "openrouter_skill_log.json")
+    log = read_json(json_folder / "openrouter_log.json")
     assert log is not None
     assert log["logs"] == []
     assert log["module_name"] == "openrouter"
@@ -143,9 +143,9 @@ def test_ensure_caller_config_provisions_new(mock_detect, tmp_path: Path):
     result = ensure_caller_config("test_caller")
 
     assert result != {}
-    assert (json_folder / "openrouter_skill_config.json").exists()
-    assert (json_folder / "openrouter_skill_data.json").exists()
-    assert (json_folder / "openrouter_skill_log.json").exists()
+    assert (json_folder / "openrouter_config.json").exists()
+    assert (json_folder / "openrouter_data.json").exists()
+    assert (json_folder / "openrouter_log.json").exists()
 
 
 @patch("aipass.api.apps.handlers.openrouter.provision.detect_caller_from_stack")
@@ -159,7 +159,7 @@ def test_ensure_caller_config_returns_existing(mock_detect, tmp_path: Path):
     assert first_result != {}
 
     # Read the created config and modify it to detect overwrites
-    config_path = json_folder / "openrouter_skill_config.json"
+    config_path = json_folder / "openrouter_config.json"
     config = read_json(config_path)
     assert config is not None
     config["config"]["ai_model"] = "test/modified-model"

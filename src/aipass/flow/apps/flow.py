@@ -108,6 +108,16 @@ def route_command(command: str, args: List[str], modules: List[Any]) -> bool:
 
 def main():
     """Main entry point - routes commands or shows help"""
+    try:
+        return _main_impl()
+    except Exception as exc:
+        logger.error("[flow] Unhandled error in main: %s", exc)
+        error(f"Unexpected error: {exc}")
+        return 1
+
+
+def _main_impl():
+    """Internal implementation of main — separated for catch-all handler."""
 
     # Discover available modules
     modules = discover_modules()

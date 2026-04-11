@@ -206,39 +206,43 @@ def route_command(command: str, args: List[str], modules: List[Any]) -> bool:
 
 def main():
     """Main entry point - routes commands to modules"""
+    try:
+        # Parse arguments
+        args = sys.argv[1:]
 
-    # Parse arguments
-    args = sys.argv[1:]
+        # Show introspection when run without arguments
+        if len(args) == 0:
+            print_introspection()
+            return 0
 
-    # Show introspection when run without arguments
-    if len(args) == 0:
-        print_introspection()
-        return 0
+        # Show version
+        if args[0] in ['--version', '-V']:
+            console.print("AI_MAIL v1.0.0")
+            return 0
 
-    # Show version
-    if args[0] in ['--version', '-V']:
-        console.print("AI_MAIL v1.0.0")
-        return 0
+        # Show help for explicit help flags
+        if args[0] in ['--help', '-h', 'help']:
+            print_help()
+            return 0
 
-    # Show help for explicit help flags
-    if args[0] in ['--help', '-h', 'help']:
-        print_help()
-        return 0
+        # Command provided - try to route to modules
+        modules = discover_modules()
+        command = args[0]
+        remaining_args = args[1:] if len(args) > 1 else []
 
-    # Command provided - try to route to modules
-    modules = discover_modules()
-    command = args[0]
-    remaining_args = args[1:] if len(args) > 1 else []
+        if not modules:
+            error("No modules found")
+            return 1
 
-    if not modules:
-        error("No modules found")
-        return 1
+        # Route command
+        if route_command(command, remaining_args, modules):
+            return 0
+        else:
+            error(f"Unknown command: {command}")
+            return 1
 
-    # Route command
-    if route_command(command, remaining_args, modules):
-        return 0
-    else:
-        error(f"Unknown command: {command}")
+    except Exception as exc:
+        logger.error('[ai_mail] Unhandled error in main: %s', exc)
         return 1
 
 if __name__ == "__main__":

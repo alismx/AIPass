@@ -201,7 +201,12 @@ def _handle_init(args: List[str]) -> bool:
 
     # Parse positional args: [target_dir] [project_name]
     caller_cwd = os.environ.get("AIPASS_CALLER_CWD", os.getcwd())
-    target = Path(args[0]) if args else Path(caller_cwd)
+    if args:
+        target = Path(args[0])
+        if not target.is_absolute():
+            target = Path(caller_cwd) / target
+    else:
+        target = Path(caller_cwd)
     project_name = args[1] if len(args) > 1 else None
 
     try:
@@ -209,10 +214,6 @@ def _handle_init(args: List[str]) -> bool:
     except ValueError as exc:
         logger.warning("Init validation error: %s", exc)
         error(str(exc), suggestion="Pass a project name explicitly")
-        sys.exit(1)
-    except FileExistsError as exc:
-        logger.warning("Init target already exists: %s", exc)
-        error(str(exc))
         sys.exit(1)
     except OSError as exc:
         logger.error("Init filesystem error: %s", exc)
@@ -283,11 +284,12 @@ def _handle_init_agent(args: List[str]) -> bool:
 
     agent_name = args[0]
     agent_path = f"src/{agent_name}"
+    extra_flags = args[1:]
     logger.info("Routing 'init agent %s' to drone @spawn create %s", agent_name, agent_path)
 
     try:
         result = subprocess.run(
-            ["drone", "@spawn", "create", agent_path],
+            ["drone", "@spawn", "create", agent_path] + extra_flags,
             check=False,
         )
         if result.returncode != 0:
@@ -297,6 +299,7 @@ def _handle_init_agent(args: List[str]) -> bool:
             )
         return True
     except FileNotFoundError:
+        logger.warning("drone command not found on PATH")
         error(
             "drone command not found",
             suggestion="Ensure AIPass is installed and drone is in PATH",

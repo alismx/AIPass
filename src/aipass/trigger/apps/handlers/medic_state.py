@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from aipass.prax.apps.modules.logger import get_direct_logger
-from aipass.trigger.apps.config import TRIGGER_ROOT, atomic_write_json
+from aipass.trigger.apps.config import TRIGGER_ROOT, atomic_write_json, json_file_lock
 from aipass.trigger.apps.handlers.json import json_handler
 
 logger = get_direct_logger()
@@ -87,15 +87,16 @@ def set_enabled(enabled: bool) -> bool:
     Returns:
         True on success
     """
-    data = read_config()
-    if 'config' not in data:
-        data['config'] = {}
-    data['config']['medic_enabled'] = enabled
-    data['timestamp'] = datetime.now().strftime("%Y-%m-%d")
+    with json_file_lock(TRIGGER_CONFIG_FILE):
+        data = read_config()
+        if 'config' not in data:
+            data['config'] = {}
+        data['config']['medic_enabled'] = enabled
+        data['timestamp'] = datetime.now().strftime("%Y-%m-%d")
 
-    if write_config(data):
-        json_handler.log_operation("state_persisted", {"key": "medic_enabled", "value": enabled})
-        return True
+        if write_config(data):
+            json_handler.log_operation("state_persisted", {"key": "medic_enabled", "value": enabled})
+            return True
     return False
 
 
@@ -142,15 +143,16 @@ def mute_branch(branch_name: str) -> bool:
         True on success
     """
     clean = _normalize_branch_name(branch_name)
-    data = read_config()
-    if 'config' not in data:
-        data['config'] = {}
-    muted = [_normalize_branch_name(b) for b in data['config'].get('muted_branches', [])]
-    if clean not in muted:
-        muted.append(clean)
-    data['config']['muted_branches'] = muted
-    data['timestamp'] = datetime.now().strftime("%Y-%m-%d")
-    return write_config(data)
+    with json_file_lock(TRIGGER_CONFIG_FILE):
+        data = read_config()
+        if 'config' not in data:
+            data['config'] = {}
+        muted = [_normalize_branch_name(b) for b in data['config'].get('muted_branches', [])]
+        if clean not in muted:
+            muted.append(clean)
+        data['config']['muted_branches'] = muted
+        data['timestamp'] = datetime.now().strftime("%Y-%m-%d")
+        return write_config(data)
 
 
 def unmute_branch(branch_name: str) -> bool:
@@ -164,14 +166,15 @@ def unmute_branch(branch_name: str) -> bool:
         True on success
     """
     clean = _normalize_branch_name(branch_name)
-    data = read_config()
-    if 'config' not in data:
-        data['config'] = {}
-    muted = [_normalize_branch_name(b) for b in data['config'].get('muted_branches', [])]
-    muted = [b for b in muted if b != clean]
-    data['config']['muted_branches'] = muted
-    data['timestamp'] = datetime.now().strftime("%Y-%m-%d")
-    return write_config(data)
+    with json_file_lock(TRIGGER_CONFIG_FILE):
+        data = read_config()
+        if 'config' not in data:
+            data['config'] = {}
+        muted = [_normalize_branch_name(b) for b in data['config'].get('muted_branches', [])]
+        muted = [b for b in muted if b != clean]
+        data['config']['muted_branches'] = muted
+        data['timestamp'] = datetime.now().strftime("%Y-%m-%d")
+        return write_config(data)
 
 
 def get_suppression_stats() -> Dict[str, Any]:

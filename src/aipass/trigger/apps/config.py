@@ -13,9 +13,11 @@ Provides package-relative paths for trigger data directories.
 Works in both pip-installed and development environments.
 """
 
+import fcntl
 import json
 import os
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
 from datetime import datetime, timezone
 
@@ -64,6 +66,27 @@ def atomic_write_json(path: Path, data, indent: int = 2, ensure_ascii: bool = Tr
         except OSError:
             pass
         raise
+
+
+@contextmanager
+def json_file_lock(path: Path):
+    """Acquire exclusive lock for a JSON file's read-modify-write cycle.
+
+    Uses a .lock sidecar file with fcntl.flock to prevent concurrent
+    processes from corrupting state during read-modify-write. Combine
+    with atomic_write_json for both concurrency and crash safety.
+
+    Args:
+        path: The JSON file to lock (lock acquired on path.with_suffix('.lock'))
+    """
+    lock_path = path.with_suffix('.lock')
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(lock_path, 'w', encoding='utf-8') as lock_f:
+        fcntl.flock(lock_f, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            fcntl.flock(lock_f, fcntl.LOCK_UN)
 
 
 def print_introspection():
