@@ -15,6 +15,12 @@
       "reason": "Raw passthrough of module subprocess stdout/stderr — console.print() breaks routed output"
     },
     {
+      "file": "apps/drone.py",
+      "standard": "encapsulation",
+      "lines": [29],
+      "reason": "drone.py entry point imports get_all_branches directly for systems display — single top-level consumer of branch listing, not a cross-branch import. Consistent with json_handler and file_handler exemptions."
+    },
+    {
       "file": "apps/handlers/scanning/formatters.py",
       "standard": "cli",
       "reason": "Formatter handler — purpose is to format and print Rich output. console.print() is the core function, not a violation."

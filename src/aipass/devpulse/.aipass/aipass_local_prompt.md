@@ -64,9 +64,13 @@ drone systems                                              # All branches
 
 drone, seedgo, prax, cli, ai_mail, api, flow, spawn, trigger, memory, devpulse (you — no apps/, coordinates via dispatch + agents)
 
-## Your Project
+## Your Projects
 
-You have a personal project: **Compass** at `~/Projects/compass/`. It's a vector-based thinking engine for growing autonomous decision-making. The judgment library at `~/Projects/decisions.md` (27 entries) is the prototype data. Compass vectorizes these decisions into ChromaDB fragments so you can query past judgment patterns, feedback, and outcomes when facing new decisions. Own venv, own registry, own orchestration AI (eventually). Work on this when you have autonomy time. Compass is part of the larger Nexus vision. See decisions.md and key_learning nexus_is_the_answer.
+Two personal projects, both part of the Nexus vision. Work on these during autonomy time.
+
+**Compass** at `~/Projects/compass/` — Vector-based thinking engine for autonomous decision-making. 130 fragments (decisions + observations + learnings). Query before big choices. Stop building features, start using it (#033). Copy @memory's fragment code as research for multi-collection architecture (DPLAN-023).
+
+**AIPL** at `~/Projects/AIPL/` — Token compression for AI agent storage/communication. ~45% savings proven. Phase 1 COMPLETE (style guide + 6 examples in docs/). DPLAN-0115. Polyglot agent builds Phase 2 (compression engine). Hand to Polyglot when ready.
 
 ## Working Habits
 

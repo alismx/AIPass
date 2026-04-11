@@ -45,6 +45,7 @@ class BranchDetector:
         self.module_map: Dict[str, str] = {}  # module -> branch
         self.known_branches: Set[str] = set()
         self._repo_root: Optional[Path] = None
+        self._external_project_cache: Dict[str, str] = {}  # dir_name -> project_name
         self._load_registry()
         json_handler.log_operation("branch_detected", {"known_branches": len(self.known_branches)})
 
@@ -109,19 +110,118 @@ class BranchDetector:
         self.known_branches.update(fallback)
         logger.info(f"Using fallback branches: {fallback}")
 
+    def _resolve_external_project_name(self, project_part: str) -> str:
+        """Resolve external project directory name to canonical name via _REGISTRY.json.
+
+        Args:
+            project_part: Directory name segment like 'Vera-Studio' or 'AIPL'
+
+        Returns:
+            Name from registry file stem (e.g., 'VERA-STUDIO') or uppercased dir name
+        """
+        for base in [Path.home() / 'Projects']:
+            project_dir = base / project_part
+            if not project_dir.exists():
+                continue
+            try:
+                for item in project_dir.iterdir():
+                    if item.is_file() and item.name.endswith('_REGISTRY.json'):
+                        return item.stem.replace('_REGISTRY', '')
+            except (OSError, PermissionError):
+                pass
+            return project_part.upper()
+        return project_part.upper()
+
+    def _parse_external_project_path(self, encoded_folder: str) -> tuple:
+        """Parse encoded Claude project folder into (project_name, agent_name).
+
+        Handles hyphens in project names by splitting on -Projects- and -src-.
+
+        Examples:
+            -home-patrick-Projects-Vera-Studio -> ('VERA-STUDIO', None)
+            -home-patrick-Projects-AIPL-src-polyglot -> ('AIPL', 'POLYGLOT')
+            -home-patrick-Projects-Vera-Studio-src-vera -> ('VERA-STUDIO', 'VERA')
+
+        Returns:
+            (project_name, agent_name) -- agent_name is None if no src subdir
+            Returns (None, None) if cannot parse.
+        """
+        if not encoded_folder.startswith('-'):
+            return None, None
+
+        name = encoded_folder[1:]  # strip leading dash
+
+        # Find -Projects- boundary
+        sep = '-projects-'
+        idx = name.lower().find(sep)
+        if idx < 0:
+            return None, None
+
+        # Everything after -projects- is our target
+        after = name[idx + len(sep):]
+
+        # Split on -src- to separate project from agent subdirectory
+        src_sep = '-src-'
+        src_idx = after.lower().find(src_sep)
+
+        if src_idx >= 0:
+            project_part = after[:src_idx]
+            agent_part = after[src_idx + len(src_sep):]
+        else:
+            project_part = after
+            agent_part = None
+
+        # Resolve project name via registry file on filesystem
+        project_name = self._resolve_external_project_name(project_part)
+
+        # Agent name: uppercase with hyphen preserved (polyglot -> POLYGLOT)
+        agent_name = agent_part.upper() if agent_part else None
+
+        return project_name, agent_name
+
     def _detect_from_claude_project(self, path_str: str) -> Optional[str]:
-        """Detect branch from Claude Code project path encoding."""
+        """Detect PROJECT/BRANCH label from Claude Code project path encoding.
+
+        Returns two-tier label (model suffix added by caller):
+        - Internal AIPass branches: 'AIPASS/DEVPULSE'
+        - External project with agent: 'AIPL/POLYGLOT'
+        - External project main session: 'VERA-STUDIO'
+        Sub-agents append ' SUB' to the agent/branch segment.
+        """
         projects_idx = path_str.index('.claude/projects/') + len('.claude/projects/')
         remaining = path_str[projects_idx:]
         project_folder = remaining.split('/')[0]
-        project_path = '/' + project_folder.replace('-', '/')
+        is_subagent = '/subagents/' in path_str
+        sub_suffix = ' SUB' if is_subagent else ''
 
-        for registered_path, branch_name in self.branch_map.items():
-            registered_normalized = registered_path.replace('_', '/')
-            project_normalized = project_path.replace('_', '/')
-            if registered_normalized == project_normalized or registered_path == project_path:
-                return branch_name
+        folder_lower = project_folder.lower()
 
+        # Internal AIPass: path contains -projects-aipass-src-aipass-
+        if '-projects-aipass-src-aipass-' in folder_lower:
+            # Simple hyphen-to-slash decode works (no hyphens in AIPass branch names)
+            project_path = '/' + project_folder.replace('-', '/')
+            for registered_path, branch_name in self.branch_map.items():
+                reg_norm = registered_path.replace('_', '/')
+                proj_norm = project_path.replace('_', '/')
+                if reg_norm == proj_norm or registered_path == project_path:
+                    return f"AIPASS/{branch_name}{sub_suffix}"
+            # Fallback: last segment after aipass-
+            segs = [s for s in project_folder.split('-') if s]
+            if segs:
+                return f"AIPASS/{segs[-1].upper()}{sub_suffix}"
+            return None
+
+        # External project
+        project_name, agent_name = self._parse_external_project_path(project_folder)
+        if project_name:
+            if agent_name:
+                return f"{project_name}/{agent_name}{sub_suffix}"
+            elif sub_suffix:
+                return f"{project_name}{sub_suffix}"
+            else:
+                return project_name
+
+        # Old fallback: segment scanning for known branch names
         segments = [s for s in project_folder.split('-') if s]
         if not segments:
             return None
@@ -143,6 +243,63 @@ class BranchDetector:
                     if branch_upper in self.known_branches:
                         return branch_upper
         return None
+
+    def _detect_from_external_project_path(self, path: Path) -> Optional[str]:
+        """Detect project/agent label from a file path under ~/Projects/.
+
+        Covers external AIPass projects (AIPL, Vera-Studio, etc.) whose files
+        are not in branch_map but live under a directory containing *_REGISTRY.json.
+        AIPass itself is skipped — its branches are handled by branch_map.
+
+        Returns labels like 'AIPL/POLYGLOT', 'VERA-STUDIO', 'AIPL/POLYGLOT TESTS'.
+        """
+        projects_base = Path.home() / 'Projects'
+        try:
+            rel = path.relative_to(projects_base)
+        except ValueError:
+            return None
+
+        parts = rel.parts
+        if not parts:
+            return None
+
+        project_dir_name = parts[0]
+
+        # Skip AIPass — handled by registry/branch_map (Strategy 2)
+        if project_dir_name.lower() == 'aipass':
+            return None
+
+        # Look up project name (cached)
+        if project_dir_name in self._external_project_cache:
+            project_name = self._external_project_cache[project_dir_name]
+        else:
+            project_dir = projects_base / project_dir_name
+            project_name = None
+            try:
+                for item in project_dir.iterdir():
+                    if item.is_file() and item.name.endswith('_REGISTRY.json'):
+                        project_name = item.stem.replace('_REGISTRY', '')
+                        break
+            except (OSError, PermissionError):
+                pass
+            if not project_name:
+                return None  # Not an external AIPass project
+            self._external_project_cache[project_dir_name] = project_name
+
+        # Extract agent from path: {project}/src/{agent}/...
+        agent_name = None
+        if len(parts) > 2 and parts[1].lower() == 'src':
+            agent_name = parts[2].upper()
+
+        # Append TESTS suffix when path is clearly test output
+        path_str_lower = str(path).lower()
+        is_test = ('/tests/' in path_str_lower or '/test_' in path_str_lower
+                   or path_str_lower.endswith('_test.py') or path_str_lower.endswith('_test.log'))
+        test_suffix = ' TESTS' if is_test else ''
+
+        if agent_name:
+            return f"{project_name}/{agent_name}{test_suffix}"
+        return f"{project_name}{test_suffix}"
 
     def _extract_branch_from_central(self, path_str: str, path: Path) -> Optional[str]:
         """Extract branch name from ai_mail central filename patterns."""
@@ -193,6 +350,12 @@ class BranchDetector:
                     result = self.branch_map[parent_str]
                     self.log_map[path_str] = result
                     return result
+
+            # Strategy 2.5: External AIPass project files (AIPL, Vera-Studio, etc.)
+            result = self._detect_from_external_project_path(path)
+            if result:
+                self.log_map[path_str] = result
+                return result
 
             # Strategy 3: Claude Code project files
             if '.claude/projects/' in path_str:

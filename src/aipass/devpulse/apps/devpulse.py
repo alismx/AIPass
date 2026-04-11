@@ -42,14 +42,29 @@ def discover_modules() -> list[Any]:
         if file_path.name.startswith("_"):
             continue
 
-        module_name = f"apps.modules.{file_path.stem}"
+        # Try package import first, fall back to relative import
+        module_names = [
+            f"aipass.devpulse.apps.modules.{file_path.stem}",
+            f"apps.modules.{file_path.stem}",
+        ]
 
-        try:
-            module = importlib.import_module(module_name)
-            if hasattr(module, "handle_command"):
-                modules.append(module)
-        except Exception as e:
-            logger.error(f"[DEVPULSE] Failed to load module {module_name}: {e}")
+        loaded = False
+        for module_name in module_names:
+            try:
+                module = importlib.import_module(module_name)
+                if hasattr(module, "handle_command"):
+                    modules.append(module)
+                loaded = True
+                break
+            except (ImportError, ModuleNotFoundError):
+                continue
+            except Exception as e:
+                logger.error(f"[DEVPULSE] Failed to load module {module_name}: {e}")
+                loaded = True
+                break
+
+        if not loaded:
+            logger.error(f"[DEVPULSE] Could not import module {file_path.stem}")
 
     return modules
 

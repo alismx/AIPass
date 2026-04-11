@@ -14,6 +14,7 @@ Standard branch entry point (apps/drone.py pattern).
 """
 
 import importlib
+import os
 import sys
 from pathlib import Path
 from typing import List
@@ -25,6 +26,7 @@ from aipass.cli.apps.modules import console, err_console
 from aipass.drone.apps.modules import BranchNotFoundError, CommandExecutionError, RegistryError
 from aipass.drone.apps.modules.discovery import get_help
 from aipass.drone.apps.modules.resolver import list_branches
+from aipass.drone.apps.handlers.registry_handler import get_all_branches
 from aipass.drone.apps.modules.router import route_command
 from aipass.drone.apps.modules.module_registry import (
     is_module,
@@ -153,29 +155,52 @@ def _handle_systems() -> int:
         console.print("No registry found in current directory tree.")
         return 0
 
-    branches = list_branches()
+    all_branches = get_all_branches()
     modules = list_modules()
+
+    # Split registry branches into services (profile=library) and project branches
+    services = [b for b in all_branches if b.get("profile") == "library"]
+    project_branches = [b for b in all_branches if b.get("profile") != "library"]
 
     # Infrastructure section — drone is the router, not a routable module
     console.print("Infrastructure:")
     console.print(f"  @{'drone':<18} Command routing and module discovery (v{VERSION})")
     console.print()
 
-    if modules:
-        console.print(f"Modules ({len(modules)}):")
+    # AIPass Services — internal modules + registry services (deduplicated)
+    # Exclude registry services that duplicate internal modules or drone itself
+    exclude = set(modules) | {"drone"}
+    deduped_services = [s for s in services if s.get("name", "").lower() not in exclude]
+    service_count = len(modules) + len(deduped_services)
+    if service_count:
+        console.print(f"AIPass Services ({service_count}):")
         for name in modules:
             info = get_module_info(name)
             if info:
                 console.print(f"  @{name:<18} {info.description}")
             else:
                 console.print(f"  @{name:<18} (not available)")
-        if branches:
+        for svc in sorted(deduped_services, key=lambda b: b.get("name", "").lower()):
+            name = svc.get("name", "").lower()
+            desc = svc.get("description", "")
+            console.print(f"  @{name:<18} {desc}")
+        if project_branches:
             console.print()
 
-    if branches:
-        console.print(f"Branches ({len(branches)}):")
-        for name in sorted(branches):
-            console.print(f"  {name}")
+    if project_branches:
+        console.print(f"Branches ({len(project_branches)}):")
+        for branch in sorted(project_branches, key=lambda b: b.get("name", "").lower()):
+            console.print(f"  @{branch.get('name', '').lower()}")
+
+    # Hint for external projects missing AIPass core branches.
+    # If AIPASS_HOME is not set AND 'drone' isn't among the local branches,
+    # we're in an external project that can't see the core branch set.
+    if not os.environ.get("AIPASS_HOME"):
+        branch_names = {b.get("name", "").lower() for b in all_branches}
+        if "drone" not in branch_names:
+            console.print()
+            console.print("[dim]Only local registry found. To access AIPass core branches:[/dim]")
+            console.print("[dim]  export AIPASS_HOME=/path/to/AIPass[/dim]")
 
     return 0
 
@@ -307,6 +332,8 @@ def _handle_custom_command(args: list[str]) -> int:
             return _handle_module(module_name, [command] + cmd_args)
         logger.warning("Custom command failed for target %s: %s", target, exc)
         err_console.print(f"drone: {exc}")
+        if isinstance(exc, BranchNotFoundError) and not os.environ.get("AIPASS_HOME"):
+            err_console.print("  Tip: set AIPASS_HOME=/path/to/AIPass to access core branches.")
         return 1
 
     if result.stdout:
@@ -343,6 +370,8 @@ def _handle_target(args: List[str]) -> int:
                 return _handle_module(module_name, rest)
             logger.warning("Introspection failed for %s: %s", target, exc)
             err_console.print(f"drone: {exc}")
+            if isinstance(exc, BranchNotFoundError) and not os.environ.get("AIPASS_HOME"):
+                err_console.print("  Tip: set AIPASS_HOME=/path/to/AIPass to access core branches.")
             return 1
         if result.stdout:
             console.print(result.stdout, end="", highlight=False)
@@ -364,6 +393,8 @@ def _handle_target(args: List[str]) -> int:
                 return _handle_module(module_name, rest)
             logger.warning("Help lookup failed for %s: %s", target, exc)
             err_console.print(f"drone: {exc}")
+            if isinstance(exc, BranchNotFoundError) and not os.environ.get("AIPASS_HOME"):
+                err_console.print("  Tip: set AIPASS_HOME=/path/to/AIPass to access core branches.")
             return 1
         return 0
 
@@ -386,6 +417,8 @@ def _handle_target(args: List[str]) -> int:
             return _handle_module(module_name, rest)
         logger.warning("Command routing failed for %s %s: %s", target, command, exc)
         err_console.print(f"drone: {exc}")
+        if isinstance(exc, BranchNotFoundError) and not os.environ.get("AIPASS_HOME"):
+            err_console.print("  Tip: set AIPASS_HOME=/path/to/AIPass to access core branches.")
         return 1
 
     if result.stdout:

@@ -51,9 +51,10 @@ def find_registry() -> Path:
     Search order:
     1. Explicitly set path via set_registry_path()
     2. AIPASS_REGISTRY environment variable
-    3. Walk up from drone package location
-    4. Walk up from cwd
-    5. Default: package-relative path
+    3. Walk up from cwd
+    4. AIPASS_HOME env var — for external projects where CWD walk finds nothing
+    5. Walk up from drone package location
+    6. Default: package-relative path
 
     The first directory that contains any *_REGISTRY.json is treated
     as the project boundary.  If that directory holds more than one
@@ -63,6 +64,13 @@ def find_registry() -> Path:
     cwd = Path.cwd()
     for parent in [cwd] + list(cwd.parents):
         hit = _first_registry_in(parent)
+        if hit is not None:
+            return hit
+
+    # AIPASS_HOME fallback — for external projects where CWD walk finds nothing
+    aipass_home = os.environ.get("AIPASS_HOME")
+    if aipass_home:
+        hit = _first_registry_in(Path(aipass_home))
         if hit is not None:
             return hit
 
@@ -162,19 +170,18 @@ def reset_registry_path() -> None:
 # Registry loading and querying
 # ---------------------------------------------------------------------------
 
-def load_registry() -> Dict[str, Any]:
-    """Load the branch registry from disk.
+def _load_registry_data(registry_path: Path) -> Dict[str, Any]:
+    """Read, parse, and normalize a registry file.
 
-    Returns:
-        Registry dictionary with branches (normalized to dict format)
+    Performs file I/O and branch normalization (list → dict).  Does NOT
+    run credential verification or log the operation — callers that need
+    those steps (i.e. load_registry) are responsible.
 
     Raises:
         RegistryNotFoundError: If registry file doesn't exist
-        RegistryCorruptError: If registry file is invalid JSON
+        RegistryCorruptError: If registry file is invalid JSON or malformed
         RegistryPermissionError: If registry file cannot be read
     """
-    registry_path = get_registry_path()
-
     if not registry_path.exists():
         raise RegistryNotFoundError(
             f"Registry not found at {registry_path}. "
@@ -200,7 +207,7 @@ def load_registry() -> Dict[str, Any]:
     # Normalize: AIPASS_REGISTRY uses list format, convert to dict keyed by name
     branches_raw = data["branches"]
     if isinstance(branches_raw, list):
-        branches_dict = {}
+        branches_dict: Dict[str, Any] = {}
         registry_dir = registry_path.parent
         for branch in branches_raw:
             name = branch.get("name", "").lower()
@@ -219,6 +226,31 @@ def load_registry() -> Dict[str, Any]:
     elif not isinstance(branches_raw, dict):
         raise RegistryCorruptError("Registry 'branches' must be a list or dict")
 
+    return data
+
+
+def _get_aipass_home_registry_path() -> Optional[Path]:
+    """Return the AIPass home registry path from AIPASS_HOME env var, or None."""
+    aipass_home = os.environ.get("AIPASS_HOME")
+    if not aipass_home:
+        return None
+    return _first_registry_in(Path(aipass_home))
+
+
+def load_registry() -> Dict[str, Any]:
+    """Load the branch registry from disk.
+
+    Returns:
+        Registry dictionary with branches (normalized to dict format)
+
+    Raises:
+        RegistryNotFoundError: If registry file doesn't exist
+        RegistryCorruptError: If registry file is invalid JSON
+        RegistryPermissionError: If registry file cannot be read
+    """
+    registry_path = get_registry_path()
+    data = _load_registry_data(registry_path)
+
     _verify_registry_credential(registry_path, data)
 
     branch_count = len(data.get("branches", {}))
@@ -231,17 +263,36 @@ def get_all_branches(
     branch_type: Optional[str] = None,
     status: str = "active",
 ) -> List[Dict[str, Any]]:
-    """Get all branches from the registry, optionally filtered."""
-    try:
-        registry = load_registry()
-    except RegistryNotFoundError:
-        logger.warning("get_all_branches: registry not found, returning empty list")
-        return []
+    """Get all branches from the registry, optionally filtered.
 
-    branches = registry.get("branches", {}).values()
+    Merges branches from both the primary (local/project) registry and the
+    AIPass home registry (from AIPASS_HOME env var).  Local branches take
+    precedence when names collide.
+    """
+    merged: Dict[str, Any] = {}
+
+    # --- Primary registry ---
+    try:
+        primary = load_registry()
+        for name, branch in primary.get("branches", {}).items():
+            merged[name] = branch
+    except (RegistryNotFoundError, RegistryCorruptError, RegistryPermissionError) as exc:
+        logger.warning("get_all_branches: primary registry unavailable: %s", exc)
+
+    # --- AIPass home registry (if different from primary) ---
+    home_path = _get_aipass_home_registry_path()
+    primary_path = get_registry_path()
+    if home_path is not None and home_path != primary_path:
+        try:
+            home_data = _load_registry_data(home_path)
+            for name, branch in home_data.get("branches", {}).items():
+                if name not in merged:
+                    merged[name] = branch
+        except (RegistryNotFoundError, RegistryCorruptError, RegistryPermissionError) as exc:
+            logger.warning("get_all_branches: AIPass home registry unavailable: %s", exc)
 
     filtered = []
-    for branch in branches:
+    for branch in merged.values():
         if status and branch.get("status") != status:
             continue
         if branch_type and branch.get("type") != branch_type:
@@ -252,11 +303,31 @@ def get_all_branches(
 
 
 def get_branch_by_name(name: str) -> Optional[Dict[str, Any]]:
-    """Get a single branch by name (case-insensitive)."""
+    """Get a single branch by name (case-insensitive).
+
+    Checks the primary (local/project) registry first.  If not found, falls
+    back to the AIPass home registry (AIPASS_HOME env var) when it points to
+    a different location.
+    """
+    lower_name = name.lower()
+
+    # --- Primary registry ---
     try:
         registry = load_registry()
-    except RegistryNotFoundError:
-        logger.warning("get_branch_by_name: registry not found for lookup of '%s'", name)
-        return None
+        branch = registry.get("branches", {}).get(lower_name)
+        if branch is not None:
+            return branch
+    except (RegistryNotFoundError, RegistryCorruptError, RegistryPermissionError) as exc:
+        logger.warning("get_branch_by_name: primary registry unavailable for '%s': %s", name, exc)
 
-    return registry.get("branches", {}).get(name.lower())
+    # --- AIPass home registry fallback ---
+    home_path = _get_aipass_home_registry_path()
+    primary_path = get_registry_path()
+    if home_path is not None and home_path != primary_path:
+        try:
+            home_data = _load_registry_data(home_path)
+            return home_data.get("branches", {}).get(lower_name)
+        except (RegistryNotFoundError, RegistryCorruptError, RegistryPermissionError) as exc:
+            logger.warning("get_branch_by_name: AIPass home registry unavailable for '%s': %s", name, exc)
+
+    return None

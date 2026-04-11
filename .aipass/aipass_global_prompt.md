@@ -78,6 +78,8 @@ drone @flow list open                 # List active plans
 
 **FPLAN** = Flow Plan. Building and executing. Default is for single focused tasks. Master is for multi-phase projects that spawn sub-FPLANs per phase. DPLANs come first, FPLANs come when you're ready to build.
 
+**Never create plan files manually.** Always use `drone @flow create`. Flow handles numbering (global 4-digit sequence), registry tracking, templates, and date stamps. Manual files break the registry and produce wrong numbering. This applies to DPLANs, FPLANs, and APLANs — in any project, inside or outside the AIPass repo.
+
 ## Dispatch — Send Task + Wake a Branch
 
 ```
@@ -98,6 +100,18 @@ drone @ai_mail dispatch wake --fresh @target
 - `email @target` = just mail, no wake (FYI only — use only when explicitly requested)
 - `--dispatch` flag on `email` = adds dispatch header but doesn't auto-wake
 
+## Feedback — Cross-Project Communication
+
+Send feedback to devpulse from any project. Messages accumulate silently — no wake, no notification. DevPulse reads on demand. Works from any AIPass project (requires `AIPASS_HOME` set).
+
+```
+drone @devpulse feedback send "Subject" "Body"     # Send feedback (sender auto-detected)
+drone @devpulse feedback inbox                     # List all messages (devpulse only)
+drone @devpulse feedback view <id>                 # Read message + thread
+drone @devpulse feedback reply <id> "message"      # Reply (lands in sender's ai_mail)
+drone @devpulse feedback clear <id>                # Remove a message
+```
+
 **Always reply to dispatch emails.** When devpulse or another branch sends you work, they're waiting for a response. Complete the task, then email back with results. No silent completions — if someone dispatched you, they need to know what happened.
 
 ## How to Work
@@ -107,6 +121,8 @@ drone @ai_mail dispatch wake --fresh @target
 **Use agents for all building work.** You are the orchestrator, not the builder. Deploy sub-agents to write code, read files, and run tests. You manage the plan, check the output, and keep moving. Your context is precious — agents are disposable.
 
 **Check seedgo standards.** Before building: `drone @seedgo standards_query aipass_standards` to know what applies. During: check your work against standards as you go. After: `drone @seedgo audit aipass @{branch}` as a final gate before committing.
+
+**Ask before spelunking.** When you need to know how another branch works — how it routes, what config it uses, what functions are available — dispatch the question to that branch instead of reading through their files yourself. A quick `drone @ai_mail dispatch @target "Question" "How does X work?"` gets you an expert answer faster than digging through 4-5 unfamiliar files. Save deep investigation for when you're explicitly asked to check something out or need more context on a specific issue.
 
 ## Logging & Debugging
 

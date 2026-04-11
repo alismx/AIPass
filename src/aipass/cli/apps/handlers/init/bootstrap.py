@@ -238,22 +238,99 @@ def _global_prompt_md(name: str) -> str:
         f"# {name} — Project Context\n"
         "<!-- Injected every turn via hook. -->\n"
         "\n"
+        "## What is AIPass\n"
+        "\n"
+        "AIPass is a multi-agent framework. Agents live in directories with\n"
+        "persistent identity, memory, and communication. All AIPass infrastructure\n"
+        "is available from any project via the `drone` command.\n"
+        "\n"
         "## Terminology\n"
         "\n"
         "- **Project** — this directory. Contains a registry and agents.\n"
-        "- **Agent** — a citizen with identity (`.trinity/`), memory, mailbox, "
-        "and code (`apps/`).\n"
+        "- **Agent** — a citizen with identity (`.trinity/`), memory, mailbox,\n"
+        "  and code (`apps/`).\n"
         f"- **Registry** — `{name}_REGISTRY.json` tracks all agents.\n"
+        "\n"
+        "## Setup: if drone commands fail\n"
+        "\n"
+        "If `drone` cannot find the AIPass registry, set the env var:\n"
+        "```bash\n"
+        "export AIPASS_HOME=/path/to/AIPass   # path to AIPass installation\n"
+        "```\n"
+        "Add to your shell profile (`~/.bashrc` or `~/.zshrc`) to make it permanent.\n"
         "\n"
         "## Commands\n"
         "\n"
+        "### Agent Lifecycle\n"
         "```\n"
-        "aipass init agent <name>           # Create a new agent\n"
+        "aipass init agent <name>           # Create a new agent in src/<name>/\n"
         "drone @spawn create <name>         # Create agent (alternative)\n"
-        "drone @seedgo audit <project>      # Standards audit\n"
-        "drone @ai_mail inbox               # Check mailbox\n"
-        "drone @flow create . \"Subject\"     # Create a plan\n"
-        "drone systems                      # List infrastructure\n"
+        "drone @spawn list                  # List registered agents\n"
+        "```\n"
+        "\n"
+        "### Standards\n"
+        "```\n"
+        "drone @seedgo audit <project>      # Run full standards audit\n"
+        "drone @seedgo checklist <file>     # Check a single file\n"
+        "```\n"
+        "\n"
+        "### Dispatch — Send Task + Wake an Agent (DEFAULT)\n"
+        "```\n"
+        "drone @ai_mail dispatch @<agent> \"Subject\" \"Body\"        # Send + wake (default)\n"
+        "drone @ai_mail dispatch @<agent> \"Subject\" \"Body\" --fresh # Send + wake fresh session\n"
+        "drone @ai_mail dispatch wake @<agent>                    # Wake without sending\n"
+        "drone @ai_mail dispatch wake --fresh @<agent>            # Wake fresh\n"
+        "drone @ai_mail email @<agent> \"Subject\" \"Body\"           # FYI only (no wake)\n"
+        "```\n"
+        "\n"
+        "Use `dispatch` by default. Use `email` only when you don't need the agent to act now.\n"
+        "\n"
+        "### Communication (ai_mail)\n"
+        "```\n"
+        "drone @ai_mail inbox               # Check your mailbox\n"
+        "drone @ai_mail view <id>           # Read a message\n"
+        "drone @ai_mail close <id>          # Mark message read\n"
+        "```\n"
+        "\n"
+        "### Feedback\n"
+        "```\n"
+        "drone @devpulse feedback send \"Subject\" \"Body\"  # Send feedback (cross-project)\n"
+        "```\n"
+        "\n"
+        "### Plans (flow)\n"
+        "```\n"
+        "drone @flow create . \"Subject\" dplan   # Create DPLAN (design/thinking)\n"
+        "drone @flow create . \"Subject\" master  # Create FPLAN master (execution)\n"
+        "drone @flow create . \"Subject\" aplan   # Create APLAN (agent-level task)\n"
+        "drone @flow list open                  # List active plans\n"
+        "drone @flow list                       # List all plans\n"
+        "drone @flow close <id>                 # Close a plan\n"
+        "drone @flow info <id>                  # View plan details\n"
+        "```\n"
+        "\n"
+        "**DPLAN** = Dev Plan. Thinking, brainstorming, architecture decisions. "
+        "Use before building.\n"
+        "**FPLAN** = Flow Plan. Building and executing. Use when the plan is clear "
+        "and work is underway.\n"
+        "\n"
+        "### Memory\n"
+        "```\n"
+        "drone @memory archive              # Archive memories to vector store\n"
+        "drone @memory search <query>       # Search archived memories\n"
+        "```\n"
+        "\n"
+        "### Git Workflow\n"
+        "```\n"
+        "drone @git pr 'description'        # Create a pull request\n"
+        "drone @git status                  # Git status (branch-scoped)\n"
+        "drone @git sync                    # Sync with main\n"
+        "drone @git lock / unlock           # Lock/unlock the repo\n"
+        "```\n"
+        "\n"
+        "### Infrastructure\n"
+        "```\n"
+        "drone systems                      # List all available infrastructure\n"
+        "drone --help                       # Full drone command reference\n"
         "```\n"
         "\n"
         "## Patterns\n"
@@ -262,6 +339,8 @@ def _global_prompt_md(name: str) -> str:
         "- **Standards** — run `drone @seedgo audit` to check compliance.\n"
         "- **Identity** — agents have `.trinity/passport.json`. "
         "Projects use the registry.\n"
+        "- **Memory** — update `.trinity/local.json` at session end. "
+        "Memory is presence.\n"
     )
 
 
@@ -524,6 +603,7 @@ def update_project(target: Path) -> dict:
     name = registry_path.stem.replace("_REGISTRY", "")
 
     updated: list[str] = []
+    already_current: list[str] = []
     skipped: list[str] = []
 
     # Managed directories — create if missing (graceful recovery).
@@ -533,39 +613,47 @@ def update_project(target: Path) -> dict:
     claude_dir = target / ".claude"
     claude_dir.mkdir(exist_ok=True)
 
-    # --- Managed files: always overwrite with latest templates ---
+    # --- Managed files: write only when content has changed ---
 
     global_prompt_path = aipass_dir / "aipass_global_prompt.md"
-    global_prompt_path.write_text(
-        _with_source(_global_prompt_md(name), global_prompt_path),
-        encoding="utf-8",
-    )
-    updated.append(str(global_prompt_path))
+    generated = _with_source(_global_prompt_md(name), global_prompt_path)
+    if not global_prompt_path.exists() or global_prompt_path.read_text(encoding="utf-8") != generated:
+        global_prompt_path.write_text(generated, encoding="utf-8")
+        updated.append(str(global_prompt_path))
+    else:
+        already_current.append(str(global_prompt_path))
 
     settings_path = claude_dir / "settings.json"
-    settings_path.write_text(_claude_settings(), encoding="utf-8")
-    updated.append(str(settings_path))
+    generated = _claude_settings()
+    if not settings_path.exists() or settings_path.read_text(encoding="utf-8") != generated:
+        settings_path.write_text(generated, encoding="utf-8")
+        updated.append(str(settings_path))
+    else:
+        already_current.append(str(settings_path))
 
     claude_md_path = target / "CLAUDE.md"
-    claude_md_path.write_text(
-        _with_source(_claude_md(name), claude_md_path),
-        encoding="utf-8",
-    )
-    updated.append(str(claude_md_path))
+    generated = _with_source(_claude_md(name), claude_md_path)
+    if not claude_md_path.exists() or claude_md_path.read_text(encoding="utf-8") != generated:
+        claude_md_path.write_text(generated, encoding="utf-8")
+        updated.append(str(claude_md_path))
+    else:
+        already_current.append(str(claude_md_path))
 
     agents_md_path = target / "AGENTS.md"
-    agents_md_path.write_text(
-        _with_source(_agents_md(name), agents_md_path),
-        encoding="utf-8",
-    )
-    updated.append(str(agents_md_path))
+    generated = _with_source(_agents_md(name), agents_md_path)
+    if not agents_md_path.exists() or agents_md_path.read_text(encoding="utf-8") != generated:
+        agents_md_path.write_text(generated, encoding="utf-8")
+        updated.append(str(agents_md_path))
+    else:
+        already_current.append(str(agents_md_path))
 
     gemini_md_path = target / "GEMINI.md"
-    gemini_md_path.write_text(
-        _with_source(_gemini_md(name), gemini_md_path),
-        encoding="utf-8",
-    )
-    updated.append(str(gemini_md_path))
+    generated = _with_source(_gemini_md(name), gemini_md_path)
+    if not gemini_md_path.exists() or gemini_md_path.read_text(encoding="utf-8") != generated:
+        gemini_md_path.write_text(generated, encoding="utf-8")
+        updated.append(str(gemini_md_path))
+    else:
+        already_current.append(str(gemini_md_path))
 
     # --- User-owned files: always skip ---
     for skip_name in (
@@ -580,5 +668,6 @@ def update_project(target: Path) -> dict:
         "project_name": name,
         "target": str(target),
         "updated_files": updated,
+        "already_current": already_current,
         "skipped_files": skipped,
     }
