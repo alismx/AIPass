@@ -42,7 +42,11 @@ def find_entry_point(branch_path: str, branch_name: str) -> Path:
 
 
 def detect_caller_branch_name(cwd: Path) -> str | None:
-    """Walk up from cwd to find .trinity/passport.json and extract branch name."""
+    """Walk up from cwd to find .trinity/passport.json and extract branch name.
+
+    Falls back to project name from registry if no passport found (external projects
+    calling from project root without a branch-level CWD).
+    """
     current = cwd.resolve()
     for _ in range(10):
         passport = current / ".trinity" / "passport.json"
@@ -60,6 +64,24 @@ def detect_caller_branch_name(cwd: Path) -> str | None:
             except Exception as exc:
                 logger.warning("Failed to read passport at %s: %s", passport, exc)
                 return None
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+
+    # Fallback: detect project name from registry file (external projects at root)
+    current = cwd.resolve()
+    for _ in range(10):
+        for reg_file in current.glob("*_REGISTRY.json"):
+            try:
+                with open(reg_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                meta = data.get("metadata", {})
+                project_name = meta.get("project_name") or meta.get("name")
+                if project_name:
+                    return project_name.lower().replace(" ", "-")
+            except Exception as exc:
+                logger.info("Failed to read registry %s: %s", reg_file, exc)
         parent = current.parent
         if parent == current:
             break
