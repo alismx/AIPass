@@ -119,7 +119,7 @@ def handle_command(command: str, args: List[str]) -> bool:
     if command in ("--help", "-h"):
         print_help()
         return True
-    valid = ["send", "email", "inbox", "view", "close", "reply", "sent", "contacts", "read"]
+    valid = ["send", "email", "inbox", "view", "close", "reply", "sent", "contacts", "read", "register"]
     if command not in valid:
         return False
     if args and args[0] in ['--help', '-h', 'help']:
@@ -131,6 +131,7 @@ def handle_command(command: str, args: List[str]) -> bool:
         "inbox": handle_inbox, "view": handle_view,
         "close": handle_close, "reply": handle_reply, "read": handle_view,
         "sent": handle_sent, "contacts": handle_contacts,
+        "register": handle_register,
     }
     return dispatch[command](args)
 
@@ -469,6 +470,27 @@ def handle_contacts(args: List[str]) -> bool:
         logger.error(f"[email] Contacts view failed: {e}")
         error(f"Error: {e}")
         return True
+
+
+def handle_register(args: List[str]) -> bool:
+    """Register a branch in the contacts address book.
+
+    Usage: drone @ai_mail register @branch /path/to/inbox [project]
+    """
+    json_handler.log_operation("register_contact_initiated", {"args": args})
+    if len(args) < 2:
+        error("Usage: register @branch /path/to/inbox [project]")
+        return True
+    branch_name = args[0].lstrip("@")
+    inbox_path = args[1]
+    project = args[2] if len(args) > 2 else ""
+    from aipass.ai_mail.apps.handlers.email.contacts import register_contact
+    ok = register_contact(branch_name, project, inbox_path)
+    if ok:
+        console.print(f"[green]Registered @{branch_name} -> {inbox_path}[/green]")
+    else:
+        error(f"Failed to register @{branch_name}")
+    return True
 
 
 def print_introspection():

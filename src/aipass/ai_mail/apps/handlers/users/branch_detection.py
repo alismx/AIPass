@@ -31,6 +31,37 @@ from aipass.ai_mail.apps.handlers.paths import find_repo_root
 BRANCH_REGISTRY_PATH = find_repo_root() / "AIPASS_REGISTRY.json"
 
 
+def _get_contact_info(branch_name: str) -> Optional[Dict]:
+    """Look up branch info from the contacts address book.
+
+    Fastest path for sender detection — works for external projects that
+    have previously registered via contacts, bypassing registry/CWD walk.
+
+    Args:
+        branch_name: Branch name or email (e.g., 'devpulse' or '@devpulse').
+
+    Returns:
+        Synthetic branch info dict compatible with registry format, or None.
+    """
+    try:
+        from aipass.ai_mail.apps.handlers.email.contacts import get_contact
+        contact = get_contact(branch_name)
+        if not contact:
+            return None
+        inbox_path = Path(contact["inbox"])
+        branch_path = inbox_path.parent.parent  # .ai_mail.local -> branch root
+        name_key = branch_name.lstrip("@").lower()
+        return {
+            "name": name_key.upper(),
+            "email": "@" + name_key,
+            "path": str(branch_path),
+            "project": contact.get("project", ""),
+        }
+    except Exception as e:
+        logger.warning("[identity] _get_contact_info(%s) failed: %s", branch_name, e)
+        return None
+
+
 def _find_caller_registry() -> Optional[Path]:
     """Find the caller's AIPASS_REGISTRY.json by walking up from AIPASS_CALLER_CWD.
 
@@ -97,6 +128,11 @@ def detect_branch_from_pwd() -> Optional[Dict]:
         # Primary: use explicit branch name passed by drone (works in Docker + local)
         caller_branch = os.environ.get("AIPASS_CALLER_BRANCH")
         if caller_branch:
+            # Try contacts first (fastest, works for external projects)
+            contact = _get_contact_info(caller_branch)
+            if contact:
+                return contact
+            # Fall back to registry lookup
             branch_info = _lookup_branch_by_name(caller_branch)
             if branch_info:
                 return branch_info
