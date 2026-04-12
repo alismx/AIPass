@@ -33,6 +33,45 @@ _REPO_ROOT = find_repo_root()
 _INBOX_LOCK = None
 
 
+def _load_caller_project_branches(caller_cwd: str) -> Dict[str, str]:
+    """Load branches from the caller's project registry.
+
+    Walks up from caller_cwd to find a *_REGISTRY.json file, then extracts
+    branch email→path mappings. Used when the target branch isn't in the
+    AIPass registry (e.g. @strategy in Vera Studio).
+    """
+    current = Path(caller_cwd).resolve()
+    for _ in range(10):
+        for reg_file in current.glob("*_REGISTRY.json"):
+            try:
+                with open(reg_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                result = {}
+                branches = data.get("branches", [])
+                if isinstance(branches, list):
+                    for b in branches:
+                        email = b.get("email", f"@{b.get('name', '').lower()}")
+                        path = b.get("path", "")
+                        if path and not Path(path).is_absolute():
+                            path = str((reg_file.parent / path).resolve())
+                        result[email] = path
+                elif isinstance(branches, dict):
+                    for name, info in branches.items():
+                        email = info.get("email", f"@{name}")
+                        path = info.get("path", "")
+                        if path and not Path(path).is_absolute():
+                            path = str((reg_file.parent / path).resolve())
+                        result[email] = path
+                return result
+            except Exception as exc:
+                logger.warning("Failed reading caller registry %s: %s", reg_file, exc)
+        parent = current.parent
+        if parent == current:
+            break
+        current = parent
+    return {}
+
+
 def _auto_register_contact(email: str, branch_path: Path, inbox_file: Path) -> None:
     """Auto-register a recipient in the contacts address book after successful delivery.
 
@@ -239,9 +278,16 @@ def deliver_email_to_branch(
             if not matched:
                 return False, f"Could not resolve path to email: {to_branch}"
 
-    # Map email address to branch path
+    # Map email address to branch path (AIPass registry + caller's project registry)
     all_branches = get_all_branches()
     branches = {b["email"]: b["path"] for b in all_branches}
+
+    if to_branch not in branches:
+        # Check caller's project registry for local branches (e.g. @strategy in Vera Studio)
+        caller_cwd = os.environ.get("AIPASS_CALLER_CWD", "")
+        if caller_cwd:
+            caller_branches = _load_caller_project_branches(caller_cwd)
+            branches.update(caller_branches)
 
     if to_branch not in branches:
         error_msg = f"Unknown branch email: {to_branch} (available: {len(branches)} branches)"

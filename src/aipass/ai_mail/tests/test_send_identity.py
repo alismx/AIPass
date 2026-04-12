@@ -240,18 +240,21 @@ class TestDetectBranchFromPwd:
         result = detect_branch_from_pwd()
         assert result is None
 
-    def test_invalid_branch_name_falls_through(self, clean_env, tmp_path, temp_registry):
-        """Nonexistent branch in AIPASS_CALLER_BRANCH should fall through to CWD.
+    def test_unknown_branch_synthesizes_from_env(self, clean_env, tmp_path, temp_registry):
+        """Unknown branch in AIPASS_CALLER_BRANCH synthesizes info from env vars.
 
-        When env branch name is not in registry, function falls back to
-        AIPASS_CALLER_CWD. If that also fails, result is None.
+        When env branch name is not in registry or contacts, function
+        synthesizes a minimal branch_info dict from the env vars so
+        external project callers can still send mail.
         """
         registry_path, _ = temp_registry
         with patch("aipass.ai_mail.apps.handlers.users.branch_detection.BRANCH_REGISTRY_PATH", registry_path):
-            os.environ["AIPASS_CALLER_BRANCH"] = "totally_fake_branch_xyz"
-            os.environ["AIPASS_CALLER_CWD"] = str(tmp_path)  # Also not a branch
+            os.environ["AIPASS_CALLER_BRANCH"] = "VERA-STUDIO"
+            os.environ["AIPASS_CALLER_CWD"] = str(tmp_path)
             result = detect_branch_from_pwd()
-            assert result is None
+            assert result is not None
+            assert result["name"].lower() == "vera-studio"
+            assert result["email"].lower() == "@vera-studio"
 
 
 # ─── find_branch_root() tests ───────────────────────────
