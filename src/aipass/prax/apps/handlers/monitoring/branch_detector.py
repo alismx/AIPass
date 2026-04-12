@@ -344,6 +344,26 @@ class BranchDetector:
             if path_str in self.log_map:
                 return self.log_map[path_str]
 
+            # Strategy 0: External AIPass project files get priority over bare registry lookups.
+            # AIPL branches (e.g. POLYGLOT) are registered in AIPASS_REGISTRY.json with
+            # absolute paths, so Strategy 2 would return bare 'POLYGLOT' before we can
+            # add the project prefix. Check external paths first to return 'AIPL/POLYGLOT TESTS'.
+            _repo_root = self._find_repo_root()
+            _projects_base = Path.home() / 'Projects'
+            _path_str_lower = path_str.lower()
+            _projects_str = str(_projects_base).lower()
+            _repo_str = str(_repo_root).lower()
+            _is_external = (
+                _path_str_lower.startswith(_projects_str + '/')
+                and not _path_str_lower.startswith(_repo_str + '/')
+            )
+
+            if _is_external:
+                result = self._detect_from_external_project_path(path)
+                if result:
+                    self.log_map[path_str] = result
+                    return result
+
             # Strategy 1: Exact match
             if path_str in self.branch_map:
                 result = self.branch_map[path_str]
@@ -358,11 +378,12 @@ class BranchDetector:
                     self.log_map[path_str] = result
                     return result
 
-            # Strategy 2.5: External AIPass project files (AIPL, Vera-Studio, etc.)
-            result = self._detect_from_external_project_path(path)
-            if result:
-                self.log_map[path_str] = result
-                return result
+            # Strategy 2.5: External AIPass project files (fallback for non-~/Projects/ paths)
+            if not _is_external:
+                result = self._detect_from_external_project_path(path)
+                if result:
+                    self.log_map[path_str] = result
+                    return result
 
             # Strategy 3: Claude Code project files
             if '.claude/projects/' in path_str:
