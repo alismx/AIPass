@@ -458,6 +458,91 @@ def _claude_settings(aipass_home: str | None = None) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
 
 
+def _prep_md() -> str:
+    """Generate .claude/commands/prep.md — /prep session wrap-up slash command.
+
+    Project-scoped slash command. Sessions wrap up by buttoning up memories,
+    plans, git state, inbox, and loose ends. Ships per-project via aipass init
+    so every AIPass project has a consistent /prep flow.
+    """
+    return (
+        "# Session Wrap-Up\n"
+        "\n"
+        "Purpose: Button up everything at the end of a session — or before a "
+        "/compact. Memories, plans, git — all tidy. Works for both closing out "
+        "a chat and preparing for compaction.\n"
+        "\n"
+        "**Workflow:** `/prep` → review output → close chat or `/compact`\n"
+        "\n"
+        "## Execution\n"
+        "\n"
+        "1. Read `.trinity/passport.json` first — re-absorb your identity "
+        "before writing anything\n"
+        "2. Do ALL of the following, then confirm what was updated\n"
+        "\n"
+        "## 1. Memories\n"
+        "\n"
+        "Each memory file plays a distinct role. Update based on what actually "
+        "changed this session.\n"
+        "\n"
+        "- **`.trinity/passport.json`** — IDENTITY. Who you are: role, "
+        "capabilities, principles. Only update if identity genuinely evolved "
+        "this session.\n"
+        "- **`.trinity/local.json`** — YOUR MEMORY. Add/update session entry "
+        "with a summary of work done. Add key_learnings for anything learned. "
+        "Trim oldest sessions if over 20.\n"
+        "- **`.trinity/observations.json`** — YOUR MEMORY OF THE USER. "
+        "Collaboration insights, preferences, friction points. Skip if nothing "
+        "new about the user this session.\n"
+        "- **`STATUS.local.md`** — PUBLIC STATUS BEACON. Current work, known "
+        "issues, todos, notepad. Auto-synced to central STATUS.md on PR events "
+        "— this is how other branches see you. Keep Current Work accurate.\n"
+        "\n"
+        "## 2. Active Plans\n"
+        "\n"
+        "- Check any DPLANs or FPLANs referenced in this session\n"
+        "- Update their execution logs, status, decision logs with current "
+        "state\n"
+        "- If a plan was completed, note it (but don't close — the user does "
+        "that)\n"
+        "\n"
+        "## 3. Git State\n"
+        "\n"
+        "- Run `git status` — report uncommitted changes\n"
+        "- If there's a logical commit waiting, suggest it (don't commit "
+        "without asking)\n"
+        "- Note the current branch and any open PRs\n"
+        "\n"
+        "## 4. Inbox\n"
+        "\n"
+        "- Run `drone @ai_mail inbox 2>/dev/null` — report any unread emails\n"
+        "- Close any that were already processed but not formally closed\n"
+        "\n"
+        "## 5. Loose Ends\n"
+        "\n"
+        "- Flag anything in-flight: running background agents, dispatched "
+        "branches waiting for replies, pending decisions\n"
+        "- If anything can't survive compaction (e.g., agent IDs needed for "
+        "resume), write it to STATUS.local.md Notepad\n"
+        "\n"
+        "## Confirm\n"
+        "\n"
+        "List everything updated. Format:\n"
+        "```\n"
+        "Prep complete:\n"
+        "- local.json: [what was added]\n"
+        "- observations.json: [updated / skipped]\n"
+        "- STATUS.local.md: [updated / skipped]\n"
+        "- Plans: [which ones updated]\n"
+        "- Git: [branch, uncommitted count, suggestion]\n"
+        "- Inbox: [count, action taken]\n"
+        "- Loose ends: [any flagged]\n"
+        "\n"
+        "Ready to close out or /compact.\n"
+        "```\n"
+    )
+
+
 def _inbox_json() -> str:
     """Generate .ai_mail.local/inbox.json — empty project mailbox structure."""
     return json.dumps(
@@ -615,6 +700,14 @@ def init_project(target: Path, project_name: str | None = None) -> dict:
         settings_path.write_text(_claude_settings(aipass_home), encoding="utf-8")
         created.append(str(settings_path))
 
+    # 9b. .claude/commands/prep.md — /prep session wrap-up slash command
+    commands_dir = claude_dir / "commands"
+    commands_dir.mkdir(exist_ok=True)
+    prep_path = commands_dir / "prep.md"
+    if not prep_path.exists():
+        prep_path.write_text(_prep_md(), encoding="utf-8")
+        created.append(str(prep_path))
+
     # 10. hooks/ directory
     hooks_dir = target / "hooks"
     if not hooks_dir.exists():
@@ -741,6 +834,17 @@ def update_project(target: Path) -> dict:
         updated.append(str(gemini_md_path))
     else:
         already_current.append(str(gemini_md_path))
+
+    # .claude/commands/prep.md — managed slash command, refresh to latest
+    commands_dir = claude_dir / "commands"
+    commands_dir.mkdir(exist_ok=True)
+    prep_path = commands_dir / "prep.md"
+    generated = _prep_md()
+    if not prep_path.exists() or prep_path.read_text(encoding="utf-8") != generated:
+        prep_path.write_text(generated, encoding="utf-8")
+        updated.append(str(prep_path))
+    else:
+        already_current.append(str(prep_path))
 
     # --- User-owned files: always skip ---
     for skip_name in (
