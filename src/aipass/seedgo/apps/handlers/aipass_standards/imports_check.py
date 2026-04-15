@@ -57,6 +57,15 @@ def check_module(module_path: str, bypass_rules: list | None = None) -> Dict:
     checks = []
     path = Path(module_path)
 
+    # Python package marker — no imports required by convention
+    if path.name == '__init__.py':
+        return {
+            'passed': True,
+            'checks': [{'name': 'Package marker', 'passed': True, 'message': '__init__.py — Python package marker, no import checks'}],
+            'score': 100,
+            'standard': 'IMPORTS'
+        }
+
     if is_bypassed(module_path, 'imports', bypass_rules=bypass_rules):
         return {
             'passed': True,
