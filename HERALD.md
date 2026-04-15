@@ -46,8 +46,8 @@ FPLAN-0165 executed (README 366→279 lines). Goldfish Rounds 5-7: R5 approval (
 ### S79 — README Overhaul + Goldfish Panel (2026-04-07)
 README overhaul with 4 Goldfish rounds (Claude+Codex+Gemini reviews). PyPI published (aipass 2.0.0). Security: ~/.secrets/ blocked across all 3 CLIs. Memory central_writer path bug fixed. Breadcrumb architecture + collaboration angle captured. FPLAN-0165 master plan. PR #201 merged.
 
-### S78 — Compass + Navigator + TDPLAN (2026-04-06)
-Compass v0.1 built (25 judgment fragments vectorized). Project-vs-agent distinction discovered (DPLAN-0104). Navigator agent pattern proven (tmux + brief + let work). TDPLAN template created. Global prompt: gitignore rule. PR #199.
+### S78 — Navigator Pattern + TDPLAN (2026-04-06)
+Project-vs-agent distinction discovered (DPLAN-0104). Navigator agent pattern proven (tmux + brief + let work). TDPLAN template created. Global prompt: gitignore rule. PR #199.
 
 ### S77 — README Value Prop Research (2026-04-06)
 Cross-platform research (10 agents), README value prop overhaul (7 agents), competitive landscape, fresh outside perspective. DPLAN-0098+0099. PR #195 merged.

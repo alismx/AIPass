@@ -100,7 +100,6 @@ BRANCH_COLORS = {
     'AIPASS': 'bold white',      # All internal AIPass agent sessions
     'AIPL': 'bright_blue',       # AIPL external project
     'VERA-STUDIO': 'bright_cyan', # Vera Studio external project
-    'COMPASS': 'bright_green',   # Compass external project
 }
 
 

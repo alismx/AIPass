@@ -14,6 +14,3 @@ build/
 *.swp
 my-project
 
-# Private Compass personal layer — never commit
-.trinity/compass/
-.trinity/compass/**

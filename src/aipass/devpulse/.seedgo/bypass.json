@@ -43,13 +43,63 @@
     },
     {
       "standard": "encapsulation",
-      "file": "apps/modules/compass_wrapper.py",
-      "reason": "Scaffold/stub for private Compass personal layer. Inherits branch-level gap: devpulse has no apps/handlers/__init__.py security guard. Local handle_command() does enforce cross-branch caller rejection."
+      "file": "apps/modules/watchdog.py",
+      "reason": "Watchdog module has its own _guard_caller() that blocks cross-branch invocation at the handle_command boundary. Inherits branch-level gap: devpulse has no apps/handlers/__init__.py inspect.stack guard."
     },
     {
       "standard": "json_structure",
-      "file": "apps/modules/compass_wrapper.py",
-      "reason": "Scaffold/stub. Devpulse branch has no apps/handlers/json/json_handler module (manager branch). Real implementation in a later session will wire logging through the devpulse json handler once it exists, or via ingest_log.jsonl directly."
+      "file": "apps/modules/watchdog.py",
+      "reason": "Devpulse is a manager branch with no apps/handlers/json/json_handler. Watchdog logs through prax system_logger instead."
+    },
+    {
+      "standard": "encapsulation",
+      "file": "apps/handlers/watchdog/agent.py",
+      "reason": "Inherits branch-level gap: devpulse has no apps/handlers/__init__.py inspect.stack guard (manager branch). Cross-branch protection enforced at the module layer via _guard_caller()."
+    },
+    {
+      "standard": "json_structure",
+      "file": "apps/handlers/watchdog/agent.py",
+      "reason": "Devpulse is a manager branch with no json_handler. Agent handler logs through prax system_logger to stderr."
+    },
+    {
+      "standard": "encapsulation",
+      "file": "apps/handlers/watchdog/__init__.py",
+      "reason": "Structural Python package marker — inherits branch-level gap (devpulse has no apps/handlers/__init__.py inspect.stack guard, manager branch)."
+    },
+    {
+      "standard": "naming",
+      "file": "apps/handlers/watchdog/__init__.py",
+      "reason": "Standard Python package marker filename — required by Python, cannot be renamed to snake_case."
+    },
+    {
+      "standard": "encapsulation",
+      "file": "apps/handlers/watchdog/timer.py",
+      "reason": "Inherits branch-level gap: devpulse has no apps/handlers/__init__.py inspect.stack guard (manager branch). Cross-branch protection enforced at the module layer via watchdog.py _guard_caller(). Same situation as watchdog/agent.py."
+    },
+    {
+      "standard": "json_structure",
+      "file": "apps/handlers/watchdog/timer.py",
+      "reason": "Devpulse is a manager branch with no json_handler. Timer handler logs through prax system_logger. Same situation as watchdog/agent.py."
+    },
+    {
+      "standard": "encapsulation",
+      "file": "apps/handlers/watchdog/schedule.py",
+      "reason": "Inherits branch-level gap: devpulse has no apps/handlers/__init__.py inspect.stack guard (manager branch). Cross-branch protection enforced at the module layer via watchdog.py _guard_caller(). Same situation as watchdog/agent.py and watchdog/timer.py."
+    },
+    {
+      "standard": "json_structure",
+      "file": "apps/handlers/watchdog/schedule.py",
+      "reason": "Devpulse is a manager branch with no json_handler. Schedule handler logs through prax system_logger. Same situation as watchdog/agent.py and watchdog/timer.py."
+    },
+    {
+      "standard": "encapsulation",
+      "file": "apps/handlers/watchdog/registry.py",
+      "reason": "Inherits branch-level gap: devpulse has no apps/handlers/__init__.py inspect.stack guard (manager branch). Cross-branch protection enforced at the module layer via watchdog.py _guard_caller(). Same situation as watchdog/agent.py, timer.py, schedule.py."
+    },
+    {
+      "standard": "json_structure",
+      "file": "apps/handlers/watchdog/registry.py",
+      "reason": "Devpulse is a manager branch with no json_handler. Registry logs through prax system_logger. Same situation as watchdog/agent.py, timer.py, schedule.py."
     }
   ],
   "notes": {
