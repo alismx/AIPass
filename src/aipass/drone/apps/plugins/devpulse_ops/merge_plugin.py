@@ -65,15 +65,38 @@ def merge_pr(pr_number: str, caller: str) -> dict:
                 logger.error(result["message"])
                 return result
 
-        # Step 2: Sync local main
+        # Step 2: Sync local main — stash any unstaged changes first so
+        # git pull --rebase doesn't abort on a dirty working tree.
+        stash = subprocess.run(
+            ["git", "stash"],
+            capture_output=True, text=True, cwd=str(repo_root),
+        )
+        stashed = "No local changes to save" not in stash.stdout
+
         pull = subprocess.run(
             ["git", "pull", "--rebase"],
             capture_output=True, text=True, cwd=str(repo_root),
         )
         if pull.returncode != 0:
+            if stashed:
+                subprocess.run(
+                    ["git", "stash", "pop"],
+                    capture_output=True, text=True, cwd=str(repo_root),
+                )
             result["message"] = f"Pull after merge failed: {pull.stderr.strip()}"
             logger.error(result["message"])
             return result
+
+        if stashed:
+            pop = subprocess.run(
+                ["git", "stash", "pop"],
+                capture_output=True, text=True, cwd=str(repo_root),
+            )
+            if pop.returncode != 0:
+                logger.warning(
+                    "merge_pr: stash pop after pull failed (manual restore may be needed): %s",
+                    pop.stderr.strip(),
+                )
 
         # Step 3: Get the merge commit hash
         rev = subprocess.run(
