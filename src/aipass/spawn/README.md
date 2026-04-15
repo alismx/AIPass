@@ -63,7 +63,7 @@ drone @spawn regenerate-registry --all        # Regenerate all template class re
 **External project support:**
 ```bash
 # Creating inside an existing AIPass project auto-detects the project registry
-drone @spawn create ~/Projects/compass/navigator   # Registers in COMPASS_REGISTRY.json
+drone @spawn create ~/Projects/MyProject/agent_name   # Registers in MYPROJECT_REGISTRY.json
 ```
 
 **Python API:**

@@ -38,7 +38,7 @@ Watchdog fixed. Night shift: 4 DPLANs (0107-0110), 10 branches dispatched, PRs #
 Decided to split 4 agents to standalone projects (backup, daemon, commons, skills); api reinstated as infrastructure. 6 parallel agents verified zero code dependencies. Updated README from 15 → 11 agents. All agent tables, tree diagrams, TOC, metrics updated. CLI dispatched for src/ directory in init + CWD-aware sync-registry for spawn.
 
 ### S81 — aipass init v2 + Vera Studio (2026-04-08)
-TDPLAN-0002: Complete init overhaul. CLI, spawn, drone worked in parallel. Init now creates 10 items with real content (CLAUDE.md, AGENTS.md, GEMINI.md, global prompt, README, .gitignore, hooks, settings). `aipass init agent` routes to spawn. Spawn added --template flag + CLAUDE.md to builder template. Drone added spawn to routing_config.json. Prax fixed watchdog with --daemon mode + statusline indicator. Vera Studio project created. Patrick testing as real first-time user — found .trinity shouldn't be in project root, local prompt is agent-level only. CLI fixed both. DPLAN-0105 (promotion prep), DPLAN-0106 (watchdog v2). PRs #204-205.
+TDPLAN-0002: Complete init overhaul. CLI, spawn, drone worked in parallel. Init now creates 10 items with real content (CLAUDE.md, AGENTS.md, GEMINI.md, global prompt, README, .gitignore, hooks, settings). `aipass init agent` routes to spawn. Spawn added --template flag + CLAUDE.md to builder template. Drone added spawn to routing_config.json. Prax fixed watchdog with --daemon mode + statusline indicator. Vera Studio project created. The AIPass Developer testing as real first-time user — found .trinity shouldn't be in project root, local prompt is agent-level only. CLI fixed both. DPLAN-0105 (promotion prep), DPLAN-0106 (watchdog v2). PRs #204-205.
 
 ### S80 — README Marathon + 14-Branch Audit (2026-04-07/08)
 FPLAN-0165 executed (README 366→279 lines). Goldfish Rounds 5-7: R5 approval (8/8.5/9 ratings), R6 branch deep dive (flow+memory undersold, honest tagging builds credibility), R7 hands-on CLI (routing 100%, nothing broke). 14 branches dispatched simultaneously for state audit — all completed in 15 min, 3,600+ tests, 11/14 at 100% seedgo. README Round 7 update (flow/memory lifecycle, transparency sentence). CLI init bug fixed (double prefix). Watchdog race condition fixed. PyPI 2.0.0 published. ~/.secrets/ blocked across all 3 CLIs. DPLAN-0099 updated through 7 rounds. Gemini free tier dead. PRs #202-203.
@@ -46,8 +46,8 @@ FPLAN-0165 executed (README 366→279 lines). Goldfish Rounds 5-7: R5 approval (
 ### S79 — README Overhaul + Goldfish Panel (2026-04-07)
 README overhaul with 4 Goldfish rounds (Claude+Codex+Gemini reviews). PyPI published (aipass 2.0.0). Security: ~/.secrets/ blocked across all 3 CLIs. Memory central_writer path bug fixed. Breadcrumb architecture + collaboration angle captured. FPLAN-0165 master plan. PR #201 merged.
 
-### S78 — Compass + Navigator + TDPLAN (2026-04-06)
-Compass v0.1 built (25 judgment fragments vectorized). Project-vs-agent distinction discovered (DPLAN-0104). Navigator agent pattern proven (tmux + brief + let work). TDPLAN template created. Global prompt: gitignore rule. PR #199.
+### S78 — Navigator Pattern + TDPLAN (2026-04-06)
+Project-vs-agent distinction discovered (DPLAN-0104). Navigator agent pattern proven (tmux + brief + let work). TDPLAN template created. Global prompt: gitignore rule. PR #199.
 
 ### S77 — README Value Prop Research (2026-04-06)
 Cross-platform research (10 agents), README value prop overhaul (7 agents), competitive landscape, fresh outside perspective. DPLAN-0098+0099. PR #195 merged.

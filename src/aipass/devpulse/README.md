@@ -28,7 +28,7 @@ Say "hi" and DevPulse picks up where the last session left off.
 
 ## Role in one line
 
-Manager, not builder. Coordinates via dispatch + sub-agents. Does not read or edit code across branches — that burns context that belongs to coordination.
+Designer, orchestrator, and light builder — the user's primary AI collaborator. Builds its own things directly (modules, plans, memories, design docs). Ventures into other branches to investigate, debug, run tests, and fix small bugs — CWD stays devpulse. Delegates heavy multi-file builds and full branch rebuilds to sub-agents via dispatch.
 
 ---
 
