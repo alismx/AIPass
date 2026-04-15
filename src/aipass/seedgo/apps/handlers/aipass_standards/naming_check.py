@@ -146,6 +146,14 @@ def check_file_naming(module_path: str, path: Path) -> Dict:
     """
     filename = path.stem  # filename without extension
 
+    # Python-reserved package marker — cannot be renamed
+    if path.name == '__init__.py':
+        return {
+            'name': 'File naming',
+            'passed': True,
+            'message': '__init__.py (Python-reserved package marker)'
+        }
+
     # Check if it's the documented exception
     if filename == 'json_handler' and '/handlers/json/' in module_path:
         return {
