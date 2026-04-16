@@ -88,6 +88,18 @@ The handler resolves `@target` → branch path → `.ai_mail.local/.dispatch.loc
 
 `drone @devpulse watchdog --help` for full subcommand list. See FPLAN-0186 (build) and DPLAN-0130 (design).
 
+## Interactive Wake — tmux
+
+Start a Claude session for the user in any project/branch via tmux. User attaches from phone/desktop.
+
+```bash
+tmux new-session -d -s "name" -c "/path/to/branch"
+tmux send-keys -t "name" "claude" Enter
+# User connects: tmux attach -t name
+```
+
+Find the agent first: look for `.trinity/passport.json` to locate the branch path. Use `dangerouslyDisableSandbox: true` on the Bash call. This gives the USER an interactive session they control — different from dispatch (which runs autonomously). Use when the user asks to "wake" or "open" a citizen/project for interactive work.
+
 ## Memory & Tracking
 
 - `.trinity/local.json` — session history, key learnings

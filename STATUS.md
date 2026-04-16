@@ -300,7 +300,7 @@
 
 ### Friction notes
 
-(none active — seedgo __init__.py false positive FIXED by @seedgo in PR #279, 2026-04-14)
+- **watchdog inotify limit (low priority)**: S93 afternoon, `python3 apps/devpulse.py watchdog agent @api` logged `inotify instance limit reached, continuing without file watcher: [Errno 24] inotify instance limit reached`. Watchdog gracefully fell back to PID polling (no functional impact), but the limit hit suggests the system has accumulated lots of file watchers (likely from Claude Code/other dev tools). Worth investigating if this starts blocking something — for now it's a noisy warning, not a failure. Check `cat /proc/sys/fs/inotify/max_user_instances` and `lsof | grep inotify | wc -l` when revisiting.
 
 ### S92 (2026-04-14 ~12:45 PT) — PRE-COMPACT, system prompt reformat work in flight
 

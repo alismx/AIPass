@@ -131,20 +131,8 @@ for d in sorted(src_dir.iterdir()):
             "last_active": today,
         })
 
-# Add external branches: commons and skills
-for ext_name in ["commons", "skills"]:
-    ext_path = Path(repo_root) / "src" / ext_name
-    if ext_path.is_dir():
-        branches.append({
-            "name": ext_name,
-            "path": str(ext_path),
-            "profile": "library",
-            "description": "",
-            "email": f"@{ext_name}",
-            "status": "active",
-            "created": today,
-            "last_active": today,
-        })
+# NOTE: commons and skills were external branches, now removed from public repo.
+# Registry only includes branches discovered under src/aipass/.
 
 registry = {
     "metadata": {
@@ -294,13 +282,11 @@ bootstrap_branch "api"      "$SCRIPT_DIR/src/aipass/api"      "builder" "LLM acc
 bootstrap_branch "trigger"  "$SCRIPT_DIR/src/aipass/trigger"  "builder" "Event-driven automation"
 bootstrap_branch "spawn"    "$SCRIPT_DIR/src/aipass/spawn"    "builder" "Branch lifecycle management"
 bootstrap_branch "devpulse" "$SCRIPT_DIR/src/aipass/devpulse" "manager" "Orchestration hub and coordination"
-bootstrap_branch "backup"   "$SCRIPT_DIR/src/aipass/backup"   "builder" "Multi-mode backup system"
-bootstrap_branch "daemon"   "$SCRIPT_DIR/src/aipass/daemon"   "builder" "Background scheduler"
 bootstrap_branch "memory"   "$SCRIPT_DIR/src/aipass/memory"   "builder" "Vector memory bank"
 
 # External branches
-bootstrap_branch "commons"  "$SCRIPT_DIR/src/commons"         "builder" "Social network for branches"
-bootstrap_branch "skills"   "$SCRIPT_DIR/src/skills"          "builder" "Capability framework"
+# NOTE: backup, daemon removed S82/S87. commons, skills moved to external repos.
+# Only the 11 core branches above should be bootstrapped.
 
 echo "  15 branches bootstrapped"
 
