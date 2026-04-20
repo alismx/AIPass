@@ -41,42 +41,21 @@ import pytest
 
 @pytest.fixture(autouse=True)
 def _fresh_json_handler(monkeypatch):
-    """Ensure json_handler module is freshly imported each test.
-
-    The conftest autouse fixture mocks the json package. We need to
-    restore the real module for direct testing via importlib.reload.
-    """
-    saved_json_pkg = sys.modules.pop("aipass.memory.apps.handlers.json", None)
+    """Ensure json_handler module is freshly imported each test."""
+    sys.modules.pop("aipass.memory.apps.handlers.json", None)
     sys.modules.pop("aipass.memory.apps.handlers.json.json_handler", None)
     sys.modules.pop("aipass.memory.apps.handlers.json.memory_files", None)
-
-    try:
-        pass  # noqa: F811
-    except Exception:
-        if saved_json_pkg is not None:
-            sys.modules["aipass.memory.apps.handlers.json"] = saved_json_pkg
-
-    jh_key = "aipass.memory.apps.handlers.json.json_handler"
-    existing = sys.modules.get(jh_key)
-    if existing is not None:
-        importlib.reload(existing)
-    else:
-        sys.modules.pop(jh_key, None)
-
     yield
 
 
 def _get_json_handler():
     """Import and return the json_handler module."""
-    return sys.modules["aipass.memory.apps.handlers.json.json_handler"]
+    return importlib.import_module("aipass.memory.apps.handlers.json.json_handler")
 
 
 def _get_memory_files():
     """Import and return the memory_files module."""
-    mf_key = "aipass.memory.apps.handlers.json.memory_files"
-    if mf_key not in sys.modules:
-        pass  # noqa: F811
-    return sys.modules[mf_key]
+    return importlib.import_module("aipass.memory.apps.handlers.json.memory_files")
 
 
 # ===========================================================================
