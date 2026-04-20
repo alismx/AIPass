@@ -652,3 +652,112 @@ def test_scan_and_ack_test_emails_no_inbox(tmp_path):
     branch_path.mkdir()
     count = scan_and_ack_test_emails(branch_path, "@testbranch")
     assert count == 0
+
+
+# ---- poll_cycle absolute path regression tests ---------------
+
+
+def test_poll_cycle_resolves_relative_branch_path(tmp_path, monkeypatch):
+    """poll_cycle resolves relative registry paths to absolute before spawning.
+
+    Regression test for issue #360 finding #3: spawn_agent was called with a
+    relative branch_path when the registry stores paths like 'src/aipass/ai_mail'.
+    A relative cwd cascades through dispatch_monitor, producing the wrong
+    working directory for the spawned claude process.
+    """
+    # Set up fake repo root and branch inside it
+    repo_root = tmp_path / "repo"
+    branch_dir = repo_root / "src" / "aipass" / "ai_mail"
+    branch_dir.mkdir(parents=True)
+    (branch_dir / ".ai_mail.local").mkdir()
+    inbox = {
+        "messages": [
+            {
+                "id": "d1",
+                "status": "new",
+                "from": "@devpulse",
+                "subject": "probe",
+                "body": "report your pwd",
+                "auto_execute": True,
+            }
+        ]
+    }
+    (branch_dir / ".ai_mail.local" / "inbox.json").write_text(json.dumps(inbox))
+
+    # Registry with relative path (real-world format)
+    registry = {"branches": [{"email": "@ai_mail", "path": "src/aipass/ai_mail", "status": "active"}]}
+    (repo_root / "AIPASS_REGISTRY.json").write_text(json.dumps(registry))
+
+    monkeypatch.setattr(daemon_mod, "BRANCH_REGISTRY", repo_root / "AIPASS_REGISTRY.json")
+    monkeypatch.setattr(daemon_mod, "_REPO_ROOT", repo_root)
+
+    spawned_paths = []
+
+    def mock_spawn_agent(branch_path, branch_email, message, config, state):
+        spawned_paths.append(branch_path)
+        return True
+
+    config = {
+        "autonomous_branches": ["@ai_mail"],
+        "max_dispatches_per_branch_per_day": 10,
+    }
+    state = {"daily_counts": {}, "session_cycles": {}}
+
+    with (
+        patch("aipass.ai_mail.apps.handlers.dispatch.daemon.spawn_agent", side_effect=mock_spawn_agent),
+        patch("aipass.ai_mail.apps.handlers.dispatch.daemon._check_lock", return_value=None),
+        patch("aipass.ai_mail.apps.handlers.dispatch.daemon._is_branch_occupied", return_value=False),
+        patch("aipass.ai_mail.apps.handlers.dispatch.daemon.scan_and_ack_test_emails", return_value=0),
+    ):
+        daemon_mod.poll_cycle(config, state)
+
+    assert len(spawned_paths) == 1, "Expected one spawn"
+    assert spawned_paths[0].is_absolute(), f"branch_path must be absolute, got: {spawned_paths[0]}"
+    assert spawned_paths[0] == branch_dir
+
+
+def test_poll_cycle_absolute_path_unchanged(tmp_path, monkeypatch):
+    """poll_cycle passes already-absolute registry paths through unchanged."""
+    repo_root = tmp_path / "repo"
+    branch_dir = repo_root / "src" / "aipass" / "drone"
+    branch_dir.mkdir(parents=True)
+    (branch_dir / ".ai_mail.local").mkdir()
+    inbox = {
+        "messages": [
+            {
+                "id": "d2",
+                "status": "new",
+                "from": "@devpulse",
+                "subject": "probe",
+                "body": "task",
+                "auto_execute": True,
+            }
+        ]
+    }
+    (branch_dir / ".ai_mail.local" / "inbox.json").write_text(json.dumps(inbox))
+
+    registry = {"branches": [{"email": "@drone", "path": str(branch_dir), "status": "active"}]}
+    (repo_root / "AIPASS_REGISTRY.json").write_text(json.dumps(registry))
+    monkeypatch.setattr(daemon_mod, "BRANCH_REGISTRY", repo_root / "AIPASS_REGISTRY.json")
+    monkeypatch.setattr(daemon_mod, "_REPO_ROOT", repo_root)
+
+    spawned_paths = []
+
+    def mock_spawn_agent(branch_path, branch_email, message, config, state):
+        spawned_paths.append(branch_path)
+        return True
+
+    config = {"autonomous_branches": ["@drone"], "max_dispatches_per_branch_per_day": 10}
+    state = {"daily_counts": {}, "session_cycles": {}}
+
+    with (
+        patch("aipass.ai_mail.apps.handlers.dispatch.daemon.spawn_agent", side_effect=mock_spawn_agent),
+        patch("aipass.ai_mail.apps.handlers.dispatch.daemon._check_lock", return_value=None),
+        patch("aipass.ai_mail.apps.handlers.dispatch.daemon._is_branch_occupied", return_value=False),
+        patch("aipass.ai_mail.apps.handlers.dispatch.daemon.scan_and_ack_test_emails", return_value=0),
+    ):
+        daemon_mod.poll_cycle(config, state)
+
+    assert len(spawned_paths) == 1
+    assert spawned_paths[0].is_absolute()
+    assert spawned_paths[0] == branch_dir
