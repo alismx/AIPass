@@ -177,8 +177,8 @@ fi
 echo "Upgrading pip ..."
 "$VENV_PYTHON" -m pip install --upgrade pip --quiet
 
-echo "Installing aipass in editable mode (with dev extras) ..."
-"$VENV_PYTHON" -m pip install -e ".[dev]" --quiet
+echo "Installing aipass in editable mode (with dev + memory extras) ..."
+"$VENV_PYTHON" -m pip install -e ".[dev,memory]" --quiet
 
 # --- Detect shadowing drone installs (Windows) ---
 # Issues #317 + #321: system-Python pip or legacy npm aipass-drone can shadow venv drone.exe.
