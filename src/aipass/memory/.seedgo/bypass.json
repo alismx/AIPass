@@ -565,6 +565,26 @@
       "standard": "unused_function",
       "lines": [427],
       "reason": "LLM-based extraction function — called conditionally when API key is available."
+    },
+    {
+      "file": "tests/test_vector.py",
+      "standard": "architecture",
+      "reason": "Test file — lives in tests/ by design, not in 3-layer apps/ structure."
+    },
+    {
+      "file": "tests/test_vector.py",
+      "standard": "documentation",
+      "reason": "Test file — test functions don't require docstrings."
+    },
+    {
+      "file": "tests/test_vector.py",
+      "standard": "encapsulation",
+      "reason": "Test file — direct handler imports are correct for unit testing handler internals."
+    },
+    {
+      "file": "tests/test_vector.py",
+      "standard": "meta",
+      "reason": "Test file — META block present at lines 1-7; hook false-positive on test file format."
     }
   ],
   "notes": {

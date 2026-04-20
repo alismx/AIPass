@@ -635,6 +635,8 @@ def poll_cycle(config: Dict[str, Any], state: Dict[str, Any]) -> int:
             continue
 
         branch_path = Path(branch_path_str)
+        if not branch_path.is_absolute():
+            branch_path = _REPO_ROOT / branch_path
 
         if is_protected_branch(branch_email):
             continue

@@ -316,8 +316,11 @@ def main():
     # even after cd'ing away. Drone reads this as fallback for caller detection.
     spawn_env["AIPASS_BRANCH_NAME"] = branch_email.lstrip("@")
 
-    # Extract CWD from lock file path (branch_path/.ai_mail.local/.dispatch.lock)
-    lock_path = Path(lock_file)
+    # Extract CWD from lock file path (branch_path/.ai_mail.local/.dispatch.lock).
+    # Resolve to absolute so the cwd passed to claude is never relative — a relative
+    # cwd would be interpreted against dispatch_monitor's own cwd and produce the
+    # wrong directory for branches like @ai_mail whose registry path is relative.
+    lock_path = Path(lock_file).resolve()
     branch_path = lock_path.parent.parent
     cwd = str(branch_path)
 

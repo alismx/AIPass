@@ -125,6 +125,41 @@ def _get_rollover_threshold(branch_name: str, file_path: Path | None = None) -> 
     return 600
 
 
+def _check_vector_deps() -> bool:
+    """
+    Check whether the memory venv has chromadb and numpy available.
+
+    Runs a quick subprocess check using the memory venv Python.
+    Logs a warning if deps are missing so the self-report is honest.
+
+    Returns:
+        True if both chromadb and numpy are importable, False otherwise
+    """
+    import subprocess
+    import sys
+
+    venv_python = _MEMORY_ROOT / ".venv" / "bin" / "python3"
+    if not venv_python.exists():
+        venv_python = Path(sys.executable)
+
+    try:
+        result = subprocess.run(
+            [str(venv_python), "-c", "import chromadb; import numpy"],
+            capture_output=True,
+            timeout=10,
+        )
+        if result.returncode != 0:
+            logger.warning(
+                "[memory_watcher] vector storage degraded — chromadb/numpy not available in memory venv. "
+                "Run: pip install -e '.[dev,memory]'"
+            )
+            return False
+        return True
+    except Exception as e:
+        logger.warning(f"[memory_watcher] vector dep check failed: {e}")
+        return False
+
+
 def check_and_rollover() -> Dict[str, Any]:
     """
     Check all memory files and trigger rollover if any exceed their threshold.
@@ -146,12 +181,15 @@ def check_and_rollover() -> Dict[str, Any]:
 
     _startup_check_done = True
 
+    vector_deps_ok = _check_vector_deps()
+
     results = {
         "success": True,
         "files_checked": 0,
         "files_over_limit": [],
         "rollover_triggered": False,
         "memory_pool": None,
+        "vector_storage": "healthy" if vector_deps_ok else "degraded — chromadb/numpy not installed",
     }
 
     # Get all branch paths
