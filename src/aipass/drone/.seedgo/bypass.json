@@ -142,6 +142,22 @@
       "file": "tests/test_devpulse_plugins.py",
       "standard": "documentation",
       "reason": "Test methods and mock helpers in this file are pre-existing without docstrings. Class docstrings describe intent; per-method docs would be noise."
+    },
+    {
+      "file": "tests/test_git_module.py",
+      "standard": "architecture",
+      "reason": "Test file — intentionally outside 3-layer structure. tests/ is a peer of apps/, not part of it."
+    },
+    {
+      "file": "tests/test_git_module.py",
+      "standard": "encapsulation",
+      "lines": [20],
+      "reason": "Test file imports lock_handler directly to test its public interface. Unit tests require direct access to implementation components."
+    },
+    {
+      "file": "tests/test_system_pr.py",
+      "standard": "architecture",
+      "reason": "Test file — intentionally outside 3-layer structure. tests/ is a peer of apps/, not part of it."
     }
   ],
   "notes": {
