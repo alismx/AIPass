@@ -64,6 +64,9 @@ aipass = "aipass.cli:cli_entry"
 [tool.hatch.build.targets.wheel]
 packages = ["src/aipass"]
 
+[tool.hatch.build.targets.wheel.force-include]
+".claude/hooks" = "aipass/_hooks"
+
 [tool.pytest.ini_options]
 testpaths = ["tests", "src"]
 norecursedirs = ["templates", "*.egg-info", ".git", ".venv", "__pycache__"]
