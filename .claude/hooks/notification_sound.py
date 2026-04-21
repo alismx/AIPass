@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Version: 1.0.0
 """Notification Hook — Plays sound when AI needs permission."""
 
 import json

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Version: 1.0.0
 """Stop Hook — Plays achievement bell when AI finishes responding."""
 
 import json
