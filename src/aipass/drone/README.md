@@ -117,14 +117,15 @@ drone/
 │   │   ├── scanning/      # Scan result formatting + discovery
 │   │   ├── command_registry/  # Command shortcut CRUD + lookup
 │   │   └── git/           # Git workflow handlers
-│   │       ├── lock_handler.py    # Atomic lockfile (O_CREAT|O_EXCL)
-│   │       ├── pr_handler.py      # 10-step PR workflow
-│   │       ├── status_handler.py  # Scoped git status
-│   │       └── sync_handler.py    # Safe main sync
+│   │       ├── lock_handler.py              # Atomic lockfile (O_CREAT|O_EXCL)
+│   │       ├── pr_handler.py               # 10-step PR workflow
+│   │       ├── status_handler.py           # Scoped git status (subprocess)
+│   │       ├── status_handler_gitpython.py # [prototype] GitPython status — DPLAN-0140 Phase 1, not wired in
+│   │       └── sync_handler.py             # Safe main sync
 │   └── plugins/           # Extensions beyond core routing
 │       └── devpulse_ops/  # System-wide PR, merge, smart-sync, fix
 ├── docs/                  # Documentation
-└── tests/                 # 513 tests, 19 test files
+└── tests/                 # 529+ tests, 19 test files
 ```
 
 ---
@@ -172,7 +173,7 @@ Infrastructure modules (seedgo, cli, git) work from external AIPass projects wit
 
 ---
 
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-21
 
 ---
 [← Back to AIPass](../../../README.md)
