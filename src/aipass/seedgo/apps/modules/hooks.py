@@ -1,13 +1,13 @@
 # =================== AIPass ====================
 # Name: hooks.py
-# Description: Hook Probe Display Module
-# Version: 1.0.0
+# Description: Hook Probe, Test, and List Module
+# Version: 1.1.0
 # Created: 2026-04-20
-# Modified: 2026-04-20
+# Modified: 2026-04-21
 # =============================================
 
 """
-Hook Probe Display Module
+Hook Probe, Test, and List Module
 
 Reads last_ping.jsonl produced by .claude/hooks/probes/ scripts and
 surfaces probe data via Rich tables and reports.
@@ -18,6 +18,8 @@ Subcommands:
   hooks probe             Show recent probe entries as a Rich table
   hooks probe --subagent  Spawn headless Claude, check if PostToolUse/SubagentStop fired
   hooks probe --matrix    Full event matrix + markdown report
+  hooks test              Run hook test suite, display per-file pass/fail table
+  hooks list              Show every wired hook from project and global settings
 """
 
 import json
@@ -45,6 +47,9 @@ from aipass.cli.apps.modules import warning
 
 # JSON handler for tracking
 from aipass.seedgo.apps.handlers.json import json_handler
+
+# Extended subcommands (test + list)
+from aipass.seedgo.apps.modules.hooks_ext import cmd_hooks_list, cmd_hooks_test
 
 # Rich output
 from rich.panel import Panel
@@ -453,6 +458,21 @@ def _write_matrix_report(report_path: Path, matrix_rows: list, entries: list) ->
 
 
 # =============================================================================
+# SUBCOMMAND: hooks test + hooks list (delegated to hooks_ext)
+# =============================================================================
+
+
+def _cmd_hooks_test() -> None:
+    """Run hook test suite — delegates to hooks_ext."""
+    cmd_hooks_test(_get_repo_root())
+
+
+def _cmd_hooks_list() -> None:
+    """Show wired hooks — delegates to hooks_ext."""
+    cmd_hooks_list(_get_repo_root())
+
+
+# =============================================================================
 # INTROSPECTION
 # =============================================================================
 
@@ -480,6 +500,8 @@ def print_introspection() -> None:
     console.print(
         "  [green]drone @seedgo hooks probe --matrix[/green]    [dim]# Full event matrix + markdown report[/dim]"
     )
+    console.print("  [green]drone @seedgo hooks test[/green]              [dim]# Run hook test suite[/dim]")
+    console.print("  [green]drone @seedgo hooks list[/green]              [dim]# List all wired hooks[/dim]")
     console.print()
 
     console.print("[yellow]Probe scripts:[/yellow]")
@@ -538,6 +560,14 @@ def handle_command(command: str, args: List[str]) -> bool:
             _cmd_probe_matrix()
         else:
             _cmd_probe_display()
+        return True
+
+    if subcommand == "test":
+        _cmd_hooks_test()
+        return True
+
+    if subcommand == "list":
+        _cmd_hooks_list()
         return True
 
     # Unknown subcommand — show introspection

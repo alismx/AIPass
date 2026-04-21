@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Version: 1.0.0
 """Tool Use Hook — Plays key press sound when AI uses tools."""
 
 import json
