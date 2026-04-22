@@ -1,3 +1,11 @@
+# =================== AIPass ====================
+# Name: test_git_module.py
+# Description: Tests for the @git module — lock, status, sync, PR, and routing
+# Version: 1.0.0
+# Created: 2026-04-21
+# Modified: 2026-04-21
+# =============================================
+
 """Tests for the @git module — lock, status, sync, PR, and routing."""
 
 from __future__ import annotations
@@ -358,6 +366,41 @@ class TestSyncHandler:
 # ===========================================================================
 
 
+def _run_nothing_staged(cmd: list[str], **kwargs: object) -> MagicMock:
+    """Subprocess mock: on main, nothing staged (diff --cached returns 0)."""
+    r = MagicMock()
+    r.returncode = 0
+    r.stderr = ""
+    r.stdout = "main\n" if cmd[1:3] == ["rev-parse", "--abbrev-ref"] else ""
+    return r
+
+
+def _run_cleanup_early_exit(cmd: list[str], **kwargs: object) -> MagicMock:
+    """Subprocess mock: on main, nothing staged — triggers early exit path."""
+    r = MagicMock()
+    r.returncode = 0
+    r.stderr = ""
+    r.stdout = "main\n" if cmd[1:3] == ["rev-parse", "--abbrev-ref"] else ""
+    return r
+
+
+def _run_with_staged(cmd: list[str], **kwargs: object) -> MagicMock:
+    """Subprocess mock: on main, staged changes, successful commit/push/PR."""
+    r = MagicMock()
+    r.returncode = 0
+    r.stderr = ""
+    r.stdout = ""
+    if cmd[1:3] == ["rev-parse", "--abbrev-ref"]:
+        r.stdout = "main\n"
+    elif cmd[1:3] == ["diff", "--cached"]:
+        r.returncode = 1  # 1 = something staged
+    elif cmd[0] == "git" and cmd[1] == "commit":
+        r.stdout = "[main abc1234] feat(api): test"
+    elif cmd[0] == "gh":
+        r.stdout = "https://github.com/test/repo/pull/1"
+    return r
+
+
 class TestPRHandler:
     """PR workflow error path tests."""
 
@@ -404,34 +447,7 @@ class TestPRHandler:
         registry.write_text("{}", encoding="utf-8")
         monkeypatch.chdir(tmp_path)
 
-        call_count = 0
-
-        def mock_subprocess_run(cmd, **kwargs):
-            """Simulate git subprocess returning main branch and staged-nothing."""
-            nonlocal call_count
-            call_count += 1
-            result = MagicMock()
-            result.stderr = ""
-            result.stdout = ""
-
-            if cmd[1:3] == ["rev-parse", "--abbrev-ref"]:
-                result.returncode = 0
-                result.stdout = "main\n"
-            elif cmd[1:3] == ["checkout", "-b"]:
-                result.returncode = 0
-            elif cmd[0] == "git" and cmd[1] == "add":
-                result.returncode = 0
-            elif cmd[1:3] == ["diff", "--cached"]:
-                result.returncode = 0  # 0 means nothing staged
-            elif cmd[1] == "checkout" and cmd[2] == "main":
-                result.returncode = 0
-            elif cmd[1] == "pull":
-                result.returncode = 0
-            else:
-                result.returncode = 0
-            return result
-
-        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", side_effect=mock_subprocess_run):
+        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", side_effect=_run_nothing_staged):
             with patch(
                 "aipass.drone.apps.handlers.git.pr_handler.acquire_lock",
                 return_value={"success": True, "message": "ok"},
@@ -448,27 +464,9 @@ class TestPRHandler:
         registry.write_text("{}", encoding="utf-8")
         monkeypatch.chdir(tmp_path)
 
-        def mock_subprocess_run(cmd, **kwargs):
-            """Simulate git subprocess returning main branch, then early exit on no staged files."""
-            result = MagicMock()
-            result.stderr = ""
-            result.stdout = ""
-
-            if cmd[1:3] == ["rev-parse", "--abbrev-ref"]:
-                result.returncode = 0
-                result.stdout = "main\n"
-            elif cmd[0] == "git" and cmd[1] == "add":
-                result.returncode = 0
-            elif cmd[1:3] == ["diff", "--cached"]:
-                # Nothing staged — triggers early exit
-                result.returncode = 0
-            else:
-                result.returncode = 0
-            return result
-
         release_mock = MagicMock(return_value={"success": True, "message": "ok"})
 
-        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", side_effect=mock_subprocess_run):
+        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", side_effect=_run_cleanup_early_exit):
             with patch(
                 "aipass.drone.apps.handlers.git.pr_handler.acquire_lock",
                 return_value={"success": True, "message": "ok"},
@@ -491,36 +489,9 @@ class TestPRHandler:
         registry.write_text("{}", encoding="utf-8")
         monkeypatch.chdir(tmp_path)
 
-        commit_cmd_seen: list[list[str]] = []
-
-        def mock_subprocess_run(cmd, **kwargs):
-            """Simulate git/gh subprocess calls, recording commit invocations."""
-            r = MagicMock()
-            r.stderr = ""
-            r.stdout = ""
-            if cmd[1:3] == ["rev-parse", "--abbrev-ref"]:
-                r.returncode = 0
-                r.stdout = "main\n"
-            elif cmd[0] == "git" and cmd[1] == "add":
-                r.returncode = 0
-            elif cmd[1:3] == ["diff", "--cached"]:
-                r.returncode = 1  # 1 means something is staged
-            elif cmd[0] == "git" and cmd[1] == "commit":
-                commit_cmd_seen.append(list(cmd))
-                r.returncode = 0
-                r.stdout = "[main abc1234] feat(api): test"
-            elif cmd[0] == "git" and cmd[1] == "branch":
-                r.returncode = 0
-            elif cmd[0] == "git" and cmd[1] == "push":
-                r.returncode = 0
-            elif cmd[0] == "gh":
-                r.returncode = 0
-                r.stdout = "https://github.com/test/repo/pull/1"
-            else:
-                r.returncode = 0
-            return r
-
-        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", side_effect=mock_subprocess_run):
+        with patch(
+            "aipass.drone.apps.handlers.git.pr_handler.subprocess.run", side_effect=_run_with_staged
+        ) as mock_run:
             with patch(
                 "aipass.drone.apps.handlers.git.pr_handler.acquire_lock",
                 return_value={"success": True, "message": "ok"},
@@ -529,8 +500,11 @@ class TestPRHandler:
                     create_pr("api", "test desc", tmp_path / "src" / "aipass" / "api")
 
         # The commit command must include '--' separator + pathspec to scope to branch_dir
-        assert commit_cmd_seen, "commit was never called"
-        commit_cmd = commit_cmd_seen[0]
+        commit_calls = [
+            c.args[0] for c in mock_run.call_args_list if c.args and c.args[0][0] == "git" and c.args[0][1] == "commit"
+        ]
+        assert commit_calls, "commit was never called"
+        commit_cmd = commit_calls[0]
         assert "--" in commit_cmd, "commit missing '--' pathspec separator"
         pathspec_idx = commit_cmd.index("--")
         pathspec = commit_cmd[pathspec_idx + 1]
@@ -744,6 +718,49 @@ class TestModuleRegistration:
 # ===========================================================================
 
 
+def _run_pr_created_success(cmd: list[str], **kwargs: object) -> MagicMock:
+    """Subprocess mock for a full successful pr_handler run (fires pr_created)."""
+    r = MagicMock()
+    r.returncode = 0
+    r.stderr = ""
+    r.stdout = ""
+    if cmd[1:3] == ["rev-parse", "--abbrev-ref"]:
+        r.stdout = "main\n"
+    elif cmd[1:3] == ["diff", "--cached"]:
+        r.returncode = 1
+    elif cmd[0] == "gh" and cmd[1] == "pr":
+        r.stdout = "https://github.com/org/repo/pull/99\n"
+    return r
+
+
+def _run_pr_trigger_resilience(cmd: list[str], **kwargs: object) -> MagicMock:
+    """Subprocess mock for pr_handler run where trigger.fire raises."""
+    r = MagicMock()
+    r.returncode = 0
+    r.stderr = ""
+    r.stdout = ""
+    if cmd[1:3] == ["rev-parse", "--abbrev-ref"]:
+        r.stdout = "main\n"
+    elif cmd[1:3] == ["diff", "--cached"]:
+        r.returncode = 1
+    elif cmd[0] == "gh" and cmd[1] == "pr":
+        r.stdout = "https://github.com/org/repo/pull/100\n"
+    return r
+
+
+def _run_merge_success(cmd: list[str], **kwargs: object) -> MagicMock:
+    """Subprocess mock for a successful merge_plugin run (fires pr_merged)."""
+    r = MagicMock()
+    r.returncode = 0
+    r.stderr = ""
+    r.stdout = ""
+    if cmd[0] == "gh" and cmd[1] == "pr" and cmd[2] == "view":
+        r.stdout = "Fix the thing\n"
+    elif cmd[1:3] == ["rev-parse", "HEAD"]:
+        r.stdout = "abc123def456\n"
+    return r
+
+
 class TestTriggerFireIntegration:
     """Verify trigger.fire() is called after successful PR/merge operations."""
 
@@ -753,43 +770,9 @@ class TestTriggerFireIntegration:
         registry.write_text("{}", encoding="utf-8")
         monkeypatch.chdir(tmp_path)
 
-        call_count = 0
-
-        def mock_run(cmd, **kwargs):
-            """Simulate git subprocess calls and count invocations."""
-            nonlocal call_count
-            call_count += 1
-            r = MagicMock()
-            r.stderr = ""
-            if cmd[1:3] == ["rev-parse", "--abbrev-ref"]:
-                r.returncode = 0
-                r.stdout = "main\n"
-            elif cmd[0] == "git" and cmd[1] == "add":
-                r.returncode = 0
-                r.stdout = ""
-            elif cmd[1:3] == ["diff", "--cached"]:
-                r.returncode = 1  # 1 = something staged
-                r.stdout = ""
-            elif cmd[0] == "git" and cmd[1] == "commit":
-                r.returncode = 0
-                r.stdout = ""
-            elif cmd[0] == "git" and cmd[1] == "branch":
-                r.returncode = 0
-                r.stdout = ""
-            elif cmd[0] == "git" and cmd[1] == "push":
-                r.returncode = 0
-                r.stdout = ""
-            elif cmd[0] == "gh" and cmd[1] == "pr":
-                r.returncode = 0
-                r.stdout = "https://github.com/org/repo/pull/99\n"
-            else:
-                r.returncode = 0
-                r.stdout = ""
-            return r
-
         mock_trigger = MagicMock()
 
-        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", side_effect=mock_run):
+        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", side_effect=_run_pr_created_success):
             with patch(
                 "aipass.drone.apps.handlers.git.pr_handler.acquire_lock",
                 return_value={"success": True, "message": "ok"},
@@ -807,28 +790,10 @@ class TestTriggerFireIntegration:
         registry.write_text("{}", encoding="utf-8")
         monkeypatch.chdir(tmp_path)
 
-        def mock_run(cmd, **kwargs):
-            """Simulate git/gh subprocess calls for trigger-failure resilience test."""
-            r = MagicMock()
-            r.stderr = ""
-            if cmd[1:3] == ["rev-parse", "--abbrev-ref"]:
-                r.returncode = 0
-                r.stdout = "main\n"
-            elif cmd[1:3] == ["diff", "--cached"]:
-                r.returncode = 1
-                r.stdout = ""
-            elif cmd[0] == "gh" and cmd[1] == "pr":
-                r.returncode = 0
-                r.stdout = "https://github.com/org/repo/pull/100\n"
-            else:
-                r.returncode = 0
-                r.stdout = ""
-            return r
-
         mock_trigger = MagicMock()
         mock_trigger.fire.side_effect = RuntimeError("trigger broken")
 
-        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", side_effect=mock_run):
+        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", side_effect=_run_pr_trigger_resilience):
             with patch(
                 "aipass.drone.apps.handlers.git.pr_handler.acquire_lock",
                 return_value={"success": True, "message": "ok"},
@@ -841,40 +806,17 @@ class TestTriggerFireIntegration:
 
     def test_merge_plugin_fires_pr_merged(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """merge_plugin.merge_pr fires pr_merged event on success."""
+        from aipass.drone.apps.plugins.devpulse_ops.merge_plugin import merge_pr
+
         registry = tmp_path / "AIPASS_REGISTRY.json"
         registry.write_text("{}", encoding="utf-8")
         monkeypatch.chdir(tmp_path)
 
-        from aipass.drone.apps.plugins.devpulse_ops.merge_plugin import merge_pr
-
-        call_idx = 0
-
-        def mock_run(cmd, **kwargs):
-            """Simulate gh pr merge and git pull subprocess calls."""
-            nonlocal call_idx
-            call_idx += 1
-            r = MagicMock()
-            r.stderr = ""
-            if cmd[0] == "gh" and cmd[1] == "pr" and cmd[2] == "merge":
-                r.returncode = 0
-                r.stdout = ""
-            elif cmd[0] == "git" and cmd[1] == "pull":
-                r.returncode = 0
-                r.stdout = ""
-            elif cmd[1:3] == ["rev-parse", "HEAD"]:
-                r.returncode = 0
-                r.stdout = "abc123def456\n"
-            elif cmd[0] == "gh" and cmd[1] == "pr" and cmd[2] == "view":
-                r.returncode = 0
-                r.stdout = "Fix the thing\n"
-            else:
-                r.returncode = 0
-                r.stdout = ""
-            return r
-
         mock_trigger = MagicMock()
 
-        with patch("aipass.drone.apps.plugins.devpulse_ops.merge_plugin.subprocess.run", side_effect=mock_run):
+        with patch(
+            "aipass.drone.apps.plugins.devpulse_ops.merge_plugin.subprocess.run", side_effect=_run_merge_success
+        ):
             with patch("aipass.trigger.apps.modules.core.trigger", mock_trigger):
                 result = merge_pr("42", "devpulse")
 

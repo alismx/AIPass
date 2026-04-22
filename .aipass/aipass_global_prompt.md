@@ -57,7 +57,11 @@ Workflow:
 2. Make edits directly on main.
 3. When the work is ready to ship: `drone @git system-pr "description"`.
 4. That command commits + branches + pushes + PRs + returns you to main. One action.
-5. Devpulse reviews + merges with `drone @git merge <PR#>`.
+5. STOP. The user merges. Do not run `drone @git merge` unless the user explicitly tells you to merge a specific PR number in this session.
+
+Never merge. Ever. User-merges-only. Past PRs, your own PRs, closed PRs — none of them auto-qualify. You fix, you PR, you stop.
+
+Local files are source of truth. When you edit a file, the state on disk IS reality — you don't wait for a merge to act on what you see locally. This also means: if the truth is wrong, fix it locally, then PR.
 
 Why this matters: the AIPass repo has ONE shared HEAD across all branches. If any agent lingers on a non-main HEAD, every other agent's next edit lands on the wrong branch. Files get stranded. Work gets lost. Conflicts pile up. We've lived this pain — don't repeat it.
 
@@ -175,7 +179,7 @@ Archive commands:
 
 # Git Workflow
 
-**Drone is the ONLY git interface. Period.** All PR workflow goes through drone. Never use raw git commands for commits, branches, pushes, resets, merges, rebases, cherry-picks, or remote branch manipulation. Drone handles everything atomically with a lockfile that prevents concurrent PR collisions.
+**Drone is the only git interface. Period.** All PR workflow goes through drone. Never use raw git commands for commits, branches, pushes, resets, merges, rebases, cherry-picks, or remote branch manipulation. Drone handles everything atomically with a lockfile that prevents concurrent PR collisions.
 
 **If you think you need a raw git command to fix a git problem, STOP. You don't.** Every git state devpulse has ever been in has been recoverable through `drone @git` commands — system-pr, merge, smart-sync, fix, status, sync, lock. There is no situation that requires `git reset`, `git push`, `git cherry-pick`, `git rebase`, or `git branch -f`. Reaching for them has always made things worse. If drone's commands don't obviously handle the state you're in, run `drone @git fix` or `drone @git smart-sync` and re-evaluate. If still stuck, ASK THE USER — do not improvise with raw git.
 
