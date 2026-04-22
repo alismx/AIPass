@@ -199,6 +199,11 @@
       "file": "tests/test_citizen_classes.py",
       "standard": "encapsulation",
       "reason": "Test file — tests must import handlers directly to test them in isolation. Handler imports inside test methods are intentional."
+    },
+    {
+      "file": "tests/test_cli_routing.py",
+      "standard": "architecture",
+      "reason": "Test file — lives in tests/ by convention, not in the 3-layer app structure. Test files are exempt from layer architecture standard."
     }
   ],
   "notes": {

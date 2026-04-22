@@ -222,25 +222,17 @@ def _spawn_watchdog(target: str, repo_root: Path) -> bool:
 
     Returns True if watchdog was spawned successfully.
     """
-    import json
+    from aipass.ai_mail.apps.handlers.registry.read import get_branch_by_email
 
-    # Locate devpulse path from registry
-    registry_file = repo_root / "AIPASS_REGISTRY.json"
-    devpulse_path: Path | None = None
-    try:
-        with open(registry_file, "r", encoding="utf-8") as f:
-            registry = json.load(f)
-        for branch in registry.get("branches", []):
-            if branch.get("email", "").lower() == "@devpulse":
-                p = Path(branch.get("path", ""))
-                devpulse_path = p if p.is_absolute() else (repo_root / p)
-                break
-    except Exception as e:
-        logger.warning("[dispatch] watchdog auto-spawn: registry lookup failed: %s", e)
+    branch_info = get_branch_by_email("@devpulse")
+    if not branch_info:
+        logger.warning("[dispatch] watchdog auto-spawn: devpulse not found in registry")
         return False
+    p = Path(branch_info.get("path", ""))
+    devpulse_path = p if p.is_absolute() else (repo_root / p)
 
-    if devpulse_path is None or not devpulse_path.exists():
-        logger.warning("[dispatch] watchdog auto-spawn: devpulse path not found in registry")
+    if not devpulse_path.exists():
+        logger.warning("[dispatch] watchdog auto-spawn: devpulse path not found on disk")
         return False
 
     try:

@@ -575,7 +575,6 @@ def print_introspection():
     console.print("    - delivery.py (deliver_email_to_branch — deliver email into branch inbox)")
     console.print("    - format.py (format_email_list_item — format email for list display)")
     console.print("    - inbox_ops.py (load_inbox — load inbox JSON data)")
-    console.print("    - inbox_cleanup.py (mark_read_and_archive — mark email read and archive)")
     console.print("    - inbox_cleanup.py (mark_all_read_and_archive — mark all emails read and archive)")
     console.print("    - inbox_cleanup.py (mark_as_opened — mark email as opened)")
     console.print("    - inbox_cleanup.py (mark_as_closed_and_archive — close and archive email)")
