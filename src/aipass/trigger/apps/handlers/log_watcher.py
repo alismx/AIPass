@@ -373,36 +373,6 @@ def _parse_prax_log_line(log_line: str) -> Optional[Dict[str, str]]:
         return None
 
 
-def _is_duplicate_error(error_hash: str) -> bool:
-    """
-    Check if error has been seen before (deduplication).
-
-    BACKWARD COMPAT: Kept for fallback when error_registry is unavailable.
-    Primary dedup path is now error_registry.report() (Medic v2).
-
-    Args:
-        error_hash: Hash of module + message
-
-    Returns:
-        True if this error has been seen before
-    """
-    global _seen_error_hashes
-
-    if error_hash in _seen_error_hashes:
-        return True
-
-    # Add to seen set with size limit
-    _seen_error_hashes.add(error_hash)
-    if len(_seen_error_hashes) > MAX_SEEN_HASHES:
-        # Remove oldest entries (convert to list, slice, back to set)
-        _seen_error_hashes = set(list(_seen_error_hashes)[MAX_SEEN_HASHES // 2 :])
-
-    # Persist to disk after each new hash
-    _save_seen_hashes()
-
-    return False
-
-
 def set_event_callback(callback: Callable[..., None]) -> None:
     """
     Set the callback function for firing events.

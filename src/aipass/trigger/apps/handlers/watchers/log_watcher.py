@@ -280,8 +280,8 @@ class LogFileWatcher(WatchdogFileSystemEventHandler if WATCHDOG_AVAILABLE else o
                         last_seen=result.get("last_seen", ""),
                         count=error_count,
                     )
-                except Exception:
-                    # Registry unavailable — fire error_logged as monitoring-only fallback
+                except Exception as exc:
+                    logger.warning("Registry unavailable, falling back to error_logged: %s", exc)
                     trigger.fire("error_logged", **event_data)
                 json_handler.log_operation("system_log_event", {"level": level, "module": module_name})
             elif level == "warning":

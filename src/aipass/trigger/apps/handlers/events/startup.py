@@ -371,9 +371,9 @@ def _run_memory_check() -> None:
     Silent failure - handlers cannot use logger or print.
     """
     try:
-        from aipass.memory.apps.modules.rollover import check_and_rollover
+        from aipass.memory.apps.modules.rollover import run_rollover
 
-        check_and_rollover()
+        run_rollover()
     except ImportError:
         return  # Memory not available
     except Exception as exc:
