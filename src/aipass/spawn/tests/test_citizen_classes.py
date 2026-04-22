@@ -341,17 +341,12 @@ class TestTemplateStructure:
         spawn_root = Path(__file__).parents[1]
         assert not (spawn_root / "templates" / "agent.template").exists()
 
-    def test_builder_template_has_claude_md(self):
-        """Builder template includes CLAUDE.md with startup protocol."""
+    def test_builder_template_has_no_claude_md(self):
+        """Builder template should NOT include CLAUDE.md — project root covers it."""
         from aipass.spawn.apps.handlers.class_registry import get_template_dir
 
         builder = get_template_dir("builder")
-        claude_md = builder / "CLAUDE.md"
-        assert claude_md.exists(), "Builder template must include CLAUDE.md"
-        content = claude_md.read_text()
-        assert "{{BRANCHNAME}}" in content
-        assert "Startup" in content
-        assert ".trinity/passport.json" in content
+        assert not (builder / "CLAUDE.md").exists()
 
     def test_builder_template_has_local_prompt(self):
         """Builder template includes non-empty local prompt."""
@@ -373,19 +368,14 @@ class TestTemplateStructure:
 class TestAgentScaffoldContent:
     """Tests verifying created agents have useful content."""
 
-    def test_created_agent_has_claude_md(self, tmp_path):
-        """Created agent should have CLAUDE.md with branch name substituted."""
+    def test_created_agent_has_no_claude_md(self, tmp_path):
+        """Branches should NOT have CLAUDE.md — project root covers it."""
         from aipass.spawn.apps.modules.core import _spawn_agent
 
         target = tmp_path / "content_test"
         _spawn_agent(str(target), role="Tester", purpose="Testing scaffold")
 
-        claude_md = target / "CLAUDE.md"
-        assert claude_md.exists()
-        content = claude_md.read_text()
-        assert "CONTENT_TEST" in content
-        assert "{{BRANCHNAME}}" not in content
-        assert ".trinity/passport.json" in content
+        assert not (target / "CLAUDE.md").exists()
 
     def test_created_agent_local_prompt_has_content(self, tmp_path):
         """Created agent's local prompt should reference branch identity."""
@@ -400,15 +390,17 @@ class TestAgentScaffoldContent:
         assert "PROMPT_AGENT" in content
         assert len(content) > 100
 
-    def test_created_agent_claude_md_has_role(self, tmp_path):
-        """CLAUDE.md should include the agent's role if provided."""
+    def test_created_agent_passport_has_role(self, tmp_path):
+        """Passport should include the agent's role if provided."""
+        import json
+
         from aipass.spawn.apps.modules.core import _spawn_agent
 
         target = tmp_path / "role_test"
         _spawn_agent(str(target), role="Data Analyst", purpose="Reports")
 
-        content = (target / "CLAUDE.md").read_text()
-        assert "Data Analyst" in content
+        passport = json.loads((target / ".trinity" / "passport.json").read_text())
+        assert passport["identity"]["role"] == "Data Analyst"
 
 
 # =============================================================================

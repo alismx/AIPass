@@ -101,12 +101,6 @@
       "content_hash": "9b1d3a691272",
       "has_branch_placeholder": false
     },
-    "f015": {
-      "path": "CLAUDE.md",
-      "name": "CLAUDE.md",
-      "content_hash": "e24c75348c4f",
-      "has_branch_placeholder": false
-    },
     "f016": {
       "path": "DASHBOARD.local.json",
       "name": "DASHBOARD.local.json",

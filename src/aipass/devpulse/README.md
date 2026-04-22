@@ -67,11 +67,13 @@ Devpulse commands are accessed via `drone @devpulse <command>`:
 - `feedback reply <id> "msg"` — reply to sender
 - `feedback send "subject" "body"` — receive feedback from another agent
 
-## Integration
+## Integration Points
 
-**Depends on:** drone (routing), prax (logging), cli (display), ai_mail (dispatch), seedgo (audits), flow (plans)
+### Depends On
+drone (routing), prax (logging), cli (display), ai_mail (dispatch), seedgo (audits), flow (plans)
 
-**Provides to:** All branches via dispatch orchestration. Watchdog monitoring for any dispatched agent. Feedback channel for cross-project communication.
+### Provides To
+All branches via dispatch orchestration. Watchdog monitoring for any dispatched agent. Feedback channel for cross-project communication.
 
 *Last updated: 2026-04-22*
 
