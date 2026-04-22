@@ -4,7 +4,7 @@
 
 **Purpose:** System-wide logging, real-time monitoring, and dashboard for AIPass.
 **Module:** `aipass.prax`
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-22
 
 ---
 
@@ -101,13 +101,15 @@ prax/
 │       ├── config/                # Configuration loading
 │       ├── dashboard/             # Dashboard refresh and operations
 │       ├── discovery/             # Module scanning and filtering
+│       ├── json/                  # JSON operations handler
+│       ├── json_templates/        # JSON template definitions
 │       ├── logging/               # Log setup, rotation, introspection
 │       ├── monitoring/            # Event queue, branch detection, stream output
 │       ├── registry/              # Module registry management
 │       ├── status/                # STATUS sync handler
 │       └── watcher/               # File and log watchers
 ├── templates/                     # Dashboard templates
-├── tests/                         # Test suite (374 tests)
+├── tests/                         # Test suite (375 tests)
 └── tools/                         # Standalone utilities (inbox_watchdog.py)
 ```
 
@@ -136,7 +138,7 @@ prax/
 
 ---
 
-*Last Updated: 2026-04-07*
+*Last Updated: 2026-04-22*
 
 ---
 [← Back to AIPass](../../../README.md)

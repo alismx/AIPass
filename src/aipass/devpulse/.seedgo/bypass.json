@@ -107,6 +107,11 @@
       "reason": "Test file imports aipass.devpulse.apps.modules.watchdog for direct router testing (same-branch import). Encapsulation check pattern-matches on 'from aipass.*.apps.*' shape regardless of same- vs cross-branch. Inherits branch-level gap (manager branch, no apps/handlers/__init__.py inspect.stack guard)."
     },
     {
+      "standard": "meta",
+      "file": "apps/modules/feedback.py",
+      "reason": "META block present (lines 1-4) but checker format mismatch — same issue as apps/devpulse.py."
+    },
+    {
       "standard": "encapsulation",
       "file": "apps/modules/feedback.py",
       "reason": "Same-branch import from devpulse handlers. Manager branch has no apps/handlers/__init__.py inspect.stack guard."
@@ -150,6 +155,11 @@
       "standard": "cli",
       "file": "apps/handlers/feedback/inbox.py",
       "reason": "Feedback handlers use console.print for Rich-formatted output routed through err_console. This is the intended output path for a manager-branch utility."
+    },
+    {
+      "standard": "unused_function",
+      "file": "apps/handlers/watchdog/schedule.py",
+      "reason": "format_wait() has 5 passing tests. Public utility for schedule display — not called in production yet but tested and documented for upcoming schedule status output."
     }
   ],
   "notes": {
