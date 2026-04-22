@@ -1,9 +1,9 @@
 # =================== AIPass ====================
 # Name: registry_monitor.py
-# Description: Registry auto-healing and file watching module
-# Version: 2.1.0
+# Description: Registry auto-healing module
+# Version: 3.0.0
 # Created: 2025-11-21
-# Modified: 2025-11-21
+# Modified: 2026-04-22
 # =============================================
 
 """
@@ -93,42 +93,8 @@ def scan_plan_files() -> Dict[str, Any]:
     )
 
 
-def start_monitoring():
-    """Start PLAN file monitoring with watchdog (thin orchestrator)
-
-    Returns:
-        True if started successfully, False otherwise
-    """
-    result = start_monitoring_impl(ecosystem_root=ECOSYSTEM_ROOT)
-    # Module handles display
-    status = result.get("status", "")
-    if status == "already_running":
-        warning("Monitor is already running")
-    elif status == "started":
-        console.print(f"[green]OK[/green] {result['message']}")
-    elif status == "error":
-        error(result["message"])
-    return result.get("success", False)
-
-
-def stop_monitoring():
-    """Stop PLAN file monitoring (thin orchestrator)
-
-    Returns:
-        True if stopped successfully, False otherwise
-    """
-    result = stop_monitoring_impl()
-    # Module handles display
-    status = result.get("status", "")
-    if status == "stopped":
-        console.print("[green]OK[/green] Monitor stopped")
-    elif status == "not_running":
-        warning("Monitor is not running")
-    return result.get("success", False)
-
-
 def get_status() -> Dict[str, Any]:
-    """Get monitoring status (thin orchestrator)"""
+    """Get registry status (thin orchestrator)"""
     return get_status_impl(
         ecosystem_root=ECOSYSTEM_ROOT,
         load_registry=load_registry,
@@ -147,9 +113,7 @@ def handle_command(command: str, args: List[str]) -> bool:
     Commands:
         scan    - One-time scan and heal
         heal    - Alias for scan
-        start   - Start watchdog monitoring
-        stop    - Stop watchdog monitoring
-        status  - Show monitoring status
+        status  - Show registry status
 
     Args:
         command: Command name
@@ -200,54 +164,19 @@ def handle_command(command: str, args: List[str]) -> bool:
         console.print()
         return True
 
-    elif subcommand == "start":
-        console.print("[bold]Starting registry monitor...[/bold]")
-        console.print()
-
-        # Run initial scan before starting monitor
-        console.print("[dim]Running initial scan...[/dim]")
-        scan_result = scan_plan_files()
-        console.print(f"[dim]Found {scan_result['total_plans']} PLAN files[/dim]")
-        console.print()
-
-        success = start_monitoring()
-        if success:
-            console.print()
-            warning("Monitor is running. Press Ctrl+C to stop.")
-            console.print()
-
-            # Keep script alive
-            try:
-                while True:
-                    time.sleep(1)
-            except KeyboardInterrupt:
-                logger.info("[registry_monitor] Keyboard interrupt received, stopping monitor")
-                console.print()
-                console.print("[bold]Stopping monitor...[/bold]")
-                stop_monitoring()
-                console.print()
-
-        return success
-
-    elif subcommand == "stop":
-        return stop_monitoring()
-
     elif subcommand == "status":
         status = get_status()
 
         console.print()
-        console.print("[bold cyan]Registry Monitor Status[/bold cyan]")
+        console.print("[bold cyan]Registry Status[/bold cyan]")
         console.print()
         console.print(f"  • Version: {status['version']}")
-        console.print(
-            f"  • Monitoring: {'[green]Active[/green]' if status['monitoring_active'] else '[yellow]Inactive[/yellow]'}"
-        )
         console.print(f"  • Watch location: {status['watch_location']}")
         console.print(f"  • Total plans: {status['total_plans']}")
         console.print(f"  • Open plans: {status['open_plans']}")
         console.print(f"  • Ignored folders: {status['ignore_folders']}")
         console.print()
-        console.print("[dim]Commands: scan | start | stop | status[/dim]")
+        console.print("[dim]Commands: scan | status[/dim]")
         console.print()
 
         return True
@@ -258,9 +187,7 @@ def handle_command(command: str, args: List[str]) -> bool:
         console.print("Available commands:")
         console.print("  • scan    - One-time scan and heal registry")
         console.print("  • heal    - Alias for scan")
-        console.print("  • start   - Start watchdog monitoring")
-        console.print("  • stop    - Stop watchdog monitoring")
-        console.print("  • status  - Show monitoring status")
+        console.print("  • status  - Show registry status")
         console.print()
         return False
 
@@ -281,19 +208,15 @@ def print_introspection():
     console.print()
 
     console.print("[yellow]Features:[/yellow]")
-    console.print("  • Real-time file watching (watchdog)")
-    console.print("  • Auto-detect create/move/delete events")
     console.print("  • Scan and heal registry")
     console.print("  • Duplicate detection with auto-renumbering")
-    console.print("  • Metadata preservation on moves")
+    console.print("  • Registry status reporting")
     console.print()
 
     console.print("[yellow]Commands:[/yellow]")
     console.print("  • scan    - One-time scan and heal registry")
     console.print("  • heal    - Alias for scan")
-    console.print("  • start   - Start watchdog monitoring (runs until Ctrl+C)")
-    console.print("  • stop    - Stop watchdog monitoring")
-    console.print("  • status  - Show monitoring status")
+    console.print("  • status  - Show registry status")
     console.print()
 
     console.print("[yellow]Connected Handlers:[/yellow]")
@@ -317,15 +240,11 @@ def print_help():
     console.print("[yellow]SUBCOMMANDS:[/yellow]")
     console.print("  scan      One-time scan and heal")
     console.print("  heal      Alias for scan")
-    console.print("  start     Start persistent watchdog monitoring")
-    console.print("  stop      Stop watchdog monitoring")
-    console.print("  status    Check monitoring status")
+    console.print("  status    Show registry status")
     console.print()
     console.print("[yellow]EXAMPLES:[/yellow]")
     console.print("  [dim]drone @flow registry scan[/dim]             # One-time scan and heal")
-    console.print("  [dim]drone @flow registry start[/dim]            # Start persistent monitoring")
-    console.print("  [dim]drone @flow registry status[/dim]           # Check monitoring status")
-    console.print("  [dim]drone @flow registry stop[/dim]             # Stop monitoring")
+    console.print("  [dim]drone @flow registry status[/dim]           # Check registry status")
     console.print()
 
 

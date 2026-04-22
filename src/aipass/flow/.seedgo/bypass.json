@@ -408,25 +408,28 @@
       "reason": "Deferred per devpulse dispatch \u2014 test infrastructure not yet in place for flow branch"
     },
     {
-      "file": "apps/handlers/registry/monitor_ops.py",
-      "standard": "unused_function",
+      "file": "tests/test_monitor_registry.py",
+      "standard": "architecture",
       "category": "false_positive",
-      "lines": [82],
-      "reason": "on_created is a watchdog FileSystemEventHandler callback invoked by the filesystem monitoring framework, not called directly by our code"
+      "reason": "Test files live in tests/ by convention, not in the apps/ 3-layer structure"
     },
     {
-      "file": "apps/handlers/registry/monitor_ops.py",
-      "standard": "unused_function",
+      "file": "tests/test_monitor_registry.py",
+      "standard": "encapsulation",
       "category": "false_positive",
-      "lines": [92],
-      "reason": "on_deleted is a watchdog FileSystemEventHandler callback invoked by the filesystem monitoring framework, not called directly by our code"
+      "reason": "Unit tests import handlers directly to test implementation functions in isolation"
     },
     {
-      "file": "apps/handlers/registry/monitor_ops.py",
-      "standard": "unused_function",
+      "file": "tests/*",
+      "standard": "architecture",
       "category": "false_positive",
-      "lines": [102],
-      "reason": "on_moved is a watchdog FileSystemEventHandler callback invoked by the filesystem monitoring framework, not called directly by our code"
+      "reason": "Test files live in tests/ by convention, not in the apps/ 3-layer structure"
+    },
+    {
+      "file": "tests/*",
+      "standard": "encapsulation",
+      "category": "false_positive",
+      "reason": "Unit tests import handlers directly to test implementation functions in isolation"
     }
   ],
   "notes": {
