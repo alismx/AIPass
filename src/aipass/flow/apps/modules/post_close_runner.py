@@ -22,25 +22,16 @@ This script lives inside the flow branch so handler import guards allow it.
 import sys
 from pathlib import Path
 
-# INFRASTRUCTURE IMPORT PATTERN
-_PKG_ROOT = Path(__file__).resolve().parents[3]  # file.py → modules/ → apps/ → flow/ → aipass/
-FLOW_ROOT = _PKG_ROOT / "flow"
-
-# External: CLI console (Rich display) and Prax logger
 from aipass.cli.apps.modules import console, error, warning
-from aipass.prax.apps.modules.logger import system_logger as logger
-
-# JSON handler for operation tracking
 from aipass.flow.apps.handlers.json import json_handler
-
-MODULE_NAME = "post_close_runner"
-
-LOCK_FILE = FLOW_ROOT / ".post_close_runner.lock"
-
-# AI summarization removed — plans vectorized directly from flow/processed_plans/
-# from aipass.flow.apps.handlers.summary.generate import generate_summaries
 from aipass.flow.apps.handlers.mbank.process import process_closed_plans
 from aipass.flow.apps.handlers.runner.lock_ops import acquire_lock, release_lock
+from aipass.prax.apps.modules.logger import system_logger as logger
+
+_PKG_ROOT = Path(__file__).resolve().parents[3]
+FLOW_ROOT = _PKG_ROOT / "flow"
+MODULE_NAME = "post_close_runner"
+LOCK_FILE = FLOW_ROOT / ".post_close_runner.lock"
 
 
 def handle_command(command: str, args: list) -> bool:
