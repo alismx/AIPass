@@ -213,7 +213,7 @@
     {
       "file": "apps/handlers/audit/audit_display.py",
       "standard": "deep_nesting",
-      "reason": "print_branch_summary() and print_bypass_audit() depth 6 — full rewrite planned in DPLAN-0047, refactoring now would be throwaway work"
+      "reason": "print_branch_summary() depth 6 — full rewrite planned in DPLAN-0047, refactoring now would be throwaway work"
     },
     {
       "file": "_content.py",

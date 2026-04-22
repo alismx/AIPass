@@ -26,8 +26,7 @@ from collections import defaultdict
 # Prax logger (system-wide, always first)
 
 # CLI services (display/output formatting)
-from aipass.cli import console, header
-from aipass.cli.apps.modules import error
+from aipass.cli import console
 
 # JSON handler for tracking
 from aipass.seedgo.apps.handlers.json import json_handler
@@ -52,16 +51,14 @@ def print_introspection() -> None:
     console.print("[yellow]Public API:[/yellow]")
     console.print("  [dim]- print_branch_summary(audit_result, system_averages, overall_system_avg)[/dim]")
     console.print("  [dim]- print_system_summary(audit_results)[/dim]")
-    console.print("  [dim]- print_bypass_audit(bypass_results)[/dim]")
     console.print()
 
     console.print("[yellow]External Dependencies:[/yellow]")
-    console.print("  [dim]- aipass.prax (logger)[/dim]")
-    console.print("  [dim]- aipass.cli (console, header)[/dim]")
+    console.print("  [dim]- aipass.cli (console)[/dim]")
     console.print()
 
     console.print("[yellow]Consumed By:[/yellow]")
-    console.print("  [dim]- modules/standards_audit.py (imports all 3 display functions)[/dim]")
+    console.print("  [dim]- modules/standards_audit.py (imports display functions)[/dim]")
     console.print()
 
 
@@ -336,71 +333,5 @@ def print_system_summary(audit_results: List[Dict]):
             branches_failing = sum(1 for r in audit_results if r["scores"].get(standard, 100) < 75)
             console.print(f"  {i}. {standard.title():15} (avg: {avg_score}%, {branches_failing} branches <75%)")
 
-    console.print("─" * 70)
-    console.print()
-
-
-def print_bypass_audit(bypass_results: List[Dict]):
-    """Print bypass audit results"""
-    if not bypass_results:
-        console.print("[green]No bypasses configured in any branch[/green]")
-        return
-
-    console.print()
-    header("BYPASS AUDIT - Current State of Bypassed Files")
-    console.print()
-
-    # Group by branch
-    by_branch = defaultdict(list)
-    for result in bypass_results:
-        by_branch[result["branch"]].append(result)
-
-    removable_count = 0
-    total_count = len(bypass_results)
-
-    for branch_name, results in sorted(by_branch.items()):
-        console.print(f"[bold cyan]{branch_name}[/bold cyan] ({len(results)} bypass{'es' if len(results) > 1 else ''})")
-
-        for r in results:
-            file_name = r["file"]
-            standard = r["standard"]
-            reason = r["reason"]
-            status = r["status"]
-
-            if status == "file_missing":
-                console.print(f"  [red]✗[/red] {file_name} [{standard}]")
-                error("FILE MISSING - bypass can be removed")
-                removable_count += 1
-            elif status == "checked":
-                score = r["current_score"]
-                would_pass = r["would_pass"]
-
-                if would_pass:
-                    console.print(f"  [green]✓[/green] {file_name} [{standard}] → {score}%")
-                    console.print("    [green]PASSES NOW - bypass can be removed![/green]")
-                    console.print(f"    [dim]Reason was: {reason}[/dim]")
-                    removable_count += 1
-                else:
-                    console.print(f"  [yellow]⚠[/yellow] {file_name} [{standard}] → {score}%")
-                    console.print(f"    [dim]Reason: {reason}[/dim]")
-                    for v in r.get("violations", [])[:3]:
-                        console.print(f"    [dim]• {v}[/dim]")
-            elif status == "error":
-                console.print(f"  [red]✗[/red] {file_name} [{standard}]")
-                console.print(f"    [red]Error: {r.get('error', 'Unknown')}[/red]")
-            else:
-                console.print(f"  [dim]?[/dim] {file_name} [{standard}]")
-                console.print("    [dim]Unknown standard or status[/dim]")
-
-        console.print()
-
-    # Summary
-    console.print("─" * 70)
-    console.print("[bold]BYPASS SUMMARY:[/bold]")
-    console.print(f"  Total bypasses:     {total_count}")
-    console.print(
-        f"  Can be removed:     {removable_count} [green]{'← clean these up!' if removable_count > 0 else ''}[/green]"
-    )
-    console.print(f"  Still needed:       {total_count - removable_count}")
     console.print("─" * 70)
     console.print()

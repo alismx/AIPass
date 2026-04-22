@@ -9,36 +9,25 @@
 """
 Registry Monitor Module - Auto-Healing PLAN Registry
 
-Thin orchestrator for filesystem monitoring and registry healing.
+Thin orchestrator for registry scanning and healing.
 All business logic delegated to handlers/registry/monitor_ops.py.
 
-Architecture (v2.0):
-- PlanFileWatcher detects filesystem events via Python watchdog
-- Events are fired via the trigger event bus (plan_file_created, plan_file_deleted, plan_file_moved)
-- Trigger handlers in trigger/apps/handlers/events/plan_file.py update the registry
-- Decoupled: Flow fires events, Trigger handles reactions
-
 Features:
-- Real-time file watching via Python watchdog
-- Auto-detect file create/move/delete events
 - Scan and heal registry (orphaned entries, missing files)
 - Duplicate plan detection with auto-renumbering
-- Metadata preservation on file moves
+- Registry status reporting
 
 Usage:
-    From flow.py: flow registry_monitor [scan|start|stop|status]
+    From flow.py: flow registry_monitor [scan|status]
     Standalone: drone @flow registry [command]
 
 Commands:
     scan    - One-time scan and heal registry
     heal    - Alias for scan
-    start   - Start watchdog monitoring (runs until Ctrl+C)
-    stop    - Stop watchdog monitoring
-    status  - Show monitoring status
+    status  - Show registry status
 """
 
 import sys
-import time
 from pathlib import Path
 from typing import Dict, Any, List
 
@@ -61,8 +50,6 @@ from aipass.flow.apps.handlers.registry.load_registry import load_registry
 # Implementation handler
 from aipass.flow.apps.handlers.registry.monitor_ops import (
     scan_plan_files_impl,
-    start_monitoring_impl,
-    stop_monitoring_impl,
     get_status_impl,
 )
 

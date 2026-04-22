@@ -1,35 +1,28 @@
 # =================== AIPass ====================
 # Name: monitor_ops.py
 # Description: Registry Monitor Implementation Handler
-# Version: 1.1.0
+# Version: 2.0.0
 # Created: 2026-03-08
-# Modified: 2026-03-08
+# Modified: 2026-04-22
 # =============================================
 
 """
 Registry Monitor Operations Handler
 
-Implements filesystem scanning, plan file watching, and registry healing logic.
-Extracted from registry_monitor module.
+Implements filesystem scanning and registry healing logic.
 
 Usage:
     from aipass.flow.apps.handlers.registry.monitor_ops import (
-        scan_plan_files_impl, PlanFileWatcher,
-        start_monitoring_impl, stop_monitoring_impl, get_status_impl
+        scan_plan_files_impl, get_status_impl
     )
 """
 
 import os
 import re
-import time
-import threading
 from pathlib import Path
-from typing import Callable, Dict, Any, List, Tuple, Optional
-from watchdog.observers import Observer
-from watchdog.events import FileSystemEventHandler
+from typing import Callable, Dict, Any, List
 
 from aipass.prax import logger
-# logger imported from aipass.prax
 
 from aipass.flow.apps.handlers.json import json_handler
 
@@ -83,128 +76,6 @@ IGNORE_FOLDERS = {
     "snapshots",
     ".snapshots",
 }
-
-# Global observer instance
-_observer: Any = None
-_observer_lock = threading.Lock()
-
-# Event deduplication
-_recent_events: List[Tuple[str, str, float]] = []  # [(event_type, plan_num, timestamp)]
-DEDUPE_WINDOW = 2.0  # seconds
-
-
-# =============================================
-# FILE WATCHER CLASS
-# =============================================
-
-
-class PlanFileWatcher(FileSystemEventHandler):
-    """Monitors PLAN file changes and fires trigger events"""
-
-    def on_created(self, event):
-        """Handle file creation events - fires trigger event"""
-        if not event.is_directory and self._is_plan_file(str(event.src_path)):
-            file_path = Path(str(event.src_path))
-            plan_num = self._get_plan_number(file_path)
-
-            if plan_num and not self._is_duplicate_event("created", plan_num):
-                logger.info(f"[{MODULE_NAME}] New PLAN file detected: {file_path.name}")
-                self._schedule_fire_created(file_path)
-
-    def on_deleted(self, event):
-        """Handle file deletion events - fires trigger event"""
-        if not event.is_directory and self._is_plan_file(str(event.src_path)):
-            file_path = Path(str(event.src_path))
-            plan_num = self._get_plan_number(file_path)
-
-            if plan_num and not self._is_duplicate_event("deleted", plan_num):
-                logger.info(f"[{MODULE_NAME}] PLAN file deleted: {file_path.name}")
-                self._schedule_fire_deleted(file_path)
-
-    def on_moved(self, event):
-        """Handle file move/rename events - fires trigger event"""
-        if not event.is_directory and self._is_plan_file(str(event.dest_path)):
-            src_path = Path(str(event.src_path))
-            dest_path = Path(str(event.dest_path))
-            plan_num = self._get_plan_number(dest_path)
-
-            if plan_num and not self._is_duplicate_event("moved", plan_num):
-                logger.info(f"[{MODULE_NAME}] PLAN file moved: {src_path.name} -> {dest_path}")
-                self._schedule_fire_moved(src_path, dest_path)
-
-    def _is_plan_file(self, file_path: str) -> bool:
-        """Check if file is a PLAN file"""
-        return PLAN_PATTERN.match(Path(file_path).name) is not None
-
-    def _get_plan_number(self, file_path: Path) -> Optional[str]:
-        """Extract plan number from filename (e.g., FPLAN-0001.md -> 0001, DPLAN-0005.md -> 0005)"""
-        match = re.search(r"[A-Z]+PLAN-(\d{4})\.md$", file_path.name)
-        return match.group(1) if match else None
-
-    def _is_duplicate_event(self, event_type: str, plan_num: str) -> bool:
-        """Check if this is a duplicate recent event"""
-        global _recent_events
-        now = time.time()
-
-        # Clean old events
-        _recent_events = [(et, pn, ts) for et, pn, ts in _recent_events if now - ts < DEDUPE_WINDOW]
-
-        # Check for duplicates
-        for et, pn, ts in _recent_events:
-            if et == event_type and pn == plan_num:
-                return True
-
-        # Add to recent events
-        _recent_events.append((event_type, plan_num, now))
-        return False
-
-    def _schedule_fire_created(self, file_path: Path):
-        """Schedule trigger event with delay to avoid duplicate events"""
-        timer = threading.Timer(0.5, self._fire_plan_file_created, args=(file_path,))
-        timer.start()
-
-    def _schedule_fire_deleted(self, file_path: Path):
-        """Schedule trigger event with delay to avoid duplicate events"""
-        timer = threading.Timer(0.5, self._fire_plan_file_deleted, args=(file_path,))
-        timer.start()
-
-    def _schedule_fire_moved(self, src_path: Path, dest_path: Path):
-        """Schedule trigger event with delay to avoid duplicate events"""
-        timer = threading.Timer(0.5, self._fire_plan_file_moved, args=(src_path, dest_path))
-        timer.start()
-
-    def _fire_plan_file_created(self, file_path: Path):
-        """Fire plan_file_created event - Trigger handles registry update"""
-        try:
-            from aipass.trigger.apps.modules.core import trigger
-
-            trigger.fire("plan_file_created", path=str(file_path))
-        except ImportError:
-            logger.warning(
-                f"[{MODULE_NAME}] Trigger not available - plan_file_created event not fired for {file_path.name}"
-            )
-
-    def _fire_plan_file_deleted(self, file_path: Path):
-        """Fire plan_file_deleted event - Trigger handles registry update"""
-        try:
-            from aipass.trigger.apps.modules.core import trigger
-
-            trigger.fire("plan_file_deleted", path=str(file_path))
-        except ImportError:
-            logger.warning(
-                f"[{MODULE_NAME}] Trigger not available - plan_file_deleted event not fired for {file_path.name}"
-            )
-
-    def _fire_plan_file_moved(self, src_path: Path, dest_path: Path):
-        """Fire plan_file_moved event - Trigger handles registry update"""
-        try:
-            from aipass.trigger.apps.modules.core import trigger
-
-            trigger.fire("plan_file_moved", src_path=str(src_path), dest_path=str(dest_path))
-        except ImportError:
-            logger.warning(
-                f"[{MODULE_NAME}] Trigger not available - plan_file_moved event not fired for {dest_path.name}"
-            )
 
 
 # =============================================
@@ -398,84 +269,30 @@ def scan_plan_files_impl(
 
 
 # =============================================
-# MONITOR CONTROL IMPLEMENTATIONS
+# STATUS IMPLEMENTATION
 # =============================================
-
-
-def start_monitoring_impl(ecosystem_root: Path) -> Dict[str, Any]:
-    """Start PLAN file monitoring with watchdog
-
-    Args:
-        ecosystem_root: Root directory to watch
-
-    Returns:
-        Dict with keys: success (bool), message (str), status (str)
-    """
-    global _observer
-
-    with _observer_lock:
-        if _observer and _observer.is_alive():
-            logger.info(f"[{MODULE_NAME}] Monitor already running")
-            return {"success": False, "message": "Monitor is already running", "status": "already_running"}
-
-        try:
-            observer = Observer()
-            observer.schedule(PlanFileWatcher(), str(ecosystem_root), recursive=True)
-            observer.start()
-            _observer = observer
-            logger.info(f"[{MODULE_NAME}] PLAN file monitor started - watching {ecosystem_root}")
-            return {"success": True, "message": f"Monitor started - watching {ecosystem_root}", "status": "started"}
-
-        except Exception as e:
-            logger.error(f"[{MODULE_NAME}] Error starting monitor: {e}")
-            return {"success": False, "message": f"Error starting monitor: {e}", "status": "error"}
-
-
-def stop_monitoring_impl() -> Dict[str, Any]:
-    """Stop PLAN file monitoring
-
-    Returns:
-        Dict with keys: success (bool), message (str), status (str)
-    """
-    global _observer
-
-    with _observer_lock:
-        if _observer and _observer.is_alive():
-            _observer.stop()
-            _observer.join()
-            _observer = None
-            logger.info(f"[{MODULE_NAME}] PLAN file monitor stopped")
-            return {"success": True, "message": "Monitor stopped", "status": "stopped"}
-        else:
-            logger.info(f"[{MODULE_NAME}] Monitor is not running")
-            return {"success": False, "message": "Monitor is not running", "status": "not_running"}
 
 
 def get_status_impl(
     ecosystem_root: Path, load_registry: Callable[[], Dict[str, Any]] = lambda: {"plans": {}}
 ) -> Dict[str, Any]:
-    """Get monitoring status
+    """Get registry status
 
     Args:
         ecosystem_root: Root directory being watched
         load_registry: Registry loader function (injected from module)
 
     Returns:
-        Dict with monitoring status information
+        Dict with registry status information
     """
-    global _observer
-
     registry = load_registry()
     total_plans = len(registry.get("plans", {}))
     open_plans = sum(1 for p in registry.get("plans", {}).values() if p.get("status") == "open")
 
-    with _observer_lock:
-        is_running = _observer and _observer.is_alive()
-
     return {
         "module": MODULE_NAME,
         "version": "2.0.0",
-        "monitoring_active": is_running,
+        "monitoring_active": False,
         "watch_location": str(ecosystem_root),
         "total_plans": total_plans,
         "open_plans": open_plans,
