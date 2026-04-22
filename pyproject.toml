@@ -69,7 +69,7 @@ packages = ["src/aipass"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "src"]
-norecursedirs = ["templates", "*.egg-info", ".git", ".venv", "__pycache__"]
+norecursedirs = ["templates", "*.egg-info", ".git", ".venv", "__pycache__", ".archive", "my-project"]
 
 [tool.coverage.run]
 source = ["src/aipass"]

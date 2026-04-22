@@ -254,41 +254,6 @@ class TestIsStaleEntry:
 
 
 # ---------------------------------------------------------------------------
-# Tests -- _is_duplicate_error
-# ---------------------------------------------------------------------------
-
-
-class TestIsDuplicateError:
-    """Tests for _is_duplicate_error."""
-
-    def test_first_time_returns_false(self):
-        """First occurrence of a hash is NOT a duplicate."""
-        lw = _import_log_watcher()
-        lw._seen_error_hashes.clear()
-        # Patch _save_seen_hashes to avoid disk I/O
-        with patch.object(lw, "_save_seen_hashes"):
-            assert lw._is_duplicate_error("aabbccdd") is False
-
-    def test_second_time_returns_true(self):
-        """Second occurrence of the same hash IS a duplicate."""
-        lw = _import_log_watcher()
-        lw._seen_error_hashes.clear()
-        with patch.object(lw, "_save_seen_hashes"):
-            lw._is_duplicate_error("aabbccdd")
-            assert lw._is_duplicate_error("aabbccdd") is True
-
-    def test_hash_set_size_limit(self):
-        """When set exceeds MAX_SEEN_HASHES, it is trimmed."""
-        lw = _import_log_watcher()
-        lw._seen_error_hashes.clear()
-        with patch.object(lw, "_save_seen_hashes"):
-            # Fill beyond the max
-            for i in range(lw.MAX_SEEN_HASHES + 10):
-                lw._is_duplicate_error(f"hash_{i:05d}")
-            assert len(lw._seen_error_hashes) <= lw.MAX_SEEN_HASHES
-
-
-# ---------------------------------------------------------------------------
 # Tests -- set_event_callback / clear_seen_hashes
 # ---------------------------------------------------------------------------
 

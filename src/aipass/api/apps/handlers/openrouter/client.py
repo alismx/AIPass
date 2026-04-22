@@ -5,7 +5,7 @@
 # Created: 2025-11-15
 # Modified: 2025-11-15
 # =============================================
-# pyright: reportInvalidTypeForm=false, reportOptionalCall=false
+# pyright: reportMissingImports=false, reportInvalidTypeForm=false, reportOptionalCall=false
 
 """
 OpenRouter Client Handler
@@ -191,7 +191,8 @@ def make_api_request(client: OpenAI, messages: List[Dict], model: str, retries: 
     """
     if not client or not messages or not model:
         logger.warning(
-            f"make_api_request() called with missing params — client={bool(client)}, messages={bool(messages)}, model={bool(model)}"
+            f"make_api_request() called with missing params — "
+            f"client={bool(client)}, messages={bool(messages)}, model={bool(model)}"
         )
         return None
 
@@ -209,7 +210,8 @@ def make_api_request(client: OpenAI, messages: List[Dict], model: str, retries: 
             if attempt < retries:
                 delay = 1.0 * (attempt + 1)  # 1s, 2s, ...
                 logger.info(
-                    f"API request failed for {model} (attempt {attempt + 1}/{1 + retries}): {e} — retrying in {delay:.0f}s"
+                    f"API request failed for {model} (attempt {attempt + 1}/{1 + retries}): "
+                    f"{e} — retrying in {delay:.0f}s"
                 )
                 time.sleep(delay)
 

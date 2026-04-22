@@ -139,7 +139,7 @@ def print_introspection() -> None:
 
     console.print("[yellow]Connected Display Modules:[/yellow]")
     console.print("  [cyan]modules/[/cyan]")
-    console.print("    [dim]- audit_display.py (print_branch_summary, print_system_summary, print_bypass_audit)[/dim]")
+    console.print("    [dim]- audit_display.py (print_branch_summary, print_system_summary)[/dim]")
     console.print()
 
     console.print("[yellow]External Dependencies:[/yellow]")

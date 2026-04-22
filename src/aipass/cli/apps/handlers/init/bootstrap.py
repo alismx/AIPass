@@ -3,7 +3,7 @@
 # Description: Init handler — bootstrap an AIPass project in any directory
 # Version: 2.0.0
 # Created: 2026-03-14
-# Modified: 2026-04-08
+# Modified: 2026-04-22
 # =============================================
 
 """
@@ -36,11 +36,72 @@ import importlib.util
 import json
 import logging
 import re
+import shutil
 import uuid
 from datetime import date
 from pathlib import Path
 
+from aipass.cli.apps.handlers.init import scaffold_content as sc
+
 logger = logging.getLogger(__name__)
+
+ENFORCEMENT_HOOKS = [
+    "auto_fix_diagnostics.py",
+    "pre_edit_gate.py",
+    "subagent_stop_gate.py",
+    "pre_compact.py",
+]
+
+INJECTOR_HOOKS = [
+    "branch_prompt_loader.py",
+    "email_notification.py",
+    "identity_injector.py",
+]
+
+HOOKS_TO_SHIP = ENFORCEMENT_HOOKS + INJECTOR_HOOKS
+
+HOOK_EVENTS: dict[str, str] = {
+    "auto_fix_diagnostics.py": "PostToolUse",
+    "pre_edit_gate.py": "PreToolUse",
+    "subagent_stop_gate.py": "Stop",
+    "pre_compact.py": "PreCompact",
+    "branch_prompt_loader.py": "UserPromptSubmit",
+    "email_notification.py": "UserPromptSubmit",
+    "identity_injector.py": "UserPromptSubmit",
+}
+
+
+def _ship_hooks(aipass_home: str, target: Path) -> list[str]:
+    """Copy enforcement + injector hooks from AIPass install to target project.
+
+    Copies each hook file from {aipass_home}/.claude/hooks/ to
+    {target}/.claude/hooks/. Skips audio hooks. Overwrites existing files
+    only if source content differs (idempotent re-sync).
+
+    Returns list of files written.
+    """
+    source_dir = Path(aipass_home) / ".claude" / "hooks"
+    if not source_dir.is_dir():
+        logger.info("No hooks directory at %s — skipping hook shipping", source_dir)
+        return []
+
+    dest_dir = target / ".claude" / "hooks"
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    shipped: list[str] = []
+
+    for hook_name in HOOKS_TO_SHIP:
+        src = source_dir / hook_name
+        dst = dest_dir / hook_name
+        if not src.exists():
+            logger.info("Hook %s not found at %s — skipping", hook_name, src)
+            continue
+        src_content = src.read_bytes()
+        if dst.exists() and dst.read_bytes() == src_content:
+            continue
+        shutil.copy2(src, dst)
+        shipped.append(str(dst))
+
+    return shipped
 
 
 def _sanitize_name(raw: str) -> str:
@@ -69,353 +130,16 @@ def _detect_aipass_home() -> str | None:
     return None
 
 
-# ---------------------------------------------------------------------------
-# Template content generators
-# ---------------------------------------------------------------------------
-
-
-def _claude_md(name: str) -> str:
-    """Generate CLAUDE.md content — Claude Code reads this on startup."""
-    return (
-        f"# {name}\n"
-        "\n"
-        "**User:** (your name here)\n"
-        "\n"
-        "## What is AIPass\n"
-        "\n"
-        "AIPass is a multi-agent framework. This project was created with `aipass init`.\n"
-        "\n"
-        "**Key concepts:**\n"
-        "- **Project** — this directory. Contains a registry and one or more agents.\n"
-        "- **Agent** — a citizen that lives inside the project. Has identity (`.trinity/`), "
-        "memory, mailbox, and its own apps/ directory.\n"
-        f"- **Registry** — `{name}_REGISTRY.json` tracks all agents in this project.\n"
-        "\n"
-        "## Getting Started\n"
-        "\n"
-        "Create your first agent:\n"
-        "```\n"
-        "aipass init agent <name>\n"
-        "```\n"
-        "\n"
-        "This creates a full agent scaffold inside `src/<name>/` "
-        "(`apps/`, `.trinity/`, `.ai_mail.local/`) "
-        "and registers it in your project registry.\n"
-        "\n"
-        "## Available Commands\n"
-        "\n"
-        "```\n"
-        "aipass init agent <name>           # Create a new agent\n"
-        "drone @spawn create <name>         # Create agent (alternative)\n"
-        "drone @seedgo audit <project>      # Run standards audit\n"
-        "drone @ai_mail inbox               # Check mailbox (per-agent)\n"
-        "drone systems                      # List all available infrastructure\n"
-        "```\n"
-        "\n"
-        "## Startup Protocol\n"
-        "\n"
-        "On any greeting, silently read these files — no narration, just do it "
-        "and respond with the status.\n"
-        "\n"
-        f"**Read:** `{name}_REGISTRY.json`, `README.md`, `STATUS.local.md`\n"
-        "**Run:** `git status`\n"
-        "\n"
-        "Then check the registry for agents and report status.\n"
-    )
-
-
-def _agents_md(name: str) -> str:
-    """Generate AGENTS.md content — Codex equivalent of CLAUDE.md."""
-    return (
-        f"# {name} — Agent Instructions\n"
-        "\n"
-        "This project uses AIPass, a multi-agent framework.\n"
-        "\n"
-        "## Key Concepts\n"
-        "\n"
-        "- **Project** — this directory. Contains a registry and one or more agents.\n"
-        "- **Agent** — a citizen that lives inside the project with its own identity, "
-        "memory, and code.\n"
-        f"- **Registry** — `{name}_REGISTRY.json` tracks all agents.\n"
-        "\n"
-        "## Getting Started\n"
-        "\n"
-        "Create your first agent:\n"
-        "```\n"
-        "aipass init agent <name>\n"
-        "```\n"
-        "\n"
-        "## Available Commands\n"
-        "\n"
-        "```\n"
-        "aipass init agent <name>           # Create a new agent\n"
-        "drone @spawn create <name>         # Create agent (alternative)\n"
-        "drone @seedgo audit <project>      # Run standards audit\n"
-        "drone systems                      # List all infrastructure\n"
-        "```\n"
-        "\n"
-        "## Startup\n"
-        "\n"
-        f"On startup, read: `{name}_REGISTRY.json`, `README.md`, `STATUS.local.md`\n"
-    )
-
-
-def _gemini_md(name: str) -> str:
-    """Generate GEMINI.md content — Gemini equivalent of CLAUDE.md."""
-    return (
-        f"# {name} — Project Instructions\n"
-        "\n"
-        "This project uses AIPass, a multi-agent framework.\n"
-        "\n"
-        "## Key Concepts\n"
-        "\n"
-        "- **Project** — this directory. Contains a registry and one or more agents.\n"
-        "- **Agent** — a citizen that lives inside the project with its own identity, "
-        "memory, and code.\n"
-        f"- **Registry** — `{name}_REGISTRY.json` tracks all agents.\n"
-        "\n"
-        "## Getting Started\n"
-        "\n"
-        "Create your first agent: `aipass init agent <name>`\n"
-        "\n"
-        "## Available Commands\n"
-        "\n"
-        "```\n"
-        "aipass init agent <name>           # Create a new agent\n"
-        "drone @spawn create <name>         # Create agent (alternative)\n"
-        "drone @seedgo audit <project>      # Run standards audit\n"
-        "drone systems                      # List all infrastructure\n"
-        "```\n"
-        "\n"
-        "## Startup\n"
-        "\n"
-        f"On startup, read: `{name}_REGISTRY.json`, `README.md`, `STATUS.local.md`\n"
-    )
-
-
-def _readme_md(name: str) -> str:
-    """Generate README.md content — real getting started guide."""
-    return (
-        f"# {name}\n"
-        "\n"
-        "An AIPass project.\n"
-        "\n"
-        "## Quick Start\n"
-        "\n"
-        "```bash\n"
-        "# 1. Create your first agent\n"
-        "aipass init agent my_agent\n"
-        "\n"
-        "# 2. Start a session\n"
-        "cd src/my_agent/\n"
-        "claude  # or your preferred AI CLI\n"
-        "\n"
-        "# 3. Check project status\n"
-        "cat STATUS.local.md\n"
-        "```\n"
-        "\n"
-        "## Project Structure\n"
-        "\n"
-        "```\n"
-        f"{name.lower()}/\n"
-        f"  {name}_REGISTRY.json    # Agent registry\n"
-        "  .aipass/                 # Prompts (injected per-turn)\n"
-        "  CLAUDE.md               # Claude Code instructions\n"
-        "  AGENTS.md               # Codex instructions\n"
-        "  GEMINI.md               # Gemini instructions\n"
-        "  STATUS.local.md         # Project status\n"
-        "  src/                    # Agent directories live here\n"
-        "    <agent_name>/         # Created via aipass init agent\n"
-        "```\n"
-        "\n"
-        "## What is AIPass?\n"
-        "\n"
-        "AIPass is a multi-agent framework where autonomous agents (citizens) "
-        "live in directories with persistent identity, memory, and communication.\n"
-        "\n"
-        "Each agent has:\n"
-        "- **Identity** — `.trinity/passport.json`\n"
-        "- **Memory** — `.trinity/local.json`, `observations.json`\n"
-        "- **Mailbox** — `.ai_mail.local/`\n"
-        "- **Code** — `apps/` with modules and handlers\n"
-        "\n"
-        "## Commands\n"
-        "\n"
-        "| Command | Description |\n"
-        "|---------|-------------|\n"
-        "| `aipass init agent <name>` | Create a new agent |\n"
-        "| `drone @spawn create <name>` | Create agent (alternative) |\n"
-        "| `drone @seedgo audit <project>` | Run standards audit |\n"
-        "| `drone @ai_mail inbox` | Check agent mailbox |\n"
-        "| `drone systems` | List infrastructure |\n"
-        "\n"
-        f"*Initialized with [AIPass](https://github.com/AIOSAI/AIPass) on "
-        f"{{date}}*\n"
-    )
-
-
-def _global_prompt_md(name: str) -> str:
-    """Generate .aipass/aipass_global_prompt.md — injected every turn."""
-    return (
-        f"# {name} — Project Context\n"
-        "<!-- Injected every turn via hook. -->\n"
-        "\n"
-        "## What is AIPass\n"
-        "\n"
-        "AIPass is a multi-agent framework. Agents live in directories with\n"
-        "persistent identity, memory, and communication. All AIPass infrastructure\n"
-        "is available from any project via the `drone` command.\n"
-        "\n"
-        "## Terminology\n"
-        "\n"
-        "- **Project** — this directory. Contains a registry and agents.\n"
-        "- **Agent** — a citizen with identity (`.trinity/`), memory, mailbox,\n"
-        "  and code (`apps/`).\n"
-        f"- **Registry** — `{name}_REGISTRY.json` tracks all agents.\n"
-        "\n"
-        "## Setup: if drone commands fail\n"
-        "\n"
-        "If `drone` cannot find the AIPass registry, set the env var:\n"
-        "```bash\n"
-        "export AIPASS_HOME=/path/to/AIPass   # path to AIPass installation\n"
-        "```\n"
-        "Add to your shell profile (`~/.bashrc` or `~/.zshrc`) to make it permanent.\n"
-        "\n"
-        "## Commands\n"
-        "\n"
-        "### Agent Lifecycle\n"
-        "```\n"
-        "aipass init agent <name>           # Create a new agent in src/<name>/\n"
-        "drone @spawn create <name>         # Create agent (alternative)\n"
-        "drone @spawn list                  # List registered agents\n"
-        "```\n"
-        "\n"
-        "### Standards\n"
-        "```\n"
-        "drone @seedgo audit <project>      # Run full standards audit\n"
-        "drone @seedgo checklist <file>     # Check a single file\n"
-        "```\n"
-        "\n"
-        "### Dispatch — Send Task + Wake an Agent (DEFAULT)\n"
-        "```\n"
-        'drone @ai_mail dispatch @<agent> "Subject" "Body"        # Send + wake (default)\n'
-        'drone @ai_mail dispatch @<agent> "Subject" "Body" --fresh # Send + wake fresh session\n'
-        "drone @ai_mail dispatch wake @<agent>                    # Wake without sending\n"
-        "drone @ai_mail dispatch wake --fresh @<agent>            # Wake fresh\n"
-        'drone @ai_mail email @<agent> "Subject" "Body"           # FYI only (no wake)\n'
-        "```\n"
-        "\n"
-        "Use `dispatch` by default. Use `email` only when you don't need the agent to act now.\n"
-        "\n"
-        "### Communication (ai_mail)\n"
-        "```\n"
-        "drone @ai_mail inbox               # Check your mailbox\n"
-        "drone @ai_mail view <id>           # Read a message\n"
-        "drone @ai_mail close <id>          # Mark message read\n"
-        "```\n"
-        "\n"
-        "### Feedback\n"
-        "```\n"
-        'drone @devpulse feedback send "Subject" "Body"  # Send feedback (cross-project)\n'
-        "```\n"
-        "\n"
-        "### Plans (flow)\n"
-        "```\n"
-        'drone @flow create . "Subject" dplan   # Create DPLAN (design/thinking)\n'
-        'drone @flow create . "Subject" master  # Create FPLAN master (execution)\n'
-        'drone @flow create . "Subject" aplan   # Create APLAN (agent-level task)\n'
-        "drone @flow list open                  # List active plans\n"
-        "drone @flow list                       # List all plans\n"
-        "drone @flow close <id>                 # Close a plan\n"
-        "drone @flow info <id>                  # View plan details\n"
-        "```\n"
-        "\n"
-        "**DPLAN** = Dev Plan. Thinking, brainstorming, architecture decisions. "
-        "Use before building.\n"
-        "**FPLAN** = Flow Plan. Building and executing. Use when the plan is clear "
-        "and work is underway.\n"
-        "\n"
-        "### Memory\n"
-        "```\n"
-        "drone @memory archive              # Archive memories to vector store\n"
-        "drone @memory search <query>       # Search archived memories\n"
-        "```\n"
-        "\n"
-        "### Git Workflow\n"
-        "```\n"
-        "drone @git pr 'description'        # Create a pull request\n"
-        "drone @git status                  # Git status (branch-scoped)\n"
-        "drone @git sync                    # Sync with main\n"
-        "drone @git lock / unlock           # Lock/unlock the repo\n"
-        "```\n"
-        "\n"
-        "### Infrastructure\n"
-        "```\n"
-        "drone systems                      # List all available infrastructure\n"
-        "drone --help                       # Full drone command reference\n"
-        "```\n"
-        "\n"
-        "## Patterns\n"
-        "\n"
-        "- **Communication** — agents communicate via `.ai_mail.local/`.\n"
-        "- **Standards** — run `drone @seedgo audit` to check compliance.\n"
-        "- **Identity** — agents have `.trinity/passport.json`. "
-        "Projects use the registry.\n"
-        "- **Memory** — update `.trinity/local.json` at session end. "
-        "Memory is presence.\n"
-    )
-
-
-def _gitignore() -> str:
-    """Generate .gitignore content — standard AIPass ignores."""
-    return (
-        "# AIPass local state\n"
-        ".trinity/\n"
-        ".ai_mail.local/\n"
-        "*.local.*\n"
-        "!STATUS.local.md\n"
-        "\n"
-        "# Plans (local working docs)\n"
-        "DPLAN-*\n"
-        "FPLAN-*\n"
-        "APLAN-*\n"
-        "TDPLAN-*\n"
-        "\n"
-        "# Logs\n"
-        "logs/\n"
-        "\n"
-        "# Python\n"
-        "__pycache__/\n"
-        "*.py[cod]\n"
-        "*.egg-info/\n"
-        "dist/\n"
-        "build/\n"
-        ".venv/\n"
-        "venv/\n"
-        "\n"
-        "# IDE\n"
-        ".vscode/\n"
-        ".idea/\n"
-        "\n"
-        "# OS\n"
-        ".DS_Store\n"
-        "Thumbs.db\n"
-        "\n"
-        "# Archives\n"
-        ".archive/\n"
-        "\n"
-        "# Disabled files\n"
-        "*(disabled)*\n"
-    )
-
-
 def _claude_settings(aipass_home: str | None = None) -> str:
-    """Generate .claude/settings.json — minimal hooks for prompt injection.
+    """Generate .claude/settings.json — hooks for prompt injection + enforcement.
 
-    Installs two UserPromptSubmit hooks:
-    1. Global prompt — injects .aipass/aipass_global_prompt.md from CWD.
-    2. Local prompt  — walks up from CWD via pathlib.Path.parents to find
-       .aipass/aipass_local_prompt.md (cross-platform; works on Windows).
+    Wires all AIPass hooks into their respective event types:
+    - UserPromptSubmit: global/local prompt injection + branch_prompt_loader,
+      email_notification, identity_injector
+    - PostToolUse: auto_fix_diagnostics
+    - PreToolUse: pre_edit_gate
+    - Stop: subagent_stop_gate
+    - PreCompact: pre_compact
 
     Args:
         aipass_home: Optional AIPass installation root to add as env.AIPASS_HOME.
@@ -429,148 +153,41 @@ def _claude_settings(aipass_home: str | None = None) -> str:
         "p and print(p.read_text(encoding='utf-8'),end='')"
         '"'
     )
-    data: dict = {
-        "hooks": {
-            "UserPromptSubmit": [
-                {
-                    "matcher": "",
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": "cat .aipass/aipass_global_prompt.md 2>/dev/null || true",
-                        }
-                    ],
-                },
-                {
-                    "matcher": "",
-                    "hooks": [
-                        {
-                            "type": "command",
-                            "command": _local_prompt_cmd,
-                        }
-                    ],
-                },
-            ]
+
+    event_hooks: dict[str, list] = {}
+    for hook_name, event in HOOK_EVENTS.items():
+        entry = {
+            "matcher": "",
+            "hooks": [{"type": "command", "command": f"python3 .claude/hooks/{hook_name}"}],
         }
-    }
+        event_hooks.setdefault(event, []).append(entry)
+
+    prompt_hooks = [
+        {
+            "matcher": "",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": "cat .aipass/aipass_global_prompt.md 2>/dev/null || true",
+                }
+            ],
+        },
+        {
+            "matcher": "",
+            "hooks": [
+                {
+                    "type": "command",
+                    "command": _local_prompt_cmd,
+                }
+            ],
+        },
+    ]
+    event_hooks["UserPromptSubmit"] = prompt_hooks + event_hooks.get("UserPromptSubmit", [])
+
+    data: dict = {"hooks": event_hooks}
     if aipass_home:
         data["env"] = {"AIPASS_HOME": aipass_home}
     return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
-
-
-def _prep_md() -> str:
-    """Generate .claude/commands/prep.md — /prep session wrap-up slash command.
-
-    Project-scoped slash command. Sessions wrap up by buttoning up memories,
-    plans, git state, inbox, and loose ends. Ships per-project via aipass init
-    so every AIPass project has a consistent /prep flow.
-    """
-    return (
-        "# Session Wrap-Up\n"
-        "\n"
-        "Purpose: Button up everything at the end of a session — or before a "
-        "/compact. Memories, plans, git — all tidy. Works for both closing out "
-        "a chat and preparing for compaction.\n"
-        "\n"
-        "**Workflow:** `/prep` → review output → close chat or `/compact`\n"
-        "\n"
-        "## Execution\n"
-        "\n"
-        "1. Read `.trinity/passport.json` first — re-absorb your identity "
-        "before writing anything\n"
-        "2. Do ALL of the following, then confirm what was updated\n"
-        "\n"
-        "## 1. Memories\n"
-        "\n"
-        "Each memory file plays a distinct role. Update based on what actually "
-        "changed this session.\n"
-        "\n"
-        "- **`.trinity/passport.json`** — IDENTITY. Who you are: role, "
-        "capabilities, principles. Only update if identity genuinely evolved "
-        "this session.\n"
-        "- **`.trinity/local.json`** — YOUR MEMORY. Add/update session entry "
-        "with a summary of work done. Add key_learnings for anything learned. "
-        "Trim oldest sessions if over 20.\n"
-        "- **`.trinity/observations.json`** — YOUR MEMORY OF THE USER. "
-        "Collaboration insights, preferences, friction points. Skip if nothing "
-        "new about the user this session.\n"
-        "- **`STATUS.local.md`** — PUBLIC STATUS BEACON. Current work, known "
-        "issues, todos, notepad. Auto-synced to central STATUS.md on PR events "
-        "— this is how other branches see you. Keep Current Work accurate.\n"
-        "\n"
-        "## 2. Active Plans\n"
-        "\n"
-        "- Check any DPLANs or FPLANs referenced in this session\n"
-        "- Update their execution logs, status, decision logs with current "
-        "state\n"
-        "- If a plan was completed, note it (but don't close — the user does "
-        "that)\n"
-        "\n"
-        "## 3. Git State\n"
-        "\n"
-        "- Run `git status` — report uncommitted changes\n"
-        "- If there's a logical commit waiting, suggest it (don't commit "
-        "without asking)\n"
-        "- Note the current branch and any open PRs\n"
-        "\n"
-        "## 4. Inbox\n"
-        "\n"
-        "- Run `drone @ai_mail inbox 2>/dev/null` — report any unread emails\n"
-        "- Close any that were already processed but not formally closed\n"
-        "\n"
-        "## 5. Loose Ends\n"
-        "\n"
-        "- Flag anything in-flight: running background agents, dispatched "
-        "branches waiting for replies, pending decisions\n"
-        "- If anything can't survive compaction (e.g., agent IDs needed for "
-        "resume), write it to STATUS.local.md Notepad\n"
-        "\n"
-        "## Confirm\n"
-        "\n"
-        "List everything updated. Format:\n"
-        "```\n"
-        "Prep complete:\n"
-        "- local.json: [what was added]\n"
-        "- observations.json: [updated / skipped]\n"
-        "- STATUS.local.md: [updated / skipped]\n"
-        "- Plans: [which ones updated]\n"
-        "- Git: [branch, uncommitted count, suggestion]\n"
-        "- Inbox: [count, action taken]\n"
-        "- Loose ends: [any flagged]\n"
-        "\n"
-        "Ready to close out or /compact.\n"
-        "```\n"
-    )
-
-
-def _inbox_json() -> str:
-    """Generate .ai_mail.local/inbox.json — empty project mailbox structure."""
-    return (
-        json.dumps(
-            {
-                "mailbox": "inbox",
-                "total_messages": 0,
-                "unread_count": 0,
-                "messages": [],
-            },
-            indent=2,
-            ensure_ascii=False,
-        )
-        + "\n"
-    )
-
-
-def _with_source(content: str, file_path: Path) -> str:
-    """Prepend a source header to AI prompt file content.
-
-    Args:
-        content: The file content to annotate.
-        file_path: The absolute path where the file will be written.
-
-    Returns:
-        Content with ``<!-- Source: {file_path} -->`` as the first line.
-    """
-    return f"<!-- Source: {file_path} -->\n{content}"
 
 
 def init_project(target: Path, project_name: str | None = None) -> dict:
@@ -632,7 +249,7 @@ def init_project(target: Path, project_name: str | None = None) -> dict:
     global_prompt_path = aipass_dir / "aipass_global_prompt.md"
     if not global_prompt_path.exists():
         global_prompt_path.write_text(
-            _with_source(_global_prompt_md(name), global_prompt_path),
+            sc.with_source(sc.global_prompt_md(name), global_prompt_path),
             encoding="utf-8",
         )
         created.append(str(global_prompt_path))
@@ -641,7 +258,7 @@ def init_project(target: Path, project_name: str | None = None) -> dict:
     claude_md_path = target / "CLAUDE.md"
     if not claude_md_path.exists():
         claude_md_path.write_text(
-            _with_source(_claude_md(name), claude_md_path),
+            sc.with_source(sc.claude_md(name), claude_md_path),
             encoding="utf-8",
         )
         created.append(str(claude_md_path))
@@ -650,7 +267,7 @@ def init_project(target: Path, project_name: str | None = None) -> dict:
     agents_md_path = target / "AGENTS.md"
     if not agents_md_path.exists():
         agents_md_path.write_text(
-            _with_source(_agents_md(name), agents_md_path),
+            sc.with_source(sc.agents_md(name), agents_md_path),
             encoding="utf-8",
         )
         created.append(str(agents_md_path))
@@ -659,7 +276,7 @@ def init_project(target: Path, project_name: str | None = None) -> dict:
     gemini_md_path = target / "GEMINI.md"
     if not gemini_md_path.exists():
         gemini_md_path.write_text(
-            _with_source(_gemini_md(name), gemini_md_path),
+            sc.with_source(sc.gemini_md(name), gemini_md_path),
             encoding="utf-8",
         )
         created.append(str(gemini_md_path))
@@ -667,7 +284,7 @@ def init_project(target: Path, project_name: str | None = None) -> dict:
     # 6. README.md
     readme_md_path = target / "README.md"
     if not readme_md_path.exists():
-        readme_content = _readme_md(name).replace("{date}", today)
+        readme_content = sc.readme_md(name).replace("{date}", today)
         readme_md_path.write_text(readme_content, encoding="utf-8")
         created.append(str(readme_md_path))
 
@@ -683,7 +300,7 @@ def init_project(target: Path, project_name: str | None = None) -> dict:
     # 8. .gitignore
     gitignore_path = target / ".gitignore"
     if not gitignore_path.exists():
-        gitignore_path.write_text(_gitignore(), encoding="utf-8")
+        gitignore_path.write_text(sc.gitignore(), encoding="utf-8")
         created.append(str(gitignore_path))
 
     # 9. .claude/settings.json
@@ -700,8 +317,19 @@ def init_project(target: Path, project_name: str | None = None) -> dict:
     commands_dir.mkdir(exist_ok=True)
     prep_path = commands_dir / "prep.md"
     if not prep_path.exists():
-        prep_path.write_text(_prep_md(), encoding="utf-8")
+        prep_path.write_text(sc.prep_md(), encoding="utf-8")
         created.append(str(prep_path))
+
+    # 9c. .claude/commands/memo.md — /memo memory update slash command
+    memo_path = commands_dir / "memo.md"
+    if not memo_path.exists():
+        memo_path.write_text(sc.memo_md(), encoding="utf-8")
+        created.append(str(memo_path))
+
+    # 9d. Ship enforcement + injector hooks from AIPass install
+    if aipass_home:
+        shipped = _ship_hooks(aipass_home, target)
+        created.extend(shipped)
 
     # 10. hooks/ directory
     hooks_dir = target / "hooks"
@@ -720,7 +348,7 @@ def init_project(target: Path, project_name: str | None = None) -> dict:
     mail_dir.mkdir(exist_ok=True)
     inbox_path = mail_dir / "inbox.json"
     if not inbox_path.exists():
-        inbox_path.write_text(_inbox_json(), encoding="utf-8")
+        inbox_path.write_text(sc.inbox_json(), encoding="utf-8")
         created.append(str(inbox_path))
 
     return {
@@ -775,7 +403,7 @@ def update_project(target: Path) -> dict:
     # --- Managed files: write only when content has changed ---
 
     global_prompt_path = aipass_dir / "aipass_global_prompt.md"
-    generated = _with_source(_global_prompt_md(name), global_prompt_path)
+    generated = sc.with_source(sc.global_prompt_md(name), global_prompt_path)
     if not global_prompt_path.exists() or global_prompt_path.read_text(encoding="utf-8") != generated:
         global_prompt_path.write_text(generated, encoding="utf-8")
         updated.append(str(global_prompt_path))
@@ -805,7 +433,7 @@ def update_project(target: Path) -> dict:
             already_current.append(str(settings_path))
 
     claude_md_path = target / "CLAUDE.md"
-    generated = _with_source(_claude_md(name), claude_md_path)
+    generated = sc.with_source(sc.claude_md(name), claude_md_path)
     if not claude_md_path.exists() or claude_md_path.read_text(encoding="utf-8") != generated:
         claude_md_path.write_text(generated, encoding="utf-8")
         updated.append(str(claude_md_path))
@@ -813,7 +441,7 @@ def update_project(target: Path) -> dict:
         already_current.append(str(claude_md_path))
 
     agents_md_path = target / "AGENTS.md"
-    generated = _with_source(_agents_md(name), agents_md_path)
+    generated = sc.with_source(sc.agents_md(name), agents_md_path)
     if not agents_md_path.exists() or agents_md_path.read_text(encoding="utf-8") != generated:
         agents_md_path.write_text(generated, encoding="utf-8")
         updated.append(str(agents_md_path))
@@ -821,7 +449,7 @@ def update_project(target: Path) -> dict:
         already_current.append(str(agents_md_path))
 
     gemini_md_path = target / "GEMINI.md"
-    generated = _with_source(_gemini_md(name), gemini_md_path)
+    generated = sc.with_source(sc.gemini_md(name), gemini_md_path)
     if not gemini_md_path.exists() or gemini_md_path.read_text(encoding="utf-8") != generated:
         gemini_md_path.write_text(generated, encoding="utf-8")
         updated.append(str(gemini_md_path))
@@ -832,12 +460,27 @@ def update_project(target: Path) -> dict:
     commands_dir = claude_dir / "commands"
     commands_dir.mkdir(exist_ok=True)
     prep_path = commands_dir / "prep.md"
-    generated = _prep_md()
+    generated = sc.prep_md()
     if not prep_path.exists() or prep_path.read_text(encoding="utf-8") != generated:
         prep_path.write_text(generated, encoding="utf-8")
         updated.append(str(prep_path))
     else:
         already_current.append(str(prep_path))
+
+    # .claude/commands/memo.md — managed slash command, refresh to latest
+    memo_path = commands_dir / "memo.md"
+    generated = sc.memo_md()
+    if not memo_path.exists() or memo_path.read_text(encoding="utf-8") != generated:
+        memo_path.write_text(generated, encoding="utf-8")
+        updated.append(str(memo_path))
+    else:
+        already_current.append(str(memo_path))
+
+    # Re-sync enforcement + injector hooks from AIPass install
+    hook_home = aipass_home or _detect_aipass_home()
+    if hook_home:
+        shipped = _ship_hooks(hook_home, target)
+        updated.extend(shipped)
 
     # --- User-owned files: always skip ---
     for skip_name in (
@@ -853,7 +496,7 @@ def update_project(target: Path) -> dict:
     mail_dir.mkdir(exist_ok=True)
     inbox_path = mail_dir / "inbox.json"
     if not inbox_path.exists():
-        inbox_path.write_text(_inbox_json(), encoding="utf-8")
+        inbox_path.write_text(sc.inbox_json(), encoding="utf-8")
         updated.append(str(inbox_path))
     else:
         skipped.append(str(inbox_path))

@@ -15,6 +15,7 @@ Bridge itself is stateless beyond the registry dict — no threading, no startup
 
 from typing import Callable
 
+from aipass.prax import logger  # noqa: F401
 from aipass.api.apps.handlers.json import json_handler
 from aipass.cli.apps.modules import console, header
 
@@ -58,3 +59,11 @@ def list_contracts() -> list[str]:
 def clear() -> None:
     """Clear all registrations. Intended for test teardown only."""
     _registry.clear()
+
+
+def handle_command(command: str, args: list) -> bool:
+    """Bridge is a utility module — no drone commands. Always returns False."""
+    if not args:
+        print_introspection()
+        return False
+    return False

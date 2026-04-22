@@ -5,6 +5,7 @@
 # Created: 2025-11-15
 # Modified: 2025-11-15
 # =============================================
+# pyright: reportMissingImports=false
 
 """
 OpenRouter Client Module

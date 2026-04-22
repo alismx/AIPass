@@ -252,3 +252,18 @@ class TestPrintIntrospection:
             print_introspection()
         output = " ".join(calls)
         assert "core.py" in output
+
+
+def test_output_capture():
+    """Verify print_introspection mentions connected modules."""
+    from io import StringIO
+    from aipass.spawn.apps.spawn import print_introspection
+
+    buf = StringIO()
+    calls = []
+    with patch("aipass.spawn.apps.spawn.console") as mock_console:
+        mock_console.print.side_effect = lambda *a, **kw: calls.append(str(a))
+        print_introspection()
+    buf.write(" ".join(calls))
+    output = buf.getvalue()
+    assert "core.py" in output

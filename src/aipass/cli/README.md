@@ -5,8 +5,8 @@
 **Purpose:** Display and output formatting service for AIPass modules. Provides consistent terminal output — headers, success/error/warning messages, section breaks, and operation templates — so every module looks the same without duplicating Rich formatting code.
 **Module:** `aipass.cli`
 **Seedgo:** 100%
-**Tests:** 161 passing (6 files, 5/5 modules covered)
-**Last Updated:** 2026-04-11
+**Tests:** 60+ passing (6 files, 5/5 modules covered)
+**Last Updated:** 2026-04-22
 
 ## Usage
 
@@ -59,7 +59,8 @@ cli/
 │   │   └── init_project.py     # aipass init command routing
 │   └── handlers/
 │       ├── init/               # Project bootstrap logic
-│       │   └── bootstrap.py
+│       │   ├── bootstrap.py
+│       │   └── scaffold_content.py
 │       ├── json/               # JSON file management
 │       │   └── json_handler.py
 │       └── templates/          # Empty — placeholder from scaffold
@@ -120,7 +121,7 @@ aipass --help                            # Via console_scripts entry point
 
 ---
 
-*Last Updated: 2026-04-11*
+*Last Updated: 2026-04-22*
 
 ---
 [← Back to AIPass](../../../README.md)

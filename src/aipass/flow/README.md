@@ -5,7 +5,7 @@
 **Purpose:** Unified plan lifecycle management for AIPass. Creates, tracks, closes, and archives numbered work plans across multiple plan types via a filesystem-driven template registry. Foreground archival with vector intake verification, cross-branch aggregation, and self-healing registries.
 **Module:** `aipass.flow`
 **Created:** 2025-11-15
-**Last Updated:** 2026-04-07
+**Last Updated:** 2026-04-22
 
 ---
 

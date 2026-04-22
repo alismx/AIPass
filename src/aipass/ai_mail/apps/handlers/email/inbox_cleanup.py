@@ -132,85 +132,6 @@ def _archive_deleted_json(mailbox_path: Path, deleted_json: Path) -> None:
     deleted_json.rename(archive_path)
 
 
-def mark_read_and_archive(branch_path: Path, message_id: str) -> Tuple[bool, str]:
-    """
-    Mark an email as read and move it to deleted/ folder.
-
-    Args:
-        branch_path: Path to branch directory
-        message_id: ID of message to archive (short 8-char ID)
-
-    Returns:
-        Tuple of (success: bool, message: str)
-    """
-    json_handler.log_operation("inbox_cleanup", {"branch_path": str(branch_path), "message_id": message_id})
-    mailbox_path = branch_path / ".ai_mail.local"
-    inbox_file = mailbox_path / "inbox.json"
-
-    if not inbox_file.exists():
-        return False, f"Inbox not found: {inbox_file}"
-
-    # Run migration if deleted.json exists
-    _migrate_deleted_json_if_exists(mailbox_path)
-
-    try:
-        with _get_inbox_lock()(inbox_file):
-            # Load inbox
-            with open(inbox_file, "r", encoding="utf-8") as f:
-                inbox_data = json.load(f)
-
-            # Find message by ID
-            messages = inbox_data.get("messages", [])
-            message_to_archive = None
-            message_index = None
-
-            for i, msg in enumerate(messages):
-                if msg.get("id") == message_id:
-                    message_to_archive = msg
-                    message_index = i
-                    break
-
-            if message_to_archive is None:
-                return False, f"Message not found: {message_id}"
-
-            # Mark as read
-            message_to_archive["read"] = True
-
-            # Remove from inbox
-            messages.pop(message_index)
-
-            # Update inbox counts
-            inbox_data["messages"] = messages
-            inbox_data["total_messages"] = len(messages)
-            # v2 status counts
-            new_count = sum(
-                1
-                for m in messages
-                if m.get("status") == "new" or (m.get("status") is None and not m.get("read", False))
-            )
-            opened_count = sum(1 for m in messages if m.get("status") == "opened")
-            inbox_data["unread_count"] = new_count
-
-            # Save inbox
-            with open(inbox_file, "w", encoding="utf-8") as f:
-                json.dump(inbox_data, f, indent=2, ensure_ascii=False)
-
-            # Save to deleted/ folder (new pattern)
-            _save_to_deleted_folder(mailbox_path, message_to_archive)
-
-        # Update dashboard (outside lock - not inbox.json)
-        _update_dashboard(branch_path, new_count, opened_count, inbox_data["total_messages"])
-
-        # Trigger auto-purge of deleted folder
-        _trigger_deleted_purge(branch_path)
-
-        return True, f"Message {message_id} archived"
-
-    except Exception as e:
-        logger.warning("[cleanup] mark_read_and_archive failed for %s: %s", message_id, e)
-        return False, f"Failed to archive: {e}"
-
-
 def mark_all_read_and_archive(branch_path: Path) -> Tuple[bool, str, int]:
     """
     Mark all emails as read and move them to deleted/ folder.
@@ -316,6 +237,7 @@ def mark_as_opened(branch_path: Path, message_id: str) -> Tuple[bool, str, Optio
     Returns:
         Tuple of (success: bool, message: str, email_data: dict or None)
     """
+    json_handler.log_operation("mark_as_opened", {"branch_path": str(branch_path), "message_id": message_id})
     inbox_file = branch_path / ".ai_mail.local" / "inbox.json"
 
     if not inbox_file.exists():
@@ -455,7 +377,6 @@ if __name__ == "__main__":
     c.print("  Marks emails as read and moves them to deleted/ folder")
     c.print()
     c.print("FUNCTIONS PROVIDED:")
-    c.print("  - mark_read_and_archive(branch_path, message_id) -> (bool, str)")
     c.print("  - mark_all_read_and_archive(branch_path) -> (bool, str, int)")
     c.print("  - mark_as_opened(branch_path, message_id) -> (bool, str, dict)")
     c.print("  - mark_as_closed_and_archive(branch_path, message_id) -> (bool, str)")
