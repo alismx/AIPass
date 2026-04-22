@@ -93,20 +93,25 @@ DASHBOARD_FILE = FLOW_ROOT / "DASHBOARD.local.json"
 
 
 def _get_all_registry_files() -> List[str]:
-    """Return per-type registry filenames via plan-type discovery."""
+    """Return per-type registry filenames from template_registry.json."""
+    template_reg = FLOW_JSON_DIR / "template_registry.json"
+    if not template_reg.exists():
+        return [REGISTRY_FILE.name]
     try:
-        from aipass.flow.apps.handlers.template.plan_type_loader import discover_plan_types
-
+        with open(template_reg, "r", encoding="utf-8") as f:
+            data = json.load(f)
         files: List[str] = []
-        for _key, config in discover_plan_types().items():
-            rf = config.get("registry_file")
-            if rf and rf not in files:
+        for _key, type_cfg in data.get("types", {}).items():
+            prefix = type_cfg.get("prefix", "")
+            if not prefix:
+                continue
+            rf = f"{prefix.lower()}_registry.json"
+            if rf not in files:
                 files.append(rf)
-        if files:
-            return files
+        return files if files else [REGISTRY_FILE.name]
     except Exception as exc:
-        logger.warning("[update_local] Failed to discover plan types, falling back to default registry: %s", exc)
-    return [REGISTRY_FILE.name]
+        logger.warning("[update_local] Failed to read template registry, falling back to default: %s", exc)
+        return [REGISTRY_FILE.name]
 
 
 # =============================================

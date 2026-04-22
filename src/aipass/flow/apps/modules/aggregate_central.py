@@ -38,6 +38,7 @@ _PKG_ROOT = Path(__file__).resolve().parents[3]  # file.py -> modules/ -> apps/ 
 FLOW_ROOT = _PKG_ROOT / "flow"
 
 from aipass.cli.apps.modules import console
+from aipass.prax.apps.modules.logger import system_logger as logger
 
 # JSON handler for operation tracking
 from aipass.flow.apps.handlers.json import json_handler
@@ -167,6 +168,7 @@ def handle_command(command: str, args: List[str]) -> bool:
     if result:
         console.print("[green]Central plans aggregated successfully[/green]")
     else:
+        logger.error("[aggregate_central] Central plans aggregation failed")
         console.print("[red]Central plans aggregation failed[/red]")
     return result
 
