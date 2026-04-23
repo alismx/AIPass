@@ -13,7 +13,6 @@ Orchestrates dispatch commands: status tracking and daemon management.
 Delegates all business logic to handlers.
 """
 
-import subprocess
 import sys
 from pathlib import Path
 from typing import List
@@ -36,9 +35,8 @@ COMMANDS:
   dispatch wake @branch               - Wake only (no email sent)
 
 DISPATCH (send + wake):
-  drone @ai_mail dispatch @branch "Subject" "Body"                    # Send + wake + watchdog
-  drone @ai_mail dispatch @branch "Subject" "Body" --no-watchdog      # Send + wake, no watchdog
-  drone @ai_mail dispatch @branch "Subject" "Body" --fresh            # Send + fresh wake + watchdog
+  drone @ai_mail dispatch @branch "Subject" "Body"                    # Send + wake
+  drone @ai_mail dispatch @branch "Subject" "Body" --fresh            # Send + fresh wake
   drone @ai_mail dispatch @branch "Subject" "Body" --model opus       # Send + wake with Opus
   drone @ai_mail dispatch @branch "Subject" "Body" --no-memory-save
 
@@ -213,49 +211,11 @@ def _orchestrate_wake(args: List[str]) -> bool:
     return success
 
 
-def _spawn_watchdog(target: str, repo_root: Path) -> bool:
-    """Detach a watchdog process to wake devpulse when the dispatched agent exits.
-
-    Spawns drone @devpulse watchdog agent <target> with cwd=devpulse branch path
-    so _guard_caller() accepts the cross-branch invocation. The process is fully
-    detached (start_new_session=True) so dispatch returns immediately.
-
-    Returns True if watchdog was spawned successfully.
-    """
-    from aipass.ai_mail.apps.handlers.registry.read import get_branch_by_email
-
-    branch_info = get_branch_by_email("@devpulse")
-    if not branch_info:
-        logger.warning("[dispatch] watchdog auto-spawn: devpulse not found in registry")
-        return False
-    p = Path(branch_info.get("path", ""))
-    devpulse_path = p if p.is_absolute() else (repo_root / p)
-
-    if not devpulse_path.exists():
-        logger.warning("[dispatch] watchdog auto-spawn: devpulse path not found on disk")
-        return False
-
-    try:
-        proc = subprocess.Popen(
-            ["drone", "@devpulse", "watchdog", "agent", target],
-            cwd=str(devpulse_path),
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            start_new_session=True,
-        )
-        logger.info("[dispatch] watchdog auto-spawned for %s (PID %d)", target, proc.pid)
-        return True
-    except (FileNotFoundError, OSError) as e:
-        logger.warning("[dispatch] watchdog auto-spawn failed for %s: %s", target, e)
-        return False
-
-
 def _orchestrate_dispatch_send(args: List[str]) -> bool:
     """Orchestrate combined dispatch: send email with --dispatch flag + wake branch."""
     # Parse flags
     use_fresh = False
     no_memory_save = False
-    no_watchdog = False
     from_branch = None
     use_model = None
     filtered = []
@@ -267,10 +227,6 @@ def _orchestrate_dispatch_send(args: List[str]) -> bool:
             continue
         if args[i] == "--no-memory-save":
             no_memory_save = True
-            i += 1
-            continue
-        if args[i] == "--no-watchdog":
-            no_watchdog = True
             i += 1
             continue
         if args[i] == "--from" and i + 1 < len(args):
@@ -379,13 +335,6 @@ def _orchestrate_dispatch_send(args: List[str]) -> bool:
     if not wake_ok:
         logger.warning("[dispatch] Wake failed for %s — email was sent", target)
         error(f"Email sent but wake failed — retry: drone @ai_mail dispatch wake {target}")
-
-    # --- Step 3: Auto-spawn watchdog (skipped if wake failed or --no-watchdog) ---
-    if wake_ok and not no_watchdog:
-        if _spawn_watchdog(target, _repo_root):
-            console.print(f"[dim]Watchdog armed for {target}[/dim]")
-        else:
-            logger.info("[dispatch] Watchdog auto-spawn skipped (devpulse not found or spawn failed)")
 
     return True
 

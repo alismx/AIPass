@@ -105,16 +105,16 @@ def print_introspection() -> None:
 
 def handle_command(command: str, args: List[str]) -> bool:
     """Handle `audit inbox-ids` — return True only for that exact subcommand."""
+    if command == "inbox_audit":
+        if not args:
+            print_introspection()
+            return True
+        if args[0] in ("--help", "-h", "help"):
+            print_introspection()
+            return True
     if command not in ("audit", "standards_audit"):
         return False
-    if not args:
-        print_introspection()
-        return True
-    if args[0] in ("--help", "-h", "help"):
-        console.print("Usage: drone @seedgo audit inbox-ids")
-        console.print("  Scans all .ai_mail.local/inbox.json files for non-8-hex message ids.")
-        return True
-    if args[0] != "inbox-ids":
+    if not args or args[0] != "inbox-ids":
         return False
     _run_inbox_id_scan()
     return True

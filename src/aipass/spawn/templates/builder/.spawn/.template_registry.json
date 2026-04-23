@@ -1,7 +1,7 @@
 {
   "metadata": {
     "version": "1.0.0",
-    "last_updated": "2026-04-15",
+    "last_updated": "2026-04-22",
     "description": "Template file tracking registry for ID-based updates"
   },
   "files": {
@@ -101,12 +101,6 @@
       "content_hash": "9b1d3a691272",
       "has_branch_placeholder": false
     },
-    "f015": {
-      "path": "CLAUDE.md",
-      "name": "CLAUDE.md",
-      "content_hash": "e24c75348c4f",
-      "has_branch_placeholder": false
-    },
     "f016": {
       "path": "DASHBOARD.local.json",
       "name": "DASHBOARD.local.json",
@@ -143,10 +137,10 @@
       "content_hash": "2e4f4a0c1b47",
       "has_branch_placeholder": false
     },
-    "f022": {
-      "path": "apps/handlers/__init__.py",
-      "name": "__init__.py",
-      "content_hash": "55afc5eddbe0",
+    "f044": {
+      "path": "apps/integrations/README.md",
+      "name": "README.md",
+      "content_hash": "31c09afe1299",
       "has_branch_placeholder": false
     },
     "f023": {
@@ -155,7 +149,7 @@
       "content_hash": "a4cf0a8e3b4f",
       "has_branch_placeholder": false
     },
-    "f026": {
+    "f045": {
       "path": "apps/modules/__init__.py",
       "name": "__init__.py",
       "content_hash": "e3b0c44298fc",
@@ -166,12 +160,6 @@
       "name": "README.md",
       "content_hash": "d1e4e2b98c38",
       "has_branch_placeholder": false
-    },
-    "f027": {
-      "path": "apps/{{BRANCH}}.py",
-      "name": "{{BRANCH}}.py",
-      "content_hash": "e3893ff95aa5",
-      "has_branch_placeholder": true
     },
     "f028": {
       "path": "artifacts/README.md",
@@ -239,12 +227,6 @@
       "content_hash": "881f06bb6574",
       "has_branch_placeholder": false
     },
-    "f039": {
-      "path": "tests/conftest.py",
-      "name": "conftest.py",
-      "content_hash": "5d98b049957b",
-      "has_branch_placeholder": false
-    },
     "f040": {
       "path": "tools/README.md",
       "name": "README.md",
@@ -263,13 +245,25 @@
       "content_hash": "28e9ae373563",
       "has_branch_placeholder": false
     },
-    "f044": {
-      "path": "apps/integrations/README.md",
-      "name": "README.md",
-      "content_hash": "31c09afe1299",
+    "f022": {
+      "path": "apps/handlers/__init__.py",
+      "name": "__init__.py",
+      "content_hash": "dbfc0e044461",
       "has_branch_placeholder": false
     },
-    "f045": {
+    "f027": {
+      "path": "apps/{{BRANCH}}.py",
+      "name": "{{BRANCH}}.py",
+      "content_hash": "39db2c4f8160",
+      "has_branch_placeholder": true
+    },
+    "f039": {
+      "path": "tests/conftest.py",
+      "name": "conftest.py",
+      "content_hash": "97f220799d19",
+      "has_branch_placeholder": false
+    },
+    "f015": {
       "path": "apps/plugins/__init__.py",
       "name": "__init__.py",
       "content_hash": "e3b0c44298fc",
@@ -280,11 +274,6 @@
     "d001": {
       "path": ".ai_mail.local",
       "name": ".ai_mail.local",
-      "has_branch_placeholder": false
-    },
-    "d002": {
-      "path": ".ai_mail.local/sent",
-      "name": "sent",
       "has_branch_placeholder": false
     },
     "d003": {
@@ -325,6 +314,11 @@
     "d009": {
       "path": "apps/handlers",
       "name": "handlers",
+      "has_branch_placeholder": false
+    },
+    "d024": {
+      "path": "apps/integrations",
+      "name": "integrations",
       "has_branch_placeholder": false
     },
     "d010": {
@@ -390,11 +384,6 @@
     "d022": {
       "path": "{{BRANCH}}_json/custom_config",
       "name": "custom_config",
-      "has_branch_placeholder": false
-    },
-    "d024": {
-      "path": "apps/integrations",
-      "name": "integrations",
       "has_branch_placeholder": false
     }
   }
