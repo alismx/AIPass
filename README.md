@@ -245,6 +245,35 @@ Each agent documents its own operational status in its branch README — what wo
 ---
 
 <details>
+<summary>Uninstall</summary>
+
+### Remove AIPass from a project
+
+AIPass stores everything locally in your project directory. To remove it:
+
+```bash
+# Remove AIPass files from your project
+rm -rf .aipass/ .claude/ .ai_mail.local/ hooks/ src/
+rm -f CLAUDE.md AGENTS.md GEMINI.md STATUS.local.md *_REGISTRY.json .gitignore
+
+# If you installed via pip
+pip uninstall aipass
+```
+
+No cloud accounts, no external services, no cleanup beyond your local filesystem.
+
+### Remove a single agent
+
+Delete the agent's directory under `src/` and remove its entry from the registry JSON file:
+
+```bash
+rm -rf src/agent_name/
+# Then edit *_REGISTRY.json to remove the agent's entry
+```
+
+</details>
+
+<details>
 <summary>Subscriptions & Compliance</summary>
 
 ### Use your existing subscription
