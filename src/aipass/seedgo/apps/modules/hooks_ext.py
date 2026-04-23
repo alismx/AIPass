@@ -238,6 +238,8 @@ def print_introspection() -> None:
 
 def handle_command(command: str, args: list) -> bool:
     """Not a primary drone module — delegates to hooks.py for routing."""
+    if command != "hooks_ext":
+        return False
     if not args:
         print_introspection()
         return True
