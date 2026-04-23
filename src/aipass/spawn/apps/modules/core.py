@@ -46,6 +46,7 @@ from aipass.spawn.apps.handlers.registry import (
     add_to_registry,
     get_next_citizen_number,
     fix_passport_registry_id,
+    ensure_project_has_owner,
 )
 from aipass.spawn.apps.handlers.class_registry import (
     get_template_dir as _get_template_dir,
@@ -250,7 +251,10 @@ def _spawn_agent(
         purpose or "New agent - purpose TBD",
     )
 
-    # Step 5: Validate no unreplaced placeholders
+    # Step 5: Ensure at least one agent in the project is the owner
+    ensure_project_has_owner(reg_path)
+
+    # Step 6: Validate no unreplaced placeholders
     issues = validate_no_placeholders(target)
 
     json_handler.log_operation("branch_created", data={"branch": branch_upper})
