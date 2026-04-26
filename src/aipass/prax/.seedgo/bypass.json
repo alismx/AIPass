@@ -435,18 +435,17 @@
     {
       "file": "tests/test_logging_handlers.py",
       "standard": "encapsulation",
-      "lines": [
-        174
-      ],
-      "reason": "Test file imports logging handlers directly for testing purposes. Line 174 imports from aipass.prax.apps.handlers.logging.introspection to test that module's public API."
+      "reason": "Unit tests must import handlers directly to test them in isolation. Same pattern as test_logging.py and test_config.py."
     },
     {
       "file": "tests/test_logging_handlers.py",
       "standard": "documentation",
-      "lines": [
-        392
-      ],
-      "reason": "Test file helper function fake_sleep() is a test fixture helper. Test fixture docstrings are optional in this codebase per pytest conventions."
+      "reason": "Test helper functions (fake_sleep, etc.) are internal fixtures. Docstrings on test helpers are optional per pytest conventions."
+    },
+    {
+      "file": "tests/test_monitoring_handlers.py",
+      "standard": "architecture",
+      "reason": "Test file lives in tests/ by convention, not in the 3-layer apps/ structure. This is standard for all prax test files."
     }
   ],
   "notes": {
