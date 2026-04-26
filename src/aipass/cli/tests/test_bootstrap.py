@@ -1,7 +1,8 @@
 """Tests for the CLI init bootstrap handler.
 
-Covers _sanitize_name() and init_project() — all file operations
-use tmp_path to stay fully isolated from the live filesystem.
+Covers _sanitize_name(), init_project(), update_project(), and
+scaffold_content generators — all file operations use tmp_path to
+stay fully isolated from the live filesystem.
 """
 
 import json
@@ -11,6 +12,7 @@ from datetime import date
 import pytest
 
 from aipass.cli.apps.handlers.init.bootstrap import _sanitize_name, init_project, update_project
+from aipass.cli.apps.handlers.init import scaffold_content as sc
 
 
 # ---------------------------------------------------------------------------
@@ -893,3 +895,112 @@ def test_init_project_settings_has_all_event_types(tmp_path):
     settings = json.loads((target / ".claude" / "settings.json").read_text(encoding="utf-8"))
     expected_events = {"UserPromptSubmit", "PostToolUse", "PreToolUse", "Stop", "PreCompact"}
     assert set(settings["hooks"].keys()) == expected_events
+
+
+# ---------------------------------------------------------------------------
+# scaffold_content — global_prompt_md tests
+# ---------------------------------------------------------------------------
+
+
+def test_global_prompt_md_returns_string():
+    """global_prompt_md() returns a non-empty string."""
+    result = sc.global_prompt_md("TestProject")
+    assert isinstance(result, str)
+    assert len(result) > 0
+
+
+def test_global_prompt_md_contains_project_name():
+    """global_prompt_md() interpolates the project name."""
+    result = sc.global_prompt_md("MyApp")
+    assert "MyApp" in result
+
+
+def test_global_prompt_md_contains_registry_reference():
+    """global_prompt_md() references the registry with the project name."""
+    result = sc.global_prompt_md("Demo")
+    assert "Demo_REGISTRY.json" in result
+
+
+def test_global_prompt_md_contains_aipass_context():
+    """global_prompt_md() includes AIPass framework context."""
+    result = sc.global_prompt_md("X")
+    assert "AIPass" in result
+    assert "drone" in result
+
+
+# ---------------------------------------------------------------------------
+# scaffold_content — prep_md tests
+# ---------------------------------------------------------------------------
+
+
+def test_prep_md_returns_string():
+    """prep_md() returns a non-empty string."""
+    result = sc.prep_md()
+    assert isinstance(result, str)
+    assert len(result) > 0
+
+
+def test_prep_md_contains_session_wrap_up():
+    """prep_md() contains the session wrap-up header."""
+    result = sc.prep_md()
+    assert "Session Wrap-Up" in result
+
+
+def test_prep_md_contains_memory_instructions():
+    """prep_md() includes instructions for updating .trinity/ files."""
+    result = sc.prep_md()
+    assert ".trinity/" in result or "local.json" in result
+
+
+# ---------------------------------------------------------------------------
+# scaffold_content — inbox_json tests
+# ---------------------------------------------------------------------------
+
+
+def test_inbox_json_returns_valid_json():
+    """inbox_json() returns valid JSON."""
+    result = sc.inbox_json()
+    parsed = json.loads(result)
+    assert isinstance(parsed, dict)
+
+
+def test_inbox_json_has_mailbox_structure():
+    """inbox_json() contains required mailbox fields."""
+    parsed = json.loads(sc.inbox_json())
+    assert parsed["mailbox"] == "inbox"
+    assert parsed["total_messages"] == 0
+    assert parsed["unread_count"] == 0
+    assert parsed["messages"] == []
+
+
+# ---------------------------------------------------------------------------
+# scaffold_content — with_source tests
+# ---------------------------------------------------------------------------
+
+
+def test_with_source_prepends_header(tmp_path):
+    """with_source() prepends a source comment to content."""
+    from pathlib import Path
+
+    result = sc.with_source("hello world", Path("/foo/bar.md"))
+    assert result.startswith("<!-- Source: /foo/bar.md -->")
+    assert "hello world" in result
+
+
+def test_with_source_preserves_content():
+    """with_source() does not alter the original content."""
+    from pathlib import Path
+
+    original = "line 1\nline 2\nline 3"
+    result = sc.with_source(original, Path("/a/b.md"))
+    assert result.endswith(original)
+
+
+def test_with_source_header_is_first_line():
+    """with_source() puts the source header on line 1, content on line 2+."""
+    from pathlib import Path
+
+    result = sc.with_source("content", Path("/test.md"))
+    lines = result.split("\n")
+    assert lines[0] == "<!-- Source: /test.md -->"
+    assert lines[1] == "content"
