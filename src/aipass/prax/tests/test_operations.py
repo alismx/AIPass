@@ -1318,3 +1318,624 @@ class TestPrintTemplate:
         mod = _load_dashboard_module()
         # Should not raise
         mod.print_template()
+
+
+# =============================================
+# print_introspection (dashboard.py)
+# =============================================
+
+
+class TestDashboardPrintIntrospection:
+    """Tests for print_introspection -- CLI module info display."""
+
+    def test_prints_introspection_without_error(self):
+        """Introspection output runs without raising."""
+        mod = _load_dashboard_module()
+        mod.print_introspection()
+
+    def test_introspection_lists_template_sections(self):
+        """Introspection lists all template section names."""
+        mod = _load_dashboard_module()
+        mod.print_introspection()
+        # console.print should have been called multiple times
+        assert mod.console.print.call_count > 3
+
+
+# =============================================
+# print_help (dashboard.py)
+# =============================================
+
+
+class TestDashboardPrintHelp:
+    """Tests for print_help -- CLI help output."""
+
+    def test_prints_help_without_error(self):
+        """Help output runs without raising."""
+        mod = _load_dashboard_module()
+        mod.print_help()
+
+    def test_help_lists_commands(self):
+        """Help output includes subcommand names."""
+        mod = _load_dashboard_module()
+        mod.print_help()
+        assert mod.console.print.call_count > 5
+
+
+# =============================================
+# handle_command (dashboard.py)
+# =============================================
+
+
+class TestDashboardHandleCommand:
+    """Tests for handle_command -- command routing."""
+
+    def test_returns_false_for_non_dashboard_command(self):
+        """handle_command returns False for commands other than 'dashboard'."""
+        mod = _load_dashboard_module()
+        assert mod.handle_command("monitor", []) is False
+
+    def test_no_args_calls_print_introspection(self):
+        """Bare 'dashboard' with no args shows introspection."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        with _patch.object(mod, "print_introspection") as mock_intro:
+            result = mod.handle_command("dashboard", [])
+            assert result is True
+            mock_intro.assert_called_once()
+
+    def test_help_flag_calls_print_help(self):
+        """--help flag shows help and returns True."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        for flag in ("--help", "-h", "help"):
+            with _patch.object(mod, "print_help") as mock_help:
+                result = mod.handle_command("dashboard", [flag])
+                assert result is True
+                mock_help.assert_called_once()
+
+    def test_status_subcommand(self):
+        """'status' subcommand dispatches to print_status."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        with _patch.object(mod, "print_status") as mock_status:
+            result = mod.handle_command("dashboard", ["status"])
+            assert result is True
+            mock_status.assert_called_once()
+
+    def test_template_subcommand(self):
+        """'template' subcommand dispatches to print_template."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        with _patch.object(mod, "print_template") as mock_tmpl:
+            result = mod.handle_command("dashboard", ["template"])
+            assert result is True
+            mock_tmpl.assert_called_once()
+
+    def test_refresh_subcommand(self):
+        """'refresh' subcommand dispatches to _handle_refresh."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        with _patch.object(mod, "_handle_refresh") as mock_refresh:
+            result = mod.handle_command("dashboard", ["refresh"])
+            assert result is True
+            mock_refresh.assert_called_once_with([])
+
+    def test_refresh_subcommand_passes_args(self):
+        """'refresh' subcommand forwards trailing args."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        with _patch.object(mod, "_handle_refresh") as mock_refresh:
+            mod.handle_command("dashboard", ["refresh", "--all"])
+            mock_refresh.assert_called_once_with(["--all"])
+
+    def test_push_template_subcommand(self):
+        """'push-template' subcommand dispatches to _handle_push_template."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        with _patch.object(mod, "_handle_push_template") as mock_push:
+            result = mod.handle_command("dashboard", ["push-template"])
+            assert result is True
+            mock_push.assert_called_once_with([])
+
+    def test_diff_template_subcommand(self):
+        """'diff-template' subcommand dispatches to _handle_diff_template."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        with _patch.object(mod, "_handle_diff_template") as mock_diff:
+            result = mod.handle_command("dashboard", ["diff-template"])
+            assert result is True
+            mock_diff.assert_called_once_with([])
+
+    def test_template_status_subcommand(self):
+        """'template-status' subcommand dispatches to _handle_template_status."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        with _patch.object(mod, "_handle_template_status") as mock_ts:
+            result = mod.handle_command("dashboard", ["template-status"])
+            assert result is True
+            mock_ts.assert_called_once()
+
+    def test_unknown_subcommand_shows_help(self):
+        """Unknown subcommand shows help and returns True."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        with _patch.object(mod, "print_help") as mock_help:
+            result = mod.handle_command("dashboard", ["bogus"])
+            assert result is True
+            mock_help.assert_called_once()
+
+
+# =============================================
+# _handle_refresh (dashboard.py)
+# =============================================
+
+
+class TestHandleRefresh:
+    """Tests for _handle_refresh -- refresh command handler."""
+
+    def test_refresh_all(self, monkeypatch):
+        """--all flag refreshes all branches."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "refresh_all_dashboards",
+            lambda: {"status": "success", "branches_updated": 3},
+        )
+        mod._handle_refresh(["--all"])
+
+    def test_refresh_all_partial(self, monkeypatch):
+        """Partial success path for --all refresh."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "refresh_all_dashboards",
+            lambda: {
+                "status": "partial",
+                "branches_updated": 2,
+                "branches_failed": 1,
+                "errors": ["branch X failed"],
+            },
+        )
+        mod._handle_refresh(["--all"])
+
+    def test_refresh_all_failure(self, monkeypatch):
+        """Full failure path for --all refresh."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "refresh_all_dashboards",
+            lambda: {
+                "status": "error",
+                "branches_updated": 0,
+                "branches_failed": 3,
+                "errors": ["total failure"],
+            },
+        )
+        mod._handle_refresh(["--all"])
+
+    def test_refresh_specific_branch_success(self, tmp_path, monkeypatch):
+        """@branch arg refreshes specific branch on success."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(mod, "_resolve_branch_path", lambda ref: tmp_path / "flow")
+        monkeypatch.setattr(
+            mod,
+            "refresh_single_dashboard",
+            lambda bp: {"status": "success", "branch": "FLOW"},
+        )
+        mod._handle_refresh(["@flow"])
+
+    def test_refresh_specific_branch_failure(self, tmp_path, monkeypatch):
+        """@branch arg shows error on refresh failure."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(mod, "_resolve_branch_path", lambda ref: tmp_path / "flow")
+        monkeypatch.setattr(
+            mod,
+            "refresh_single_dashboard",
+            lambda bp: {"status": "error", "error": "disk full"},
+        )
+        mod._handle_refresh(["@flow"])
+
+    def test_refresh_specific_branch_not_found(self, monkeypatch):
+        """@branch arg handles branch not found in registry."""
+        mod = _load_dashboard_module()
+
+        def _raise(ref):
+            """Simulate branch not found."""
+            raise FileNotFoundError("not found in registry")
+
+        monkeypatch.setattr(mod, "_resolve_branch_path", _raise)
+        mod._handle_refresh(["@ghost"])
+
+    def test_refresh_cwd_success(self, tmp_path, monkeypatch):
+        """No args refreshes current branch from CWD."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        monkeypatch.setattr(
+            mod,
+            "refresh_single_dashboard",
+            lambda bp: {"status": "success", "branch": "PRAX"},
+        )
+        with _patch("pathlib.Path.cwd", return_value=tmp_path):
+            mod._handle_refresh([])
+
+    def test_refresh_cwd_failure(self, tmp_path, monkeypatch):
+        """No args shows error on CWD refresh failure."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        monkeypatch.setattr(
+            mod,
+            "refresh_single_dashboard",
+            lambda bp: {"status": "error", "error": "no dashboard"},
+        )
+        with _patch("pathlib.Path.cwd", return_value=tmp_path):
+            mod._handle_refresh([])
+
+    def test_refresh_cwd_walks_up_to_find_branch(self, tmp_path, monkeypatch):
+        """No args walks up directory tree to find branch root."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        # Create a branch root with .aipass marker above CWD
+        branch_root = tmp_path / "src" / "aipass" / "flow"
+        branch_root.mkdir(parents=True)
+        (branch_root / ".aipass").mkdir()
+        deep_cwd = branch_root / "apps" / "modules"
+        deep_cwd.mkdir(parents=True)
+
+        monkeypatch.setattr(
+            mod,
+            "refresh_single_dashboard",
+            lambda bp: {"status": "success", "branch": bp.name.upper()},
+        )
+        with _patch("pathlib.Path.cwd", return_value=deep_cwd):
+            mod._handle_refresh([])
+
+
+# =============================================
+# _handle_push_template (dashboard.py)
+# =============================================
+
+
+class TestHandlePushTemplate:
+    """Tests for _handle_push_template -- push template handler."""
+
+    def test_push_template_with_changes(self, monkeypatch):
+        """Push template shows changes when branches need updating."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "push_dashboard_template",
+            lambda dry_run=False: {
+                "branches_scanned": 5,
+                "branches_updated": 2,
+                "branches_created": 1,
+                "branches_skipped": 2,
+                "changes": [
+                    {
+                        "branch": "FLOW",
+                        "actions": ["removed bulletin_board"],
+                    }
+                ],
+                "errors": [],
+            },
+        )
+        mod._handle_push_template([])
+
+    def test_push_template_dry_run(self, monkeypatch):
+        """Dry run flag is forwarded to push_dashboard_template."""
+        mod = _load_dashboard_module()
+        captured: dict[str, object] = {}
+
+        def _mock_push(dry_run=False):
+            """Capture dry_run flag."""
+            captured["dry_run"] = dry_run
+            return {
+                "branches_scanned": 3,
+                "branches_updated": 0,
+                "branches_created": 0,
+                "branches_skipped": 3,
+                "changes": [],
+                "errors": [],
+            }
+
+        monkeypatch.setattr(mod, "push_dashboard_template", _mock_push)
+        mod._handle_push_template(["--dry-run"])
+        assert captured["dry_run"] is True
+
+    def test_push_template_with_errors(self, monkeypatch):
+        """Push template shows errors when some branches fail."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "push_dashboard_template",
+            lambda dry_run=False: {
+                "branches_scanned": 3,
+                "branches_updated": 1,
+                "branches_created": 0,
+                "branches_skipped": 1,
+                "changes": [],
+                "errors": ["branch X: permission denied"],
+            },
+        )
+        mod._handle_push_template([])
+
+    def test_push_template_all_up_to_date(self, monkeypatch):
+        """Push template shows 'all up to date' message."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "push_dashboard_template",
+            lambda dry_run=False: {
+                "branches_scanned": 3,
+                "branches_updated": 0,
+                "branches_created": 0,
+                "branches_skipped": 3,
+                "changes": [],
+                "errors": [],
+            },
+        )
+        mod._handle_push_template([])
+
+
+# =============================================
+# _handle_diff_template (dashboard.py)
+# =============================================
+
+
+class TestHandleDiffTemplate:
+    """Tests for _handle_diff_template -- diff template handler."""
+
+    def test_diff_template_error(self, monkeypatch):
+        """Diff template shows error when result has error key."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "diff_dashboard_template",
+            lambda branch_name=None: {"error": "template not found"},
+        )
+        mod._handle_diff_template([])
+
+    def test_diff_template_with_branch_flag(self, monkeypatch):
+        """--branch flag filters diff to single branch."""
+        mod = _load_dashboard_module()
+        captured: dict[str, object] = {}
+
+        def _mock_diff(branch_name=None):
+            """Capture branch_name arg."""
+            captured["branch_name"] = branch_name
+            return {
+                "summary": {
+                    "needs_update": 0,
+                    "up_to_date": 1,
+                    "missing": 0,
+                },
+                "branches": [],
+            }
+
+        monkeypatch.setattr(mod, "diff_dashboard_template", _mock_diff)
+        mod._handle_diff_template(["--branch", "FLOW"])
+        assert captured["branch_name"] == "FLOW"
+
+    def test_diff_template_branch_flag_missing_name(self):
+        """--branch without name prints error."""
+        mod = _load_dashboard_module()
+        mod._handle_diff_template(["--branch"])
+        mod.error.assert_called()
+
+    def test_diff_template_with_changes(self, monkeypatch):
+        """Diff template shows additions, removals, and modifications."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "diff_dashboard_template",
+            lambda branch_name=None: {
+                "summary": {
+                    "needs_update": 1,
+                    "up_to_date": 1,
+                    "missing": 1,
+                    "invalid_json": 1,
+                },
+                "branches": [
+                    {
+                        "branch": "FLOW",
+                        "status": "needs_update",
+                        "additions": ["+ commons_activity"],
+                        "removals": ["- bulletin_board"],
+                        "modifications": ["~ ai_mail.new default changed"],
+                    },
+                    {"branch": "MISSING", "status": "missing"},
+                    {"branch": "GOOD", "status": "up_to_date"},
+                ],
+            },
+        )
+        mod._handle_diff_template([])
+
+
+# =============================================
+# _handle_template_status (dashboard.py)
+# =============================================
+
+
+class TestHandleTemplateStatus:
+    """Tests for _handle_template_status -- template status display."""
+
+    def test_template_status_basic(self, monkeypatch):
+        """Template status displays version info."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "get_template_status",
+            lambda: {
+                "templates_dir": "/path/to/templates",
+                "template_exists": True,
+                "version": "3.0.0",
+                "last_updated": "2026-03-01",
+                "updated_by": "prax",
+                "last_push": "2026-03-02",
+                "last_push_branches": ["FLOW", "AI_MAIL"],
+                "changes": [],
+            },
+        )
+        mod._handle_template_status()
+
+    def test_template_status_with_many_branches(self, monkeypatch):
+        """Template status truncates branch list at 5 with ellipsis."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "get_template_status",
+            lambda: {
+                "templates_dir": "/path/to/templates",
+                "template_exists": True,
+                "version": "3.0.0",
+                "last_updated": "2026-03-01",
+                "updated_by": "prax",
+                "last_push": "2026-03-02",
+                "last_push_branches": [
+                    "A",
+                    "B",
+                    "C",
+                    "D",
+                    "E",
+                    "F",
+                    "G",
+                ],
+                "changes": ["added commons"],
+            },
+        )
+        mod._handle_template_status()
+
+    def test_template_status_missing(self, monkeypatch):
+        """Template status handles missing template."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "get_template_status",
+            lambda: {
+                "templates_dir": "/path/to/templates",
+                "template_exists": False,
+                "version": None,
+                "last_updated": None,
+                "updated_by": None,
+                "last_push": None,
+                "last_push_branches": [],
+                "changes": [],
+            },
+        )
+        mod._handle_template_status()
+
+    def test_template_status_no_push(self, monkeypatch):
+        """Template status handles never-pushed template."""
+        mod = _load_dashboard_module()
+        monkeypatch.setattr(
+            mod,
+            "get_template_status",
+            lambda: {
+                "templates_dir": "/path/to/templates",
+                "template_exists": True,
+                "version": "1.0.0",
+                "last_updated": "2026-01-01",
+                "updated_by": "dev",
+                "last_push": None,
+                "last_push_branches": [],
+                "changes": [],
+            },
+        )
+        mod._handle_template_status()
+
+
+# =============================================
+# _resolve_branch_path (dashboard.py wrapper)
+# =============================================
+
+
+class TestResolveBranchPathWrapper:
+    """Tests for _resolve_branch_path -- dashboard module wrapper."""
+
+    def test_delegates_to_handler(self, monkeypatch):
+        """Wrapper delegates to resolve_branch_path handler."""
+        mod = _load_dashboard_module()
+        from pathlib import Path
+
+        monkeypatch.setattr(
+            mod,
+            "resolve_branch_path",
+            lambda ref: Path("/fake/flow"),
+        )
+        result = mod._resolve_branch_path("@flow")
+        assert result == Path("/fake/flow")
+
+
+# =============================================
+# main (dashboard.py)
+# =============================================
+
+
+class TestDashboardMain:
+    """Tests for main -- CLI entry point."""
+
+    def test_main_no_args(self, monkeypatch):
+        """No args shows introspection."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        monkeypatch.setattr(sys, "argv", ["dashboard"])
+        with _patch.object(mod, "print_introspection") as mock_intro:
+            mod.main()
+        mock_intro.assert_called_once()
+
+    def test_main_help_flag(self, monkeypatch):
+        """--help flag shows help."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        monkeypatch.setattr(sys, "argv", ["dashboard", "--help"])
+        with _patch.object(mod, "print_help") as mock_help:
+            mod.main()
+        mock_help.assert_called_once()
+
+    def test_main_h_flag(self, monkeypatch):
+        """-h flag shows help."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        monkeypatch.setattr(sys, "argv", ["dashboard", "-h"])
+        with _patch.object(mod, "print_help") as mock_help:
+            mod.main()
+        mock_help.assert_called_once()
+
+    def test_main_valid_command(self, monkeypatch):
+        """Valid command delegates to handle_command."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        monkeypatch.setattr(sys, "argv", ["dashboard", "dashboard", "status"])
+        with _patch.object(mod, "handle_command", return_value=True) as mock_hc:
+            mod.main()
+        mock_hc.assert_called_once_with("dashboard", ["status"])
+
+    def test_main_unknown_command(self, monkeypatch):
+        """Unknown command shows error and help."""
+        mod = _load_dashboard_module()
+        from unittest.mock import patch as _patch
+
+        monkeypatch.setattr(sys, "argv", ["dashboard", "bogus"])
+        with (
+            _patch.object(mod, "handle_command", return_value=False),
+            _patch.object(mod, "print_help") as mock_help,
+        ):
+            mod.main()
+        mock_help.assert_called_once()
+        mod.error.assert_called()
