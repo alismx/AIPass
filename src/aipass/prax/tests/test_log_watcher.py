@@ -1048,11 +1048,18 @@ class TestInitializePositionsAdditional:
         log_file = tmp_path / "bad.log"
         log_file.write_text("content\n", encoding="utf-8")
 
+        original_stat = Path.stat
+
+        def failing_stat(self_path, *args, **kwargs):
+            """Fail stat only for .log files, not directory existence."""
+            if str(self_path).endswith(".log"):
+                raise OSError("stat failed")
+            return original_stat(self_path, *args, **kwargs)
+
         with (
             patch.object(mod, "get_system_logs_dir", return_value=tmp_path),
-            patch.object(Path, "stat", side_effect=OSError("stat failed")),
+            patch.object(Path, "stat", failing_stat),
         ):
-            # Should not raise
             watcher.initialize_positions()
 
         assert str(log_file) not in watcher.log_positions

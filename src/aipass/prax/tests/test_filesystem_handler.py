@@ -19,7 +19,29 @@ import sys
 from pathlib import Path
 from unittest.mock import MagicMock, patch, mock_open as _mock_file_open
 
+import pytest
+
 _mopen = _mock_file_open
+
+_INJECTED_MODULES = [
+    "watchdog",
+    "watchdog.events",
+    "aipass.prax.apps.handlers.monitoring.event_queue",
+    "aipass.prax.apps.handlers.monitoring.branch_detector",
+    "aipass.prax.apps.handlers.monitoring.monitoring_filters",
+    "aipass.prax.apps.handlers.monitoring.filesystem_handler",
+]
+
+
+@pytest.fixture(autouse=True)
+def _cleanup_injected_modules():
+    """Remove mocked monitoring modules from sys.modules after each test."""
+    saved = {k: sys.modules[k] for k in _INJECTED_MODULES if k in sys.modules}
+    yield
+    for k in _INJECTED_MODULES:
+        sys.modules.pop(k, None)
+    for k, v in saved.items():
+        sys.modules[k] = v
 
 
 # =============================================
