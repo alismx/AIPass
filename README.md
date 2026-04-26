@@ -2,7 +2,7 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](pyproject.toml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 [![PyPI](https://img.shields.io/pypi/v/aipass)](https://pypi.org/project/aipass/)
-[![CLIs](https://img.shields.io/badge/CLIs-Claude%20%7C%20Codex%20%7C%20Gemini-purple)](#cli-support)
+[![CLI](https://img.shields.io/badge/CLI-Claude%20Code-purple)](#cli-support)
 [![Give Feedback](https://img.shields.io/badge/Give-Feedback-brightgreen)](https://github.com/AIOSAI/AIPass/issues/new?template=feedback.yml)
 [![codecov](https://codecov.io/gh/AIOSAI/AIPass/graph/badge.svg)](https://codecov.io/gh/AIOSAI/AIPass)
 [![OSS Health](https://oss-health-monitor.vercel.app/api/badge/AIOSAI/AIPass)](https://github.com/volotat/OSS-Health-Monitor)
@@ -45,7 +45,7 @@ What's missing isn't more agents — it's *presence*. Agents that have identity,
 
 ## What AIPass Does
 
-AIPass is a local CLI framework that gives your AI agents **identity, memory, and teamwork**. Verified with Claude Code, Codex, and Gemini CLI. Designed for terminal-native coding agents that support instruction files, hooks, and subprocess invocation.
+AIPass is a local CLI framework that gives your AI agents **identity, memory, and teamwork**. Built and tested with Claude Code on Linux/WSL. Designed for terminal-native coding agents that support instruction files, hooks, and subprocess invocation.
 
 **Start with one agent that remembers:**
 
@@ -208,13 +208,13 @@ You don't need to memorize this list. Start with `devpulse`, use `drone` to reac
 
 ## CLI Support
 
-AIPass works with three AI coding CLIs. Claude Code is the most tested.
+AIPass is built and tested with **Claude Code** on Linux/WSL.
 
 | CLI | Autonomous Mode | Status |
 |-----|----------------|--------|
 | [Claude Code](https://docs.anthropic.com/en/docs/claude-code) | `claude -p "prompt" --permission-mode bypassPermissions` | Fully tested |
-| [Codex](https://github.com/openai/codex) | `codex exec "prompt" --dangerously-bypass-approvals-and-sandbox` | Integrated, less tested |
-| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `gemini -p "prompt" --approval-mode=yolo` | Integrated, less tested |
+| [Codex](https://github.com/openai/codex) | `codex exec "prompt" --dangerously-bypass-approvals-and-sandbox` | Experimental — see [Roadmap](#roadmap) |
+| [Gemini CLI](https://github.com/google-gemini/gemini-cli) | `gemini -p "prompt" --approval-mode=yolo` | Experimental — see [Roadmap](#roadmap) |
 
 setup.sh auto-detects which CLIs are installed and configures hooks for each.
 
@@ -240,10 +240,20 @@ Each agent documents its own operational status in its branch README — what wo
 ## Requirements
 
 - Python 3.10+
-- At least one AI CLI: Claude Code (recommended), Codex, or Gemini CLI
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code)
+- Linux or WSL (primary supported platforms)
 - `sudo` access (for global CLI symlinks)
 - API keys optional (OpenRouter/OpenAI — for optional add-on agents)
-- **Platforms:** Linux (tested, primary dev environment), macOS (untested), Windows (native testing in progress — see [open issues](https://github.com/AIOSAI/AIPass/issues?q=is%3Aissue+is%3Aopen+Windows))
+
+## Roadmap
+
+These items have partial work done and are under ongoing testing:
+
+- **macOS support** — setup and bootstrap work in progress ([#360](https://github.com/AIOSAI/AIPass/issues/360))
+- **Windows native** — CI passing, real-world testing ongoing
+- **Codex CLI** — hooks and AGENTS.md wired, needs end-to-end testing
+- **Gemini CLI** — hooks and GEMINI.md wired, needs end-to-end testing
+- **Fork contributor workflow** — improved error handling for fork-based PRs ([#329](https://github.com/AIOSAI/AIPass/issues/329))
 
 ---
 
