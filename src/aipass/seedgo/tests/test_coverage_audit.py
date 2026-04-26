@@ -8,6 +8,9 @@
 # Modified: 2026-04-26
 # =============================================
 
+# seedgo:bypass standard=architecture reason="test files live in tests/, not apps/"
+# seedgo:bypass standard=encapsulation reason="tests import handlers directly for unit testing"
+
 import types
 
 import pytest
@@ -30,9 +33,7 @@ def _mock_infrastructure(monkeypatch):
     mock_json_handler = MagicMock()
     mock_json_handler.log_operation = MagicMock(return_value=True)
     mock_ignore_handler = MagicMock()
-    mock_ignore_handler.get_audit_ignore_patterns = MagicMock(
-        return_value=[]
-    )
+    mock_ignore_handler.get_audit_ignore_patterns = MagicMock(return_value=[])
     mock_scan_branch = MagicMock(return_value=None)
 
     # -- prax ---------------------------------------------------------------
@@ -48,9 +49,7 @@ def _mock_infrastructure(monkeypatch):
     # -- seedgo json handler ------------------------------------------------
     json_pkg = MagicMock()
     json_pkg.json_handler = mock_json_handler
-    monkeypatch.setitem(
-        sys.modules, "aipass.seedgo.apps.handlers.json", json_pkg
-    )
+    monkeypatch.setitem(sys.modules, "aipass.seedgo.apps.handlers.json", json_pkg)
     json_mod = MagicMock()
     json_mod.log_operation = mock_json_handler.log_operation
     monkeypatch.setitem(
@@ -62,9 +61,7 @@ def _mock_infrastructure(monkeypatch):
     # -- bypass handler -----------------------------------------------------
     bypass_pkg = MagicMock()
     bypass_pkg.ignore_handler = mock_ignore_handler
-    monkeypatch.setitem(
-        sys.modules, "aipass.seedgo.apps.handlers.bypass", bypass_pkg
-    )
+    monkeypatch.setitem(sys.modules, "aipass.seedgo.apps.handlers.bypass", bypass_pkg)
     monkeypatch.setitem(
         sys.modules,
         "aipass.seedgo.apps.handlers.bypass.ignore_handler",
@@ -87,13 +84,13 @@ def _mock_infrastructure(monkeypatch):
         scanner_mod,
     )
 
-    # -- audit package (must be a real module with __path__ so
-    #    submodule imports like audit.audit_display work) --------------------
+    # -- audit package (must be a real module with __path__ pointing to the
+    #    actual directory so submodule imports like audit.audit_display work)
     audit_pkg = types.ModuleType("aipass.seedgo.apps.handlers.audit")
-    audit_pkg.__path__ = []  # type: ignore[attr-defined]
-    monkeypatch.setitem(
-        sys.modules, "aipass.seedgo.apps.handlers.audit", audit_pkg
-    )
+    audit_pkg.__path__ = [  # type: ignore[attr-defined]
+        str(Path(__file__).resolve().parents[1] / "apps" / "handlers" / "audit")
+    ]
+    monkeypatch.setitem(sys.modules, "aipass.seedgo.apps.handlers.audit", audit_pkg)
 
     # Force re-imports so modules pick up fresh mocks
     for mod_name in [
@@ -201,10 +198,7 @@ class TestRenderViolations:
         )
 
         mock_con = MagicMock()
-        violations = [
-            {"path": f"/file{i}.py", "score": 10, "issues": []}
-            for i in range(8)
-        ]
+        violations = [{"path": f"/file{i}.py", "score": 10, "issues": []} for i in range(8)]
         _render_violations("naming", violations, mock_con)
         calls = [str(c) for c in mock_con.print.call_args_list]
         assert any("3 more" in c for c in calls)
@@ -216,10 +210,7 @@ class TestRenderViolations:
         )
 
         mock_con = MagicMock()
-        violations = [
-            {"path": f"/file{i}.py", "score": 10, "issues": []}
-            for i in range(5)
-        ]
+        violations = [{"path": f"/file{i}.py", "score": 10, "issues": []} for i in range(5)]
         _render_violations("naming", violations, mock_con)
         calls = [str(c) for c in mock_con.print.call_args_list]
         assert not any("more" in c for c in calls)
@@ -246,15 +237,7 @@ class TestRenderArchitectureViolations:
         )
 
         mock_con = MagicMock()
-        audit_result = {
-            "results": {
-                "architecture": {
-                    "checks": [
-                        {"passed": True, "name": "Dir: apps"}
-                    ]
-                }
-            }
-        }
+        audit_result = {"results": {"architecture": {"checks": [{"passed": True, "name": "Dir: apps"}]}}}
         _render_architecture_violations(audit_result, mock_con)
         assert mock_con.print.call_count == 0
 
@@ -273,9 +256,7 @@ class TestRenderArchitectureViolations:
                 "message": "x",
             },
         ]
-        audit_result = {
-            "results": {"architecture": {"checks": checks}}
-        }
+        audit_result = {"results": {"architecture": {"checks": checks}}}
         _render_architecture_violations(audit_result, mock_con)
         calls = [str(c) for c in mock_con.print.call_args_list]
         assert any("ARCHITECTURE VIOLATIONS" in c for c in calls)
@@ -295,9 +276,7 @@ class TestRenderArchitectureViolations:
                 "message": "x",
             },
         ]
-        audit_result = {
-            "results": {"architecture": {"checks": checks}}
-        }
+        audit_result = {"results": {"architecture": {"checks": checks}}}
         _render_architecture_violations(audit_result, mock_con)
         calls = [str(c) for c in mock_con.print.call_args_list]
         assert any("Missing files" in c for c in calls)
@@ -316,9 +295,7 @@ class TestRenderArchitectureViolations:
                 "message": "Something wrong",
             },
         ]
-        audit_result = {
-            "results": {"architecture": {"checks": checks}}
-        }
+        audit_result = {"results": {"architecture": {"checks": checks}}}
         _render_architecture_violations(audit_result, mock_con)
         calls = [str(c) for c in mock_con.print.call_args_list]
         assert any("Something wrong" in c for c in calls)
@@ -330,13 +307,8 @@ class TestRenderArchitectureViolations:
         )
 
         mock_con = MagicMock()
-        checks = [
-            {"passed": False, "name": f"Dir: dir{i}"}
-            for i in range(7)
-        ]
-        audit_result = {
-            "results": {"architecture": {"checks": checks}}
-        }
+        checks = [{"passed": False, "name": f"Dir: dir{i}"} for i in range(7)]
+        audit_result = {"results": {"architecture": {"checks": checks}}}
         _render_architecture_violations(audit_result, mock_con)
         calls = [str(c) for c in mock_con.print.call_args_list]
         assert any("2 more" in c for c in calls)
@@ -348,13 +320,8 @@ class TestRenderArchitectureViolations:
         )
 
         mock_con = MagicMock()
-        checks = [
-            {"passed": False, "name": f"File: file{i}.py"}
-            for i in range(8)
-        ]
-        audit_result = {
-            "results": {"architecture": {"checks": checks}}
-        }
+        checks = [{"passed": False, "name": f"File: file{i}.py"} for i in range(8)]
+        audit_result = {"results": {"architecture": {"checks": checks}}}
         _render_architecture_violations(audit_result, mock_con)
         calls = [str(c) for c in mock_con.print.call_args_list]
         assert any("3 more" in c for c in calls)
@@ -385,9 +352,7 @@ class TestRenderArchitectureViolations:
                 "message": "Missing config",
             },
         ]
-        audit_result = {
-            "results": {"architecture": {"checks": checks}}
-        }
+        audit_result = {"results": {"architecture": {"checks": checks}}}
         _render_architecture_violations(audit_result, mock_con)
         calls = [str(c) for c in mock_con.print.call_args_list]
         assert any("Missing directories" in c for c in calls)
@@ -405,9 +370,7 @@ class TestRenderTypeErrors:
         )
 
         mock_con = MagicMock()
-        _render_type_errors(
-            {"type_errors": 0, "files_checked": 0}, mock_con
-        )
+        _render_type_errors({"type_errors": 0, "files_checked": 0}, mock_con)
         assert mock_con.print.call_count == 0
 
     def test_no_type_errors_with_files_checked(self):
@@ -417,9 +380,7 @@ class TestRenderTypeErrors:
         )
 
         mock_con = MagicMock()
-        _render_type_errors(
-            {"type_errors": 0, "files_checked": 5}, mock_con
-        )
+        _render_type_errors({"type_errors": 0, "files_checked": 5}, mock_con)
         calls = [str(c) for c in mock_con.print.call_args_list]
         assert any("No type errors" in c for c in calls)
 
@@ -517,9 +478,7 @@ class TestRenderTestMap:
         )
 
         mock_con = MagicMock()
-        _render_test_map(
-            {"test_map": {"total_functions": 0}}, mock_con
-        )
+        _render_test_map({"test_map": {"total_functions": 0}}, mock_con)
         assert mock_con.print.call_count == 0
 
     def test_test_map_with_data(self):
@@ -564,9 +523,7 @@ class TestRenderDeprecatedPatterns:
         )
 
         mock_con = MagicMock()
-        _render_deprecated_patterns(
-            {"deprecated_patterns": []}, mock_con
-        )
+        _render_deprecated_patterns({"deprecated_patterns": []}, mock_con)
         assert mock_con.print.call_count == 0
 
     def test_with_patterns(self):
@@ -582,9 +539,7 @@ class TestRenderDeprecatedPatterns:
                 "message": "Rename DOCUMENTS/ to docs/",
             },
         ]
-        _render_deprecated_patterns(
-            {"deprecated_patterns": patterns}, mock_con
-        )
+        _render_deprecated_patterns({"deprecated_patterns": patterns}, mock_con)
         calls = [str(c) for c in mock_con.print.call_args_list]
         assert any("DEPRECATED PATTERNS" in c for c in calls)
         assert any("DOCUMENTS" in c for c in calls)
@@ -635,9 +590,7 @@ class TestPrintBranchSummary:
                 "name": branch_name,
                 "path": "/fake/path",
             },
-            "scores": scores
-            if scores is not None
-            else {"architecture": 90, "naming": 80},
+            "scores": scores if scores is not None else {"architecture": 90, "naming": 80},
             "average": average,
             "files_checked": files_checked,
             "results": results if results is not None else {},
@@ -661,9 +614,7 @@ class TestPrintBranchSummary:
             print_branch_summary,
         )
 
-        result = self._make_audit_result(
-            scores={"architecture": 95, "naming": 92}, average=93
-        )
+        result = self._make_audit_result(scores={"architecture": 95, "naming": 92}, average=93)
         print_branch_summary(result)
 
     def test_medium_scores(self):
@@ -672,9 +623,7 @@ class TestPrintBranchSummary:
             print_branch_summary,
         )
 
-        result = self._make_audit_result(
-            scores={"architecture": 80, "naming": 76}, average=78
-        )
+        result = self._make_audit_result(scores={"architecture": 80, "naming": 76}, average=78)
         print_branch_summary(result)
 
     def test_low_scores(self):
@@ -683,9 +632,7 @@ class TestPrintBranchSummary:
             print_branch_summary,
         )
 
-        result = self._make_audit_result(
-            scores={"architecture": 50, "naming": 60}, average=55
-        )
+        result = self._make_audit_result(scores={"architecture": 50, "naming": 60}, average=55)
         print_branch_summary(result)
 
     def test_odd_number_of_scores(self):
@@ -895,9 +842,7 @@ class TestPrintSystemSummary:
         return {
             "branch": {"name": name},
             "average": avg,
-            "scores": scores
-            if scores is not None
-            else {"architecture": avg, "naming": avg},
+            "scores": scores if scores is not None else {"architecture": avg, "naming": avg},
             "type_errors": type_errors,
         }
 
@@ -977,12 +922,8 @@ class TestPrintSystemSummary:
         )
 
         results = [
-            self._make_result(
-                "a", 60, scores={"arch": 50, "naming": 70}
-            ),
-            self._make_result(
-                "b", 80, scores={"arch": 90, "naming": 70}
-            ),
+            self._make_result("a", 60, scores={"arch": 50, "naming": 70}),
+            self._make_result("b", 80, scores={"arch": 90, "naming": 70}),
         ]
         print_system_summary(results)
 
@@ -1051,9 +992,7 @@ class TestDiscoverCheckers:
         standards_dir = tmp_path / "standards"
         standards_dir.mkdir()
         checker_file = standards_dir / "broken_check.py"
-        checker_file.write_text(
-            "raise RuntimeError('broken')\n", encoding="utf-8"
-        )
+        checker_file.write_text("raise RuntimeError('broken')\n", encoding="utf-8")
         result = discover_checkers(standards_dir)
         assert "broken" not in result
 
@@ -1135,9 +1074,7 @@ class TestCollectPyFiles:
         (apps_dir / "module.py").write_text("pass", encoding="utf-8")
         subdir = apps_dir / "handlers"
         subdir.mkdir()
-        (subdir / "handler.py").write_text(
-            "pass", encoding="utf-8"
-        )
+        (subdir / "handler.py").write_text("pass", encoding="utf-8")
         result = _collect_py_files(tmp_path)
         names = [f["name"] for f in result]
         assert "module.py" in names
@@ -1148,9 +1085,7 @@ class TestCollectPyFiles:
         """Files matching ignore patterns are excluded."""
         import sys
 
-        mock_ign = sys.modules[
-            "aipass.seedgo.apps.handlers.bypass"
-        ].ignore_handler
+        mock_ign = sys.modules["aipass.seedgo.apps.handlers.bypass"].ignore_handler
         mock_ign.get_audit_ignore_patterns.return_value = ["test_"]
 
         from aipass.seedgo.apps.handlers.audit.branch_audit import (
@@ -1159,12 +1094,8 @@ class TestCollectPyFiles:
 
         apps_dir = tmp_path / "apps"
         apps_dir.mkdir()
-        (apps_dir / "module.py").write_text(
-            "pass", encoding="utf-8"
-        )
-        (apps_dir / "test_module.py").write_text(
-            "pass", encoding="utf-8"
-        )
+        (apps_dir / "module.py").write_text("pass", encoding="utf-8")
+        (apps_dir / "test_module.py").write_text("pass", encoding="utf-8")
         result = _collect_py_files(tmp_path)
         names = [f["name"] for f in result]
         assert "module.py" in names
@@ -1305,9 +1236,7 @@ class TestRunAllFiles:
         )
         checker.FILE_FILTER = None
         files = [{"file": "/foo.py", "name": "foo.py"}]
-        violations, scores = _run_all_files(
-            checker, "naming", files, []
-        )
+        violations, scores = _run_all_files(checker, "naming", files, [])
         assert len(scores) == 1
         assert scores[0] == 90
 
@@ -1318,14 +1247,10 @@ class TestRunAllFiles:
         )
 
         checker = MagicMock()
-        checker.check_module = MagicMock(
-            side_effect=RuntimeError("boom")
-        )
+        checker.check_module = MagicMock(side_effect=RuntimeError("boom"))
         checker.FILE_FILTER = None
         files = [{"file": "/foo.py", "name": "foo.py"}]
-        violations, scores = _run_all_files(
-            checker, "naming", files, []
-        )
+        violations, scores = _run_all_files(checker, "naming", files, [])
         assert violations == []
         assert scores == []
 
@@ -1350,9 +1275,7 @@ class TestRunAllFiles:
             {"file": "/handler.py", "name": "handler.py"},
             {"file": "/module.py", "name": "module.py"},
         ]
-        violations, scores = _run_all_files(
-            checker, "naming", files, []
-        )
+        violations, scores = _run_all_files(checker, "naming", files, [])
         assert checker.check_module.call_count == 1
 
     def test_skipped_checks_excluded(self):
@@ -1376,9 +1299,7 @@ class TestRunAllFiles:
         )
         checker.FILE_FILTER = None
         files = [{"file": "/foo.py", "name": "foo.py"}]
-        violations, scores = _run_all_files(
-            checker, "naming", files, []
-        )
+        violations, scores = _run_all_files(checker, "naming", files, [])
         assert scores == []
 
     def test_failing_checks_collected(self):
@@ -1400,9 +1321,7 @@ class TestRunAllFiles:
         )
         checker.FILE_FILTER = None
         files = [{"file": "/bad.py", "name": "bad.py"}]
-        violations, scores = _run_all_files(
-            checker, "naming", files, []
-        )
+        violations, scores = _run_all_files(checker, "naming", files, [])
         assert len(violations) == 1
         assert violations[0]["score"] == 40
         assert "Bad naming" in violations[0]["issues"]
@@ -1444,9 +1363,7 @@ class TestLoadDiagnosticsChecker:
         )
 
         mock_spec = MagicMock()
-        mock_spec.loader.exec_module.side_effect = RuntimeError(
-            "fail"
-        )
+        mock_spec.loader.exec_module.side_effect = RuntimeError("fail")
         with (
             patch("pathlib.Path.exists", return_value=True),
             patch(
@@ -1519,9 +1436,7 @@ def _make_checker(
             "score": 100,
             "checks": [],
         }
-        checker.check_module = MagicMock(
-            return_value=check_module_result or default_mod
-        )
+        checker.check_module = MagicMock(return_value=check_module_result or default_mod)
     else:
         del checker.check_module
 
@@ -1531,16 +1446,12 @@ def _make_checker(
             "score": 100,
             "checks": [],
         }
-        checker.check_branch = MagicMock(
-            return_value=check_branch_result or default_br
-        )
+        checker.check_branch = MagicMock(return_value=check_branch_result or default_br)
     else:
         del checker.check_branch
 
     if has_post:
-        checker.check_branch_post = MagicMock(
-            return_value=post_result or ([], [])
-        )
+        checker.check_branch_post = MagicMock(return_value=post_result or ([], []))
     else:
         del checker.check_branch_post
 
@@ -1566,9 +1477,7 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["branch"] == branch
@@ -1600,16 +1509,12 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["scores"]["dead_code"] == 85
 
-    def test_branch_level_checker_exception(
-        self, tmp_path, monkeypatch
-    ):
+    def test_branch_level_checker_exception(self, tmp_path, monkeypatch):
         """Branch-level checker that raises produces score 0."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
@@ -1630,17 +1535,13 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["scores"]["broken"] == 0
         assert "error" in result["results"]["broken"]
 
-    def test_entry_point_checker_exception(
-        self, tmp_path, monkeypatch
-    ):
+    def test_entry_point_checker_exception(self, tmp_path, monkeypatch):
         """Entry-point checker that raises produces score 0."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
@@ -1657,9 +1558,7 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["scores"]["naming"] == 0
@@ -1671,9 +1570,7 @@ class TestAuditBranch:
 
         branch, branch_path = _setup_branch(tmp_path)
         apps_dir = Path(branch_path) / "apps"
-        (apps_dir / "other.py").write_text(
-            "pass", encoding="utf-8"
-        )
+        (apps_dir / "other.py").write_text("pass", encoding="utf-8")
 
         checker = _make_checker(
             scope="all_files",
@@ -1695,24 +1592,18 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["scores"]["naming"] == 80
 
-    def test_all_files_with_violations(
-        self, tmp_path, monkeypatch
-    ):
+    def test_all_files_with_violations(self, tmp_path, monkeypatch):
         """all_files scope with failing checks updates results."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
         branch, branch_path = _setup_branch(tmp_path)
         apps_dir = Path(branch_path) / "apps"
-        (apps_dir / "bad.py").write_text(
-            "pass", encoding="utf-8"
-        )
+        (apps_dir / "bad.py").write_text("pass", encoding="utf-8")
 
         def check_side_effect(path, bypass_rules=None):
             """Return different results based on path."""
@@ -1747,9 +1638,7 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert "naming_violations" in result
@@ -1780,26 +1669,20 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         # Post check: (100 + 50) / 2 = 75
         assert result["scores"]["naming"] == 75
         assert len(result["naming_violations"]) == 1
 
-    def test_post_check_raises_exception(
-        self, tmp_path, monkeypatch
-    ):
+    def test_post_check_raises_exception(self, tmp_path, monkeypatch):
         """check_branch_post that raises is caught."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
         branch, _ = _setup_branch(tmp_path)
         checker = _make_checker(has_post=True)
-        checker.check_branch_post.side_effect = RuntimeError(
-            "fail"
-        )
+        checker.check_branch_post.side_effect = RuntimeError("fail")
         monkeypatch.setattr(
             branch_audit,
             "discover_checkers",
@@ -1810,16 +1693,12 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["scores"]["naming"] == 100
 
-    def test_diagnostics_checker_added(
-        self, tmp_path, monkeypatch
-    ):
+    def test_diagnostics_checker_added(self, tmp_path, monkeypatch):
         """Diagnostics checker loaded and added."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
@@ -1847,16 +1726,12 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: diag_mod,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert "diagnostics" in result["scores"]
 
-    def test_deprecated_documents_dir(
-        self, tmp_path, monkeypatch
-    ):
+    def test_deprecated_documents_dir(self, tmp_path, monkeypatch):
         """DOCUMENTS/ directory detected as deprecated."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
@@ -1873,18 +1748,14 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert len(result["deprecated_patterns"]) == 1
         dep = result["deprecated_patterns"][0]
         assert dep["old"] == "DOCUMENTS/"
 
-    def test_no_deprecated_without_documents(
-        self, tmp_path, monkeypatch
-    ):
+    def test_no_deprecated_without_documents(self, tmp_path, monkeypatch):
         """No deprecated patterns without DOCUMENTS/."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
@@ -1899,9 +1770,7 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["deprecated_patterns"] == []
@@ -1959,9 +1828,7 @@ class TestAuditBranch:
         result = branch_audit.audit_branch(branch, [])
         assert result["test_map"] == scan_result
 
-    def test_no_checkers_zero_average(
-        self, tmp_path, monkeypatch
-    ):
+    def test_no_checkers_zero_average(self, tmp_path, monkeypatch):
         """No checkers returns average 0."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
@@ -1976,16 +1843,12 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["average"] == 0
 
-    def test_implicit_branch_level(
-        self, tmp_path, monkeypatch
-    ):
+    def test_implicit_branch_level(self, tmp_path, monkeypatch):
         """Checker without check_module treated as branch-level."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
@@ -2010,9 +1873,7 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["scores"]["implicit"] == 75
@@ -2029,25 +1890,19 @@ class TestAuditBranch:
             captured["value"] = pack_path
             return {}
 
-        monkeypatch.setattr(
-            branch_audit, "discover_checkers", mock_discover
-        )
+        monkeypatch.setattr(branch_audit, "discover_checkers", mock_discover)
         monkeypatch.setattr(
             branch_audit,
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         pack = tmp_path / "custom_standards"
         branch_audit.audit_branch(branch, [], pack_path=pack)
         assert captured["value"] == pack
 
-    def test_diagnostics_not_duplicated(
-        self, tmp_path, monkeypatch
-    ):
+    def test_diagnostics_not_duplicated(self, tmp_path, monkeypatch):
         """Existing diagnostics not overwritten by loader."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
@@ -2076,16 +1931,12 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: different,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["scores"]["diagnostics"] == 80
 
-    def test_branch_level_violations_extraction(
-        self, tmp_path, monkeypatch
-    ):
+    def test_branch_level_violations_extraction(self, tmp_path, monkeypatch):
         """Branch-level results have violations extracted."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
@@ -2123,16 +1974,12 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert len(result["dead_code_violations"]) == 1
 
-    def test_output_diagnostics_fields(
-        self, tmp_path, monkeypatch
-    ):
+    def test_output_diagnostics_fields(self, tmp_path, monkeypatch):
         """Output includes type_errors and type_error_files."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
@@ -2159,19 +2006,13 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["type_errors"] == 3
-        assert result["type_error_files"] == [
-            {"file": "a.py", "errors": 3}
-        ]
+        assert result["type_error_files"] == [{"file": "a.py", "errors": 3}]
 
-    def test_post_check_empty_scores(
-        self, tmp_path, monkeypatch
-    ):
+    def test_post_check_empty_scores(self, tmp_path, monkeypatch):
         """Post-check with empty scores does not change score."""
         from aipass.seedgo.apps.handlers.audit import branch_audit
 
@@ -2190,9 +2031,7 @@ class TestAuditBranch:
             "_load_diagnostics_checker",
             lambda: None,
         )
-        monkeypatch.setattr(
-            branch_audit, "scan_branch", lambda p: None
-        )
+        monkeypatch.setattr(branch_audit, "scan_branch", lambda p: None)
 
         result = branch_audit.audit_branch(branch, [])
         assert result["scores"]["naming"] == 100

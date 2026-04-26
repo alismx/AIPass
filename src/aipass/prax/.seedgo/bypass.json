@@ -476,6 +476,21 @@
       "file": "tests/test_operations.py",
       "standard": "encapsulation",
       "reason": "Unit tests must import handlers directly to test them in isolation. _load_ops() imports operations handler for unit testing. Same pattern as test_logging_handlers.py."
+    },
+    {
+      "file": "tests/test_filesystem_handler.py",
+      "standard": "architecture",
+      "reason": "Test file lives in tests/ by convention, not in the 3-layer apps/ structure. This is standard for all prax test files."
+    },
+    {
+      "file": "tests/test_filesystem_handler.py",
+      "standard": "log_structure",
+      "reason": "False positive — /home/ references are test fixture path strings (e.g. Path('/home/user/modules/logger.py')), not real log config."
+    },
+    {
+      "file": "tests/test_filesystem_handler.py",
+      "standard": "documentation",
+      "reason": "Test helper functions use pytest naming conventions. Internal test stubs do not require docstrings."
     }
   ],
   "notes": {
