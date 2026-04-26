@@ -446,6 +446,36 @@
       "file": "tests/test_monitoring_handlers.py",
       "standard": "architecture",
       "reason": "Test file lives in tests/ by convention, not in the 3-layer apps/ structure. This is standard for all prax test files."
+    },
+    {
+      "file": "tests/test_log_watcher.py",
+      "standard": "architecture",
+      "reason": "Test file lives in tests/ by convention, not in the 3-layer apps/ structure. This is standard for all prax test files."
+    },
+    {
+      "file": "tests/test_log_watcher.py",
+      "standard": "documentation",
+      "reason": "Pre-existing test functions follow pytest naming conventions (test_*). Original 35 functions were written without docstrings per project test style."
+    },
+    {
+      "file": "tests/test_log_watcher.py",
+      "standard": "naming",
+      "reason": "Pre-existing _RealFSHandler is a private test stub with underscore prefix indicating internal use. Renaming would not improve clarity."
+    },
+    {
+      "file": "tests/test_monitor_module.py",
+      "standard": "architecture",
+      "reason": "Test file lives in tests/ by convention, not in the 3-layer apps/ structure. This is standard for all prax test files."
+    },
+    {
+      "file": "tests/test_operations.py",
+      "standard": "architecture",
+      "reason": "Test file lives in tests/ by convention, not in the 3-layer apps/ structure. This is standard for all prax test files."
+    },
+    {
+      "file": "tests/test_operations.py",
+      "standard": "encapsulation",
+      "reason": "Unit tests must import handlers directly to test them in isolation. _load_ops() imports operations handler for unit testing. Same pattern as test_logging_handlers.py."
     }
   ],
   "notes": {
