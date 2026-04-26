@@ -76,7 +76,10 @@ def copy_template(template_dir, target_dir, replacements):
                 shutil.copy2(item, dest)
                 copied.append(f"{dest_rel} (binary)")
 
-    json_handler.log_operation("template_copied", data={"target": str(target_dir)})
+    try:
+        json_handler.log_operation("template_copied", data={"target": str(target_dir)})
+    except Exception as exc:
+        logger.info("json_handler.log_operation failed (non-fatal): %s", exc)
 
     return copied, skipped
 
