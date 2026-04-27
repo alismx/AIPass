@@ -185,6 +185,51 @@ def _pid_alive(pid: int) -> bool:
     return True
 
 
+def _get_jsonl_projects_dir(branch_path: Path) -> Path:
+    """Get Claude's JSONL projects directory for a branch path."""
+    cwd = str(branch_path)
+    encoded = cwd.replace("\\", "-").replace("/", "-").replace(":", "-").replace("_", "-").replace(".", "-")
+    return Path.home() / ".claude" / "projects" / encoded
+
+
+def _snapshot_jsonl_sizes(projects_dir: Path) -> dict:
+    """Snapshot current sizes of all JSONL files."""
+    sizes = {}
+    if not projects_dir.exists():
+        return sizes
+    try:
+        for f in projects_dir.glob("*.jsonl"):
+            try:
+                sizes[f.name] = f.stat().st_size
+            except OSError as exc:
+                logger.info("[watchdog.agent] jsonl snapshot stat failed for %s: %s", f.name, exc)
+    except OSError as exc:
+        logger.info("[watchdog.agent] jsonl snapshot glob failed: %s", exc)
+    return sizes
+
+
+def _has_jsonl_activity(projects_dir: Path, baseline: dict) -> bool:
+    """Return True if any JSONL file grew or a new file appeared since baseline."""
+    if not projects_dir.exists():
+        return False
+    try:
+        files = list(projects_dir.glob("*.jsonl"))
+    except OSError as exc:
+        logger.info("[watchdog.agent] jsonl activity glob failed: %s", exc)
+        return False
+    for f in files:
+        try:
+            current_size = f.stat().st_size
+        except OSError as exc:
+            logger.info("[watchdog.agent] jsonl activity stat failed for %s: %s", f.name, exc)
+            continue
+        if f.name not in baseline:
+            return current_size > 0
+        if current_size > baseline[f.name]:
+            return True
+    return False
+
+
 def _read_lock(lock_file: Path) -> dict | None:
     """Read lock file, return dict or None on miss/error."""
     if not lock_file.exists():
@@ -333,6 +378,12 @@ def watch_agent(
 
         _stderr(f"[watchdog.agent] {agent_id}: lock present, monitor PID={initial_pid}")
 
+        jsonl_dir = _get_jsonl_projects_dir(branch_path)
+        jsonl_baseline = _snapshot_jsonl_sizes(jsonl_dir)
+        last_activity_at = time.monotonic()
+        stall_reported = False
+        stall_threshold = 120.0
+
         while True:
             elapsed = time.monotonic() - started_at
             if elapsed >= timeout_seconds:
@@ -383,6 +434,27 @@ def watch_agent(
                     "agent_id": agent_id,
                     "handle": handle,
                 }
+
+            if _has_jsonl_activity(jsonl_dir, jsonl_baseline):
+                jsonl_baseline = _snapshot_jsonl_sizes(jsonl_dir)
+                last_activity_at = time.monotonic()
+                if stall_reported:
+                    _stderr(f"[watchdog.agent] {agent_id}: activity resumed")
+                    logger.info("[watchdog.agent] activity resumed agent_id=%s", agent_id)
+                    stall_reported = False
+            elif not stall_reported and (time.monotonic() - last_activity_at) >= stall_threshold:
+                idle_secs = int(time.monotonic() - last_activity_at)
+                _stderr(
+                    f"[watchdog.agent] {agent_id}: STALLED — no JSONL activity for {idle_secs}s "
+                    f"(PID {initial_pid} still alive)"
+                )
+                logger.info(
+                    "[watchdog.agent] stall detected agent_id=%s idle=%ss pid=%s",
+                    agent_id,
+                    idle_secs,
+                    initial_pid,
+                )
+                stall_reported = True
 
             time.sleep(poll_interval)
     finally:
