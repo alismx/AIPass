@@ -80,12 +80,12 @@ def test_watch_agent_no_active_lock(monkeypatch, tmp_path):
     result = agent_handler.watch_agent("@fakebranch", timeout_seconds=5)
 
     assert result["woke"] is True
-    assert result["agent_state"] == "completed"
+    assert result["agent_state"] == "completed_silent"
     assert result["exit_code"] == 0
 
 
 def test_watch_agent_completed_via_lock_removal(monkeypatch, tmp_path):
-    """Lock present at start, then removed -> wake with state=completed."""
+    """Lock present at start, then removed -> wake with state=completed_silent (no sent messages)."""
     branch_path = _build_fake_branch(tmp_path)
     lock_file = _write_lock(branch_path, pid=os.getpid())
     monkeypatch.setattr(agent_handler, "_find_repo_root", lambda *a, **kw: tmp_path)
@@ -105,9 +105,38 @@ def test_watch_agent_completed_via_lock_removal(monkeypatch, tmp_path):
     result = agent_handler.watch_agent("@fakebranch", timeout_seconds=5, poll_interval=0.01)
 
     assert result["woke"] is True
-    assert result["agent_state"] == "completed"
+    assert result["agent_state"] == "completed_silent"
     assert result["exit_code"] == 0
-    assert "clean" in result["reason"].lower() or "finished" in result["reason"].lower()
+
+
+def test_watch_agent_completed_replied_via_sent_folder(monkeypatch, tmp_path):
+    """Lock removed + sent message after dispatch -> completed_replied."""
+    branch_path = _build_fake_branch(tmp_path)
+    lock_file = _write_lock(branch_path, pid=os.getpid())
+    monkeypatch.setattr(agent_handler, "_find_repo_root", lambda *a, **kw: tmp_path)
+
+    sent_dir = branch_path / ".ai_mail.local" / "sent"
+    sent_dir.mkdir(parents=True, exist_ok=True)
+    sent_msg = {"to": "@devpulse", "from": "@fakebranch", "subject": "Done", "timestamp": "2026-04-14 00:01:00"}
+    (sent_dir / "reply.json").write_text(json.dumps(sent_msg), encoding="utf-8")
+
+    call_count = {"n": 0}
+    real_sleep = time.sleep
+
+    def fake_sleep(seconds):
+        """Remove lock on first poll to simulate clean exit."""
+        call_count["n"] += 1
+        if call_count["n"] >= 1:
+            lock_file.unlink(missing_ok=True)
+        real_sleep(0.01)
+
+    monkeypatch.setattr(agent_handler.time, "sleep", fake_sleep)
+
+    result = agent_handler.watch_agent("@fakebranch", timeout_seconds=5, poll_interval=0.01)
+
+    assert result["woke"] is True
+    assert result["agent_state"] == "completed_replied"
+    assert result["exit_code"] == 0
 
 
 def test_watch_agent_crashed_via_bounce_file(monkeypatch, tmp_path):
@@ -206,7 +235,7 @@ def test_watch_agent_live_dispatch_completes():
 
     result = agent_handler.watch_agent("@drone", timeout_seconds=300, poll_interval=2.0)
     assert result["woke"] is True
-    assert result["agent_state"] in ("completed", "crashed")
+    assert result["agent_state"] in ("completed_replied", "completed_silent", "crashed")
 
 
 @pytest.mark.integration
