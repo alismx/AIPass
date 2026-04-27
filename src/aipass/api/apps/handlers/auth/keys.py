@@ -10,12 +10,11 @@
 API Key Management Handler
 
 Handles API key retrieval and validation for multiple providers.
-Keys are read from config JSON or directly from ~/.secrets/aipass/.env.
+Keys are read from ~/.secrets/aipass/.env (single source of truth).
 
 Functions:
     get_api_key() - Get validated API key
     validate_key() - Validate key format for provider
-    get_key_from_config() - Retrieve key from config JSON
     get_validation_rules() - Get provider-specific validation rules
 """
 
@@ -34,10 +33,6 @@ from aipass.api.apps.handlers.json import json_handler
 # CONSTANTS
 # ==============================================
 
-# Navigate: keys.py -> auth/ -> handlers/ -> apps/ -> api/
-API_ROOT = Path(__file__).resolve().parent.parent.parent.parent
-API_JSON_DIR = API_ROOT / "api_json"
-
 # Provider validation rules (embedded - no config dependency for core validation)
 VALIDATION_RULES = {
     "openrouter": {"prefix": "sk-or-v1-", "min_length": 40},
@@ -55,11 +50,9 @@ VALIDATION_RULES = {
 
 def get_api_key(provider: str = "openrouter") -> Optional[str]:
     """
-    Get validated API key for provider.
+    Get validated API key for provider from secrets file.
 
-    Sources (in order):
-    1. Config JSON file (api_json/api_connect_config.json)
-    2. Secrets file (~/.secrets/aipass/.env)
+    Source: ~/.secrets/aipass/.env (single source of truth)
 
     Args:
         provider: Provider name (default: 'openrouter')
@@ -73,24 +66,11 @@ def get_api_key(provider: str = "openrouter") -> Optional[str]:
         ...     print(f"Got key: {key[:20]}...")
     """
     try:
-        source = ""
-
-        # 1. Try config file
-        key = get_key_from_config(provider)
+        key = _read_key_from_secrets(provider)
         if key and validate_key(key, provider):
-            source = "config"
-
-        # 2. Try secrets file
-        if not source:
-            key = _read_key_from_secrets(provider)
-            if key and validate_key(key, provider):
-                source = "secrets"
-
-        if source:
-            json_handler.log_operation("key_retrieved", {"provider": provider, "source": source})
+            json_handler.log_operation("key_retrieved", {"provider": provider, "source": "secrets"})
             return key
 
-        # No valid key found
         return None
 
     except Exception as e:
@@ -126,50 +106,6 @@ def _read_key_from_secrets(provider: str) -> Optional[str]:
         return None
     except Exception as e:
         logger.warning(f"Error reading secrets file: {e}")
-        return None
-
-
-def get_key_from_config(provider: str) -> Optional[str]:
-    """
-    Retrieve API key from config JSON file.
-
-    Reads from: <api_root>/api_json/api_connect_config.json
-
-    Args:
-        provider: Provider name (e.g., 'openrouter')
-
-    Returns:
-        str: API key from config or None if not found
-
-    Example:
-        >>> key = get_key_from_config('openrouter')
-    """
-    try:
-        config_path = API_JSON_DIR / "api_connect_config.json"
-
-        if not config_path.exists():
-            # Config file not found
-            return None
-
-        import json
-
-        with open(config_path, "r", encoding="utf-8") as f:
-            config = json.load(f)
-
-        # Navigate config structure
-        if "config" in config:
-            providers = config["config"].get("providers", {})
-            if provider in providers:
-                key = providers[provider].get("api_key", "")
-                if key:
-                    return key
-
-        # No key in config file
-        return None
-
-    except Exception as e:
-        # Error reading config
-        logger.error(f"Error reading config for provider '{provider}': {e}")
         return None
 
 
@@ -255,7 +191,7 @@ def diagnose_key(provider: str = "openrouter") -> str:
     """
     Diagnose why get_api_key() returned None.
 
-    Checks all sources for a raw key (skipping validation) and explains
+    Checks secrets file for a raw key (skipping validation) and explains
     exactly why it failed — missing entirely, wrong prefix, too short, etc.
 
     Args:
@@ -268,27 +204,20 @@ def diagnose_key(provider: str = "openrouter") -> str:
         >>> if not get_api_key('openrouter'):
         ...     print(diagnose_key('openrouter'))
     """
-    # Check all sources for raw key (without validation)
-    key = get_key_from_config(provider)
-    source = "config"
-
-    if not key:
-        key = _read_key_from_secrets(provider)
-        source = "secrets"
+    key = _read_key_from_secrets(provider)
 
     if not key:
         secrets_path = Path.home() / ".secrets" / "aipass" / ".env"
         return f"API key for {provider} not found. Expected at {secrets_path}. Run drone @api setup to configure."
 
-    # Key exists but failed validation — explain why
     key = key.strip()
     rules = get_validation_rules(provider)
 
     if "prefix" in rules and not key.startswith(rules["prefix"]):
         actual_prefix = key[: len(rules["prefix"])] if len(key) >= len(rules["prefix"]) else key[:6]
-        return f"Key found ({source}) but invalid — expected prefix '{rules['prefix']}', got '{actual_prefix}...'"
+        return f"Key found (secrets) but invalid — expected prefix '{rules['prefix']}', got '{actual_prefix}...'"
 
     if "min_length" in rules and len(key) < rules["min_length"]:
-        return f"Key found ({source}) but too short — {len(key)} chars, need {rules['min_length']}+"
+        return f"Key found (secrets) but too short — {len(key)} chars, need {rules['min_length']}+"
 
-    return f"Key found ({source}) but failed validation"
+    return "Key found (secrets) but failed validation"

@@ -163,7 +163,6 @@ def test_daemon_poll_cycle_is_called(tmp_path, monkeypatch):
     with (
         patch.object(daemon_mod, "_write_pid_file", return_value=True),
         patch.object(daemon_mod, "_remove_pid_file"),
-        patch.object(daemon_mod, "_notify_telegram", return_value=False),
         patch.object(daemon_mod, "poll_cycle", side_effect=mock_poll_cycle),
         patch.object(daemon_mod, "save_daemon_state"),
         patch.object(daemon_mod, "is_kill_switch_active", return_value=False),

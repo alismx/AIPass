@@ -33,7 +33,7 @@
     {
       "file": "apps/handlers/auth/keys.py",
       "standard": "deep_nesting",
-      "reason": "2 functions: _read_key_from_secrets() depth 5 (file read with validation guards), get_key_from_config() depth 4 (config navigation with nested dict structure)"
+      "reason": "_read_key_from_secrets() depth 5 — file read with validation guards"
     },
     {
       "file": "apps/handlers/openrouter/client.py",
@@ -87,6 +87,16 @@
     },
     {
       "file": "tests/test_integrations.py",
+      "standard": "architecture",
+      "reason": "Test file — lives in tests/ by convention, not in the 3-layer app structure. Test files are exempt from layer architecture standard."
+    },
+    {
+      "file": "tests/test_api_key.py",
+      "standard": "architecture",
+      "reason": "Test file — lives in tests/ by convention, not in the 3-layer app structure. Test files are exempt from layer architecture standard."
+    },
+    {
+      "file": "tests/test_critical_paths.py",
       "standard": "architecture",
       "reason": "Test file — lives in tests/ by convention, not in the 3-layer app structure. Test files are exempt from layer architecture standard."
     },

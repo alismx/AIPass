@@ -168,6 +168,21 @@ def init_env():
         error("Failed to create environment template")
 
 
+def fetch_api_key(provider: str = "openrouter"):
+    """Retrieve a validated API key for a provider from secrets."""
+    return keys.get_api_key(provider)
+
+
+def fetch_validate_key(key: str, provider: str = "openrouter") -> bool:
+    """Validate an API key format for a given provider."""
+    return keys.validate_key(key, provider)
+
+
+def get_validation_rules(provider: str) -> dict:
+    """Retrieve validation rules for a provider from the auth handler."""
+    return keys.get_validation_rules(provider)
+
+
 def print_help():
     """Print help output for API key management"""
     import argparse

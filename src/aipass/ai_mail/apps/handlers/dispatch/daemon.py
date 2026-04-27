@@ -28,8 +28,6 @@ import subprocess
 from pathlib import Path
 from datetime import datetime, date
 from typing import Dict, Any, Optional
-from urllib.request import Request, urlopen
-from urllib.error import URLError
 
 from aipass.prax.apps.modules.logger import system_logger as logger
 from aipass.ai_mail.apps.handlers.json import json_handler
@@ -48,38 +46,11 @@ DAEMON_LOG_FILE = _AI_MAIL_DIR / ".ai_mail.local" / "dispatch_daemon.log"
 DAEMON_PID_FILE = _AI_MAIL_DIR / ".ai_mail.local" / "daemon.pid"
 BRANCH_REGISTRY = _REPO_ROOT / "AIPASS_REGISTRY.json"
 
-# Telegram notifications (scheduler bot)
-SCHEDULER_CONFIG = _REPO_ROOT / ".aipass" / "scheduler_config.json"
-
 # Graceful shutdown
 SHUTDOWN = False
 
 # AIPASS-TEST token handling extracted to test_token.py
 from aipass.ai_mail.apps.handlers.dispatch.test_token import scan_and_ack_test_emails
-
-
-def _notify_telegram(message: str) -> bool:
-    """Send a notification to Patrick's Telegram via the scheduler bot."""
-    try:
-        with open(SCHEDULER_CONFIG, "r", encoding="utf-8") as f:
-            config = json.load(f)
-        bot_token = config["telegram_bot_token"]
-        chat_id = config["telegram_chat_id"]
-    except (FileNotFoundError, KeyError, json.JSONDecodeError):
-        logger.info("Telegram notification skipped (no scheduler config)")
-        return False
-
-    url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-    payload = json.dumps({"chat_id": chat_id, "text": message}).encode("utf-8")
-    req = Request(url, data=payload, headers={"Content-Type": "application/json"})
-
-    try:
-        with urlopen(req, timeout=10) as resp:
-            result = json.loads(resp.read())
-            return result.get("ok", False)
-    except (URLError, Exception):
-        logger.info("Telegram notification failed: %s", message[:60])
-        return False
 
 
 def _handle_signal(signum, _frame):
@@ -431,7 +402,6 @@ def spawn_agent(
 
         logger.info(f'SPAWN {branch_email} PID={monitor_pid} (monitor) sender={sender} subject="{subject[:60]}"')
         log_dispatch(branch_email, monitor_pid, "spawned")
-        _notify_telegram(f"[Dispatch] {branch_email} woke\nTask from {sender}: {subject[:80]}")
         return True
 
     except Exception as e:
@@ -440,7 +410,6 @@ def spawn_agent(
         lock_file.unlink(missing_ok=True)
         logger.info(f"SPAWN FAILED {branch_email}: {e}")
         log_dispatch(branch_email, None, "failed", error_msg=str(e))
-        _notify_telegram(f"[Dispatch FAILED] {branch_email}\n{type(e).__name__}: {e}")
         return False
 
 
@@ -465,7 +434,7 @@ def _read_session_type(pid_str: str) -> str:
 
 
 # Session types that should NOT block dispatch (idle/background sessions)
-_NON_BLOCKING_SESSION_TYPES = {"telegram", "dispatched", "daemon"}
+_NON_BLOCKING_SESSION_TYPES = {"dispatched", "daemon"}
 
 
 def _is_branch_occupied(branch_path: Path) -> bool:
@@ -574,7 +543,6 @@ def run_daemon() -> None:
     logger.info("=" * 60)
     logger.info(f"DISPATCH DAEMON STARTING (PID {os.getpid()})")
     logger.info("=" * 60)
-    _notify_telegram(f"[Daemon] Started (PID {os.getpid()})")
 
     config = load_config()
     poll_interval = config.get("poll_interval_seconds", 300)
@@ -630,7 +598,6 @@ def run_daemon() -> None:
 
     _remove_pid_file()
     logger.info("DISPATCH DAEMON STOPPED")
-    _notify_telegram("[Daemon] Stopped")
 
 
 if __name__ == "__main__":
