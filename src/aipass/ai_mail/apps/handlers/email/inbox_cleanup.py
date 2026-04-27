@@ -219,6 +219,36 @@ def _trigger_deleted_purge(branch_path: Path) -> None:
         logger.warning("[cleanup] _trigger_deleted_purge() failed: %s", e)
 
 
+def _sweep_closed(inbox_data: Dict, mailbox_path: Path) -> int:
+    """Archive and remove closed messages still sitting in the inbox.
+
+    Safety net for messages set to status=closed by direct JSON edit
+    rather than through mark_as_closed_and_archive().  Modifies
+    inbox_data["messages"] in place (replaces the list).  Does NOT
+    update count fields -- callers recalculate after calling this.
+
+    Args:
+        inbox_data: Inbox data dict (modified in place).
+        mailbox_path: Path to .ai_mail.local directory.
+
+    Returns:
+        Number of messages swept.
+    """
+    messages = inbox_data.get("messages", [])
+    closed = [m for m in messages if m.get("status") == "closed"]
+    if not closed:
+        return 0
+
+    for msg in closed:
+        try:
+            _save_to_deleted_folder(mailbox_path, msg)
+        except Exception as e:
+            logger.warning("[cleanup] _sweep_closed archive failed: %s", e)
+
+    inbox_data["messages"] = [m for m in messages if m.get("status") != "closed"]
+    return len(closed)
+
+
 # =============================================================================
 # V2 SCHEMA FUNCTIONS (status: new/opened/closed)
 # =============================================================================
@@ -264,13 +294,16 @@ def mark_as_opened(branch_path: Path, message_id: str) -> Tuple[bool, str, Optio
             # Keep backward compat
             target_msg["read"] = True
 
-            # Recalculate status counts (v2 schema)
+            _sweep_closed(inbox_data, inbox_file.parent)
+
+            # Recalculate counts (sweep may have removed messages)
+            inbox_data["total_messages"] = len(inbox_data["messages"])
             new_count = sum(
                 1
-                for m in messages
+                for m in inbox_data["messages"]
                 if m.get("status") == "new" or (m.get("status") is None and not m.get("read", False))
             )
-            opened_count = sum(1 for m in messages if m.get("status") == "opened")
+            opened_count = sum(1 for m in inbox_data["messages"] if m.get("status") == "opened")
             inbox_data["unread_count"] = new_count
 
             with open(inbox_file, "w", encoding="utf-8") as f:
@@ -333,17 +366,19 @@ def mark_as_closed_and_archive(branch_path: Path, message_id: str, skip_post_ops
 
             # Remove from inbox
             messages.pop(message_index)
+            inbox_data["messages"] = messages
+
+            _sweep_closed(inbox_data, mailbox_path)
 
             # Update inbox counts
-            inbox_data["messages"] = messages
-            inbox_data["total_messages"] = len(messages)
+            inbox_data["total_messages"] = len(inbox_data["messages"])
             # v2 status counts
             new_count = sum(
                 1
-                for m in messages
+                for m in inbox_data["messages"]
                 if m.get("status") == "new" or (m.get("status") is None and not m.get("read", False))
             )
-            opened_count = sum(1 for m in messages if m.get("status") == "opened")
+            opened_count = sum(1 for m in inbox_data["messages"] if m.get("status") == "opened")
             inbox_data["unread_count"] = new_count
 
             with open(inbox_file, "w", encoding="utf-8") as f:

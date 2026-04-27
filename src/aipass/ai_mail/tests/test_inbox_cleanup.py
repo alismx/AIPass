@@ -313,3 +313,192 @@ def test_mark_as_closed_and_archive_updates_counts(tmp_path: Path):
         inbox_data = json.load(f)
     assert inbox_data["total_messages"] == 1
     assert inbox_data["unread_count"] == 1
+
+
+# ---- _sweep_closed tests ----------------------------------------
+
+
+def test_sweep_closed_removes_closed_messages(tmp_path: Path):
+    """Messages with status=closed are archived to deleted/ and removed."""
+    mailbox = tmp_path / ".ai_mail.local"
+    mailbox.mkdir(parents=True)
+    inbox_data = {
+        "messages": [
+            {"id": "m1", "status": "new", "subject": "Active"},
+            {"id": "m2", "status": "closed", "subject": "Done"},
+            {"id": "m3", "status": "opened", "subject": "Read"},
+        ]
+    }
+
+    swept = mod._sweep_closed(inbox_data, mailbox)
+
+    assert swept == 1
+    assert len(inbox_data["messages"]) == 2
+    assert all(m["id"] != "m2" for m in inbox_data["messages"])
+    deleted_files = list((mailbox / "deleted").glob("*.json"))
+    assert len(deleted_files) == 1
+
+
+def test_sweep_closed_no_closed_messages_is_noop(tmp_path: Path):
+    """Inbox with zero closed messages returns 0 and makes no changes."""
+    mailbox = tmp_path / ".ai_mail.local"
+    mailbox.mkdir(parents=True)
+    original_messages = [
+        {"id": "m1", "status": "new", "subject": "A"},
+        {"id": "m2", "status": "opened", "subject": "B"},
+    ]
+    inbox_data = {"messages": list(original_messages)}
+
+    swept = mod._sweep_closed(inbox_data, mailbox)
+
+    assert swept == 0
+    assert len(inbox_data["messages"]) == 2
+    assert not (mailbox / "deleted").exists()
+
+
+def test_sweep_closed_multiple_closed(tmp_path: Path):
+    """Multiple closed messages are all swept in one pass."""
+    mailbox = tmp_path / ".ai_mail.local"
+    mailbox.mkdir(parents=True)
+    inbox_data = {
+        "messages": [
+            {"id": "m1", "status": "closed", "subject": "Done1"},
+            {"id": "m2", "status": "closed", "subject": "Done2"},
+            {"id": "m3", "status": "new", "subject": "Active"},
+        ]
+    }
+
+    swept = mod._sweep_closed(inbox_data, mailbox)
+
+    assert swept == 2
+    assert len(inbox_data["messages"]) == 1
+    assert inbox_data["messages"][0]["id"] == "m3"
+    deleted_files = list((mailbox / "deleted").glob("*.json"))
+    assert len(deleted_files) == 2
+
+
+def test_sweep_closed_archive_failure_still_removes(tmp_path: Path, monkeypatch):
+    """If archival fails for one message, it's still removed from inbox."""
+    mailbox = tmp_path / ".ai_mail.local"
+    mailbox.mkdir(parents=True)
+
+    call_count = [0]
+    original_save = mod._save_to_deleted_folder
+
+    def _failing_save(mp, msg):
+        call_count[0] += 1
+        if call_count[0] == 1:
+            raise OSError("disk full")
+        return original_save(mp, msg)
+
+    monkeypatch.setattr(mod, "_save_to_deleted_folder", _failing_save)
+
+    inbox_data = {
+        "messages": [
+            {"id": "m1", "status": "closed", "subject": "Fail"},
+            {"id": "m2", "status": "closed", "subject": "OK"},
+            {"id": "m3", "status": "new", "subject": "Active"},
+        ]
+    }
+
+    swept = mod._sweep_closed(inbox_data, mailbox)
+
+    assert swept == 2
+    assert len(inbox_data["messages"]) == 1
+
+
+def test_sweep_closed_on_read_via_load_inbox(tmp_path: Path, monkeypatch):
+    """Closed message injected by raw JSON edit is swept on next load_inbox."""
+    import aipass.ai_mail.apps.handlers.email.inbox_ops as ops_mod
+
+    monkeypatch.setattr(ops_mod, "_get_inbox_lock", lambda: _noop_lock)
+
+    mailbox = tmp_path / ".ai_mail.local"
+    mailbox.mkdir(parents=True)
+    inbox_file = mailbox / "inbox.json"
+    data = {
+        "mailbox": "inbox",
+        "total_messages": 2,
+        "unread_count": 1,
+        "messages": [
+            {"id": "m1", "status": "new", "subject": "Active", "read": False},
+            {"id": "m2", "status": "closed", "subject": "Stale", "read": True},
+        ],
+    }
+    inbox_file.write_text(json.dumps(data), encoding="utf-8")
+
+    result = ops_mod.load_inbox(inbox_file)
+
+    assert len(result["messages"]) == 1
+    assert result["messages"][0]["id"] == "m1"
+    # Verify persistence — file should be updated
+    with open(inbox_file, "r", encoding="utf-8") as f:
+        persisted = json.load(f)
+    assert len(persisted["messages"]) == 1
+    # Verify archived
+    deleted_files = list((mailbox / "deleted").glob("*.json"))
+    assert len(deleted_files) == 1
+
+
+def test_sweep_on_mark_as_opened_cleans_stale_closed(tmp_path: Path):
+    """Opening a message also sweeps any stale closed messages in inbox."""
+    branch_path = tmp_path / "branch"
+    _make_inbox(
+        branch_path,
+        [
+            {"id": "m1", "status": "new", "subject": "Target", "read": False},
+            {"id": "m2", "status": "closed", "subject": "Stale", "read": True},
+        ],
+    )
+
+    success, _, _ = mod.mark_as_opened(branch_path, "m1")
+    assert success is True
+
+    inbox_file = branch_path / ".ai_mail.local" / "inbox.json"
+    with open(inbox_file, "r", encoding="utf-8") as f:
+        inbox_data = json.load(f)
+    assert len(inbox_data["messages"]) == 1
+    assert inbox_data["messages"][0]["id"] == "m1"
+    assert inbox_data["total_messages"] == 1
+
+
+def test_sweep_on_mark_as_closed_cleans_other_stale(tmp_path: Path):
+    """Closing one message also sweeps other stale closed messages."""
+    branch_path = tmp_path / "branch"
+    _make_inbox(
+        branch_path,
+        [
+            {"id": "m1", "status": "opened", "subject": "Close Me", "read": True},
+            {"id": "m2", "status": "closed", "subject": "Stale", "read": True},
+            {"id": "m3", "status": "new", "subject": "Active", "read": False},
+        ],
+    )
+
+    success, _ = mod.mark_as_closed_and_archive(branch_path, "m1")
+    assert success is True
+
+    inbox_file = branch_path / ".ai_mail.local" / "inbox.json"
+    with open(inbox_file, "r", encoding="utf-8") as f:
+        inbox_data = json.load(f)
+    assert len(inbox_data["messages"]) == 1
+    assert inbox_data["messages"][0]["id"] == "m3"
+    assert inbox_data["total_messages"] == 1
+    assert inbox_data["unread_count"] == 1
+    # Both m1 (properly closed) and m2 (swept) should be in deleted/
+    deleted_files = list((branch_path / ".ai_mail.local" / "deleted").glob("*.json"))
+    assert len(deleted_files) == 2
+
+
+def test_proper_close_does_not_double_archive(tmp_path: Path):
+    """Closing via mark_as_closed_and_archive does not produce duplicate archives."""
+    branch_path = tmp_path / "branch"
+    _make_inbox(
+        branch_path,
+        [{"id": "m1", "status": "opened", "subject": "Normal Close", "read": True}],
+    )
+
+    success, _ = mod.mark_as_closed_and_archive(branch_path, "m1")
+    assert success is True
+
+    deleted_files = list((branch_path / ".ai_mail.local" / "deleted").glob("*.json"))
+    assert len(deleted_files) == 1
