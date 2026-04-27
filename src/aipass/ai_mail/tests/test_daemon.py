@@ -770,7 +770,6 @@ import sys
 from unittest.mock import MagicMock, mock_open
 
 from aipass.ai_mail.apps.handlers.dispatch.daemon import (
-    _notify_telegram,
     _handle_signal,
     _check_lock,
     _acquire_lock,
@@ -782,80 +781,6 @@ from aipass.ai_mail.apps.handlers.dispatch.daemon import (
     spawn_agent,
     run_daemon,
 )
-
-
-# ---- _notify_telegram tests ------------------------------------
-
-
-def test_notify_telegram_success(tmp_path, monkeypatch):
-    """Successful Telegram notification returns True."""
-    config_file = tmp_path / "scheduler_config.json"
-    config_file.write_text(
-        json.dumps({"telegram_bot_token": "fake-token", "telegram_chat_id": "12345"}),
-        encoding="utf-8",
-    )
-    monkeypatch.setattr(daemon_mod, "SCHEDULER_CONFIG", config_file)
-
-    mock_resp = MagicMock()
-    mock_resp.read.return_value = json.dumps({"ok": True}).encode("utf-8")
-    mock_resp.__enter__ = MagicMock(return_value=mock_resp)
-    mock_resp.__exit__ = MagicMock(return_value=False)
-
-    with patch("aipass.ai_mail.apps.handlers.dispatch.daemon.urlopen", return_value=mock_resp):
-        result = _notify_telegram("Test message")
-
-    assert result is True
-
-
-def test_notify_telegram_config_missing(tmp_path, monkeypatch):
-    """Missing scheduler config returns False."""
-    monkeypatch.setattr(daemon_mod, "SCHEDULER_CONFIG", tmp_path / "nonexistent.json")
-
-    result = _notify_telegram("Test message")
-
-    assert result is False
-
-
-def test_notify_telegram_config_decode_error(tmp_path, monkeypatch):
-    """Corrupt scheduler config returns False."""
-    config_file = tmp_path / "scheduler_config.json"
-    config_file.write_text("{bad json!", encoding="utf-8")
-    monkeypatch.setattr(daemon_mod, "SCHEDULER_CONFIG", config_file)
-
-    result = _notify_telegram("Test message")
-
-    assert result is False
-
-
-def test_notify_telegram_config_missing_key(tmp_path, monkeypatch):
-    """Config missing required keys returns False."""
-    config_file = tmp_path / "scheduler_config.json"
-    config_file.write_text(json.dumps({"telegram_bot_token": "tok"}), encoding="utf-8")
-    monkeypatch.setattr(daemon_mod, "SCHEDULER_CONFIG", config_file)
-
-    result = _notify_telegram("Test message")
-
-    assert result is False
-
-
-def test_notify_telegram_url_error(tmp_path, monkeypatch):
-    """URLError during sending returns False."""
-    from urllib.error import URLError
-
-    config_file = tmp_path / "scheduler_config.json"
-    config_file.write_text(
-        json.dumps({"telegram_bot_token": "fake-token", "telegram_chat_id": "12345"}),
-        encoding="utf-8",
-    )
-    monkeypatch.setattr(daemon_mod, "SCHEDULER_CONFIG", config_file)
-
-    with patch(
-        "aipass.ai_mail.apps.handlers.dispatch.daemon.urlopen",
-        side_effect=URLError("connection refused"),
-    ):
-        result = _notify_telegram("Test message")
-
-    assert result is False
 
 
 # ---- _handle_signal tests --------------------------------------
@@ -1330,10 +1255,6 @@ def test_spawn_agent_success(tmp_path):
         ),
         patch("aipass.ai_mail.apps.handlers.dispatch.daemon.log_dispatch"),
         patch(
-            "aipass.ai_mail.apps.handlers.dispatch.daemon._notify_telegram",
-            return_value=True,
-        ),
-        patch(
             "aipass.ai_mail.apps.handlers.dispatch.daemon.send_notification",
             create=True,
         ),
@@ -1361,10 +1282,6 @@ def test_spawn_agent_exception(tmp_path):
             side_effect=OSError("command not found"),
         ),
         patch("aipass.ai_mail.apps.handlers.dispatch.daemon.log_dispatch"),
-        patch(
-            "aipass.ai_mail.apps.handlers.dispatch.daemon._notify_telegram",
-            return_value=True,
-        ),
     ):
         result = spawn_agent(branch_path, "@testbranch", message, config, state)
 
@@ -1403,10 +1320,6 @@ def test_spawn_agent_strips_claude_env_vars(tmp_path, monkeypatch):
             return_value=(True, "Lock acquired"),
         ),
         patch("aipass.ai_mail.apps.handlers.dispatch.daemon.log_dispatch"),
-        patch(
-            "aipass.ai_mail.apps.handlers.dispatch.daemon._notify_telegram",
-            return_value=True,
-        ),
         patch(
             "aipass.ai_mail.apps.handlers.dispatch.daemon.send_notification",
             create=True,
@@ -1447,10 +1360,6 @@ def test_run_daemon_kill_switch_pauses(tmp_path, monkeypatch):
         ),
         patch("aipass.ai_mail.apps.handlers.dispatch.daemon._remove_pid_file"),
         patch(
-            "aipass.ai_mail.apps.handlers.dispatch.daemon._notify_telegram",
-            return_value=True,
-        ),
-        patch(
             "aipass.ai_mail.apps.handlers.dispatch.daemon.load_config",
             return_value={
                 "poll_interval_seconds": 0,
@@ -1487,10 +1396,6 @@ def test_run_daemon_shutdown_exits_loop(tmp_path, monkeypatch):
             return_value=True,
         ),
         patch("aipass.ai_mail.apps.handlers.dispatch.daemon._remove_pid_file"),
-        patch(
-            "aipass.ai_mail.apps.handlers.dispatch.daemon._notify_telegram",
-            return_value=True,
-        ),
         patch(
             "aipass.ai_mail.apps.handlers.dispatch.daemon.load_config",
             return_value={

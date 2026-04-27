@@ -354,6 +354,11 @@ def get_response(prompt: str, caller: str | None = None, model: str | None = Non
     return client.get_response(prompt, caller, model, **kwargs)
 
 
+def extract_response(response):
+    """Public API: Extract content from an OpenRouter API response object."""
+    return client.extract_response(response)
+
+
 if __name__ == "__main__":
     """Standalone execution mode"""
     args = sys.argv[1:]

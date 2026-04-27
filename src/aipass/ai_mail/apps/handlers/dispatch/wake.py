@@ -226,7 +226,7 @@ def _read_session_type(pid_str: str) -> str:
 
 
 # Session types that should NOT block dispatch (idle/background sessions)
-_NON_BLOCKING_SESSION_TYPES = {"telegram", "dispatched", "daemon"}
+_NON_BLOCKING_SESSION_TYPES = {"dispatched", "daemon"}
 
 
 def _is_branch_occupied(branch_path: Path) -> bool:
