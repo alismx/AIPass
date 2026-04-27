@@ -86,6 +86,15 @@ def load_inbox(inbox_file: Path) -> Dict:
             )
             migrated = True
 
+        try:
+            from aipass.ai_mail.apps.handlers.email.inbox_cleanup import _sweep_closed
+
+            swept = _sweep_closed(inbox_data, inbox_file.parent)
+            if swept > 0:
+                migrated = True
+        except Exception as e:
+            logger.warning("[inbox] sweep_closed in load_inbox failed: %s", e)
+
         # Persist migration under lock to prevent concurrent write races
         if migrated:
             try:
