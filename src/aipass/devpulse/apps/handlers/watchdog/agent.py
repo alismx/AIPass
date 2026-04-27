@@ -29,6 +29,7 @@ import json
 import os
 import sys
 import time
+from datetime import datetime
 from pathlib import Path
 
 from aipass.prax.apps.modules.logger import system_logger as logger
@@ -184,6 +185,51 @@ def _pid_alive(pid: int) -> bool:
     return True
 
 
+def _get_jsonl_projects_dir(branch_path: Path) -> Path:
+    """Get Claude's JSONL projects directory for a branch path."""
+    cwd = str(branch_path)
+    encoded = cwd.replace("\\", "-").replace("/", "-").replace(":", "-").replace("_", "-").replace(".", "-")
+    return Path.home() / ".claude" / "projects" / encoded
+
+
+def _snapshot_jsonl_sizes(projects_dir: Path) -> dict:
+    """Snapshot current sizes of all JSONL files."""
+    sizes = {}
+    if not projects_dir.exists():
+        return sizes
+    try:
+        for f in projects_dir.glob("*.jsonl"):
+            try:
+                sizes[f.name] = f.stat().st_size
+            except OSError as exc:
+                logger.info("[watchdog.agent] jsonl snapshot stat failed for %s: %s", f.name, exc)
+    except OSError as exc:
+        logger.info("[watchdog.agent] jsonl snapshot glob failed: %s", exc)
+    return sizes
+
+
+def _has_jsonl_activity(projects_dir: Path, baseline: dict) -> bool:
+    """Return True if any JSONL file grew or a new file appeared since baseline."""
+    if not projects_dir.exists():
+        return False
+    try:
+        files = list(projects_dir.glob("*.jsonl"))
+    except OSError as exc:
+        logger.info("[watchdog.agent] jsonl activity glob failed: %s", exc)
+        return False
+    for f in files:
+        try:
+            current_size = f.stat().st_size
+        except OSError as exc:
+            logger.info("[watchdog.agent] jsonl activity stat failed for %s: %s", f.name, exc)
+            continue
+        if f.name not in baseline:
+            return current_size > 0
+        if current_size > baseline[f.name]:
+            return True
+    return False
+
+
 def _read_lock(lock_file: Path) -> dict | None:
     """Read lock file, return dict or None on miss/error."""
     if not lock_file.exists():
@@ -195,10 +241,54 @@ def _read_lock(lock_file: Path) -> dict | None:
         return None
 
 
-def _classify_exit(branch_path: Path, lock_existed: bool) -> tuple[str, str, int | None]:
-    """After lock disappears, decide success vs crash.
+def _check_sent_for_reply(branch_path: Path, dispatch_ts: str | None) -> bool:
+    """Check if the agent sent any messages after the dispatch timestamp."""
+    sent_dir = branch_path / ".ai_mail.local" / "sent"
+    if not sent_dir.is_dir():
+        return False
+
+    baseline = None
+    if dispatch_ts:
+        for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M"):
+            try:
+                baseline = datetime.strptime(dispatch_ts, fmt)
+                break
+            except ValueError:
+                logger.info("[watchdog.agent] dispatch_ts %r didn't match fmt %s", dispatch_ts, fmt)
+                continue
+
+    for msg_file in sent_dir.iterdir():
+        if not msg_file.suffix == ".json":
+            continue
+        try:
+            data = json.loads(msg_file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            logger.info("[watchdog.agent] skipping unreadable sent file %s: %s", msg_file.name, exc)
+            continue
+        if baseline is None:
+            return True
+        msg_ts_str = data.get("timestamp", "")
+        for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%dT%H:%M:%S"):
+            try:
+                msg_ts = datetime.strptime(msg_ts_str, fmt)
+                if msg_ts >= baseline:
+                    return True
+                break
+            except ValueError:
+                logger.info("[watchdog.agent] msg timestamp %r didn't match fmt %s", msg_ts_str, fmt)
+                continue
+    return False
+
+
+def _classify_exit(
+    branch_path: Path,
+    lock_existed: bool,
+    dispatch_ts: str | None = None,
+) -> tuple[str, str, int | None]:
+    """After lock disappears, decide success vs crash vs silent finish.
 
     Returns (agent_state, reason, exit_code).
+    States: completed_replied, completed_silent, crashed.
     """
     bounce_file = branch_path / ".ai_mail.local" / "last_bounce.json"
     if bounce_file.exists():
@@ -214,9 +304,15 @@ def _classify_exit(branch_path: Path, lock_existed: bool) -> tuple[str, str, int
             logger.warning("[watchdog.agent] bounce file unreadable: %s", exc)
             return ("crashed", "agent crashed (bounce file present, unreadable)", None)
 
-    if not lock_existed:
-        return ("completed", "agent finished cleanly", 0)
-    return ("completed", "agent finished cleanly (lock removed)", 0)
+    replied = _check_sent_for_reply(branch_path, dispatch_ts)
+    if replied:
+        reason = "agent finished cleanly (lock removed)" if lock_existed else "agent finished cleanly"
+        return ("completed_replied", reason, 0)
+
+    reason = "agent exited without sending a reply"
+    if lock_existed:
+        reason += " (lock removed)"
+    return ("completed_silent", reason, 0)
 
 
 def watch_agent(
@@ -234,7 +330,7 @@ def watch_agent(
 
     Returns:
         dict with keys: woke, reason, elapsed, agent_state, exit_code, agent_id.
-        agent_state is one of: "completed", "crashed", "timeout".
+        agent_state is one of: "completed_replied", "completed_silent", "crashed", "timeout".
     """
     started_at = time.monotonic()
     _stderr(f"[watchdog.agent] watching {agent_id} (timeout={timeout_seconds}s)")
@@ -263,12 +359,13 @@ def watch_agent(
         lock_file = branch_path / ".ai_mail.local" / ".dispatch.lock"
         initial_lock = _read_lock(lock_file)
         initial_pid = initial_lock.get("pid") if initial_lock else None
+        dispatch_ts = initial_lock.get("timestamp") if initial_lock else None
         lock_existed_initially = initial_lock is not None
 
         if not lock_existed_initially:
             _stderr(f"[watchdog.agent] {agent_id}: no active lock — agent already idle")
             elapsed = int(time.monotonic() - started_at)
-            state, reason, exit_code = _classify_exit(branch_path, lock_existed=False)
+            state, reason, exit_code = _classify_exit(branch_path, lock_existed=False, dispatch_ts=dispatch_ts)
             return {
                 "woke": True,
                 "reason": f"no active dispatch ({reason})",
@@ -280,6 +377,12 @@ def watch_agent(
             }
 
         _stderr(f"[watchdog.agent] {agent_id}: lock present, monitor PID={initial_pid}")
+
+        jsonl_dir = _get_jsonl_projects_dir(branch_path)
+        jsonl_baseline = _snapshot_jsonl_sizes(jsonl_dir)
+        last_activity_at = time.monotonic()
+        stall_reported = False
+        stall_threshold = 120.0
 
         while True:
             elapsed = time.monotonic() - started_at
@@ -299,7 +402,7 @@ def watch_agent(
             if not lock_file.exists():
                 _stderr(f"[watchdog.agent] {agent_id}: lock removed — agent done")
                 elapsed_int = int(time.monotonic() - started_at)
-                state, reason, exit_code = _classify_exit(branch_path, lock_existed=True)
+                state, reason, exit_code = _classify_exit(branch_path, lock_existed=True, dispatch_ts=dispatch_ts)
                 logger.info("[watchdog.agent] wake agent_id=%s state=%s elapsed=%s", agent_id, state, elapsed_int)
                 return {
                     "woke": True,
@@ -317,8 +420,8 @@ def watch_agent(
                     f"but lock still present — treating as crash"
                 )
                 elapsed_int = int(time.monotonic() - started_at)
-                state, reason, exit_code = _classify_exit(branch_path, lock_existed=True)
-                if state == "completed":
+                state, reason, exit_code = _classify_exit(branch_path, lock_existed=True, dispatch_ts=dispatch_ts)
+                if state.startswith("completed"):
                     state = "crashed"
                     reason = f"monitor PID {initial_pid} dead, lock still present"
                 logger.info("[watchdog.agent] wake agent_id=%s state=%s elapsed=%s", agent_id, state, elapsed_int)
@@ -331,6 +434,27 @@ def watch_agent(
                     "agent_id": agent_id,
                     "handle": handle,
                 }
+
+            if _has_jsonl_activity(jsonl_dir, jsonl_baseline):
+                jsonl_baseline = _snapshot_jsonl_sizes(jsonl_dir)
+                last_activity_at = time.monotonic()
+                if stall_reported:
+                    _stderr(f"[watchdog.agent] {agent_id}: activity resumed")
+                    logger.info("[watchdog.agent] activity resumed agent_id=%s", agent_id)
+                    stall_reported = False
+            elif not stall_reported and (time.monotonic() - last_activity_at) >= stall_threshold:
+                idle_secs = int(time.monotonic() - last_activity_at)
+                _stderr(
+                    f"[watchdog.agent] {agent_id}: STALLED — no JSONL activity for {idle_secs}s "
+                    f"(PID {initial_pid} still alive)"
+                )
+                logger.info(
+                    "[watchdog.agent] stall detected agent_id=%s idle=%ss pid=%s",
+                    agent_id,
+                    idle_secs,
+                    initial_pid,
+                )
+                stall_reported = True
 
             time.sleep(poll_interval)
     finally:

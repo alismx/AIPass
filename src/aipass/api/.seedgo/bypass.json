@@ -119,6 +119,11 @@
       "file": "apps/modules/integrations_manager.py",
       "standard": "unused_function",
       "reason": "fetch_contracts() and call_contract() are test API hooks called from tests/test_integrations.py. The unused_function checker excludes test dirs from its search corpus, so these appear unused despite being actively called. Encapsulation standard requires tests to go through modules, not import handlers directly — these functions serve that purpose."
+    },
+    {
+      "file": "apps/modules/api_key.py",
+      "standard": "unused_function",
+      "reason": "fetch_api_key() and fetch_validate_key() are module-level wrappers called from tests/test_critical_paths.py. The unused_function checker excludes test dirs from its search corpus. Encapsulation standard requires tests to go through modules — these functions serve that purpose (DPLAN-0155)."
     }
   ],
   "notes": {

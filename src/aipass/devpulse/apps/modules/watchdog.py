@@ -353,9 +353,18 @@ def _handle_agent(sub_args: List[str]) -> bool:
     reason = result.get("reason", "")
     elapsed = result.get("elapsed", 0)
     console.print(f"[bold]watchdog agent[/bold] {agent_id} -> state={state} elapsed={elapsed}s reason={reason}")
-    console.print(
-        f'watchdog: {agent_id} stopped (state={state}). Next: drone @ai_mail dispatch {agent_id} "check in" "..."'
-    )
+    if state == "completed_silent":
+        console.print(
+            f"watchdog: {agent_id} stopped (state={state}) -- CHECK DELIVERABLES. "
+            f'Next: drone @ai_mail dispatch {agent_id} "check in" "You finished your last task but did not send a reply. '
+            f'Please reply with your results now via drone @ai_mail email @devpulse."'
+        )
+    elif state == "completed_replied":
+        console.print(f"watchdog: {agent_id} stopped (state={state}). Reply detected — check inbox.")
+    else:
+        console.print(
+            f'watchdog: {agent_id} stopped (state={state}). Next: drone @ai_mail dispatch {agent_id} "check in" "..."'
+        )
     return True
 
 

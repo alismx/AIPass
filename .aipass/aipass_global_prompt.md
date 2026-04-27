@@ -197,7 +197,7 @@ Always work on main. Edit files in your branch directory on the main branch. Whe
 
 **Blocked system-wide via `.claude/settings.json` permission gate:** `git checkout*` (any form — switch, discard, new branch), `git add -f*`, `git add --force*`. These are denied for every agent including devpulse. Use `drone @git sync` to switch to main, `drone @git fix` to recover from broken states.
 
-**Culturally blocked (no permission gate yet, still don't use):** `git commit`, `git push`, `gh pr create`. Go through drone.
+**Mechanically blocked via `.git/hooks/pre-commit`:** `git commit` is rejected on any branch except main (also catches detached HEAD). `git push`, `gh pr create` — go through drone.
 
 **Allowed read-only:** `git status`, `git diff`, `git log`, `git stash` (safe transient save).
 
