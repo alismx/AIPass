@@ -19,6 +19,7 @@ import pytest
 
 from aipass.drone.apps.handlers.registry_handler import (
     _first_registry_in,
+    _validate_branch_path,
     _verify_registry_credential,
     find_registry,
     get_all_branches,
@@ -126,8 +127,8 @@ class TestLoadRegistry:
         assert str(branch_path).startswith(str(registry_dir))
 
     def test_absolute_path_not_re_resolved(self, registry_dir: Path):
-        """A branch with an already-absolute path is NOT re-resolved against registry_dir."""
-        abs_path = "/opt/custom/my_branch"
+        """A branch with an already-absolute path inside project root is preserved as-is."""
+        abs_path = str(registry_dir / "my_branch")
         reg = _minimal_registry(
             branches=[
                 {
@@ -532,3 +533,58 @@ class TestRegistryPathManagement:
         with patch.dict(os.environ, {"AIPASS_REGISTRY": env_path}):
             result = get_registry_path()
             assert result == Path(env_path)
+
+
+# ===================================================================
+# Path containment validation
+# ===================================================================
+
+
+class TestValidateBranchPath:
+    """_validate_branch_path() security boundary checks."""
+
+    def test_valid_path_inside_project(self, registry_dir: Path):
+        """Path within project root passes validation."""
+        branch = registry_dir / "src" / "aipass" / "trigger"
+        branch.mkdir(parents=True)
+        assert _validate_branch_path(branch, registry_dir, "trigger") is True
+
+    def test_path_traversal_blocked(self, registry_dir: Path):
+        """Path with ../ escaping project root is rejected."""
+        evil_path = registry_dir / ".." / ".." / ".." / "tmp" / "evil"
+        assert _validate_branch_path(evil_path, registry_dir, "evil") is False
+
+    def test_absolute_path_outside_root_blocked(self, registry_dir: Path):
+        """Absolute path outside project root is rejected."""
+        assert _validate_branch_path(Path("/tmp/evil"), registry_dir, "evil") is False
+
+    def test_exact_project_root_passes(self, registry_dir: Path):
+        """Path equal to project root passes (edge case)."""
+        assert _validate_branch_path(registry_dir, registry_dir, "root") is True
+
+    def test_symlink_resolved(self, registry_dir: Path):
+        """Symlink pointing outside project root is rejected after resolution."""
+        external = Path(tempfile.mkdtemp(prefix="external_"))
+        try:
+            link = registry_dir / "sneaky_link"
+            link.symlink_to(external)
+            assert _validate_branch_path(link, registry_dir, "sneaky") is False
+        finally:
+            shutil.rmtree(external, ignore_errors=True)
+
+    def test_registry_rejects_traversal_entry(self, registry_dir: Path, monkeypatch):
+        """A registry entry with path traversal is silently dropped during load."""
+        reg = _minimal_registry(
+            branches=[
+                {"name": "legit", "path": "src/legit", "status": "active", "type": "lib"},
+                {"name": "evil", "path": "../../../tmp/evil", "status": "active", "type": "lib"},
+            ]
+        )
+        _write_registry(registry_dir, reg)
+        set_registry_path(registry_dir / "AIPASS_REGISTRY.json")
+
+        monkeypatch.chdir(registry_dir)
+        result = load_registry()
+        branch_names = list(result["branches"].keys())
+        assert "legit" in branch_names
+        assert "evil" not in branch_names

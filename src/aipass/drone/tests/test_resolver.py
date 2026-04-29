@@ -408,3 +408,42 @@ class TestWithSampleRegistry:
             assert info["status"] == "active"
         finally:
             reset_registry_path()
+
+
+# ===========================================================================
+# Path containment — resolver side
+# ===========================================================================
+
+
+class TestResolverPathContainment:
+    """resolve_branch() rejects registry entries with path traversal."""
+
+    def test_traversal_path_raises(self, tmp_path: Path):
+        """Registry entry with ../../../tmp/evil is rejected (filtered at load or resolve)."""
+        reg_file = tmp_path / "AIPASS_REGISTRY.json"
+        _write_registry(
+            reg_file,
+            [_make_branch("evil", "../../../tmp/evil")],
+        )
+        set_registry_path(reg_file)
+        try:
+            with pytest.raises(BranchNotFoundError):
+                resolve_branch("@evil")
+        finally:
+            reset_registry_path()
+
+    def test_valid_path_resolves(self, tmp_path: Path):
+        """Registry entry within project root resolves normally."""
+        branch_dir = tmp_path / "src" / "aipass" / "legit"
+        branch_dir.mkdir(parents=True)
+        reg_file = tmp_path / "AIPASS_REGISTRY.json"
+        _write_registry(
+            reg_file,
+            [_make_branch("legit", "src/aipass/legit")],
+        )
+        set_registry_path(reg_file)
+        try:
+            result = resolve_branch("@legit")
+            assert "legit" in result
+        finally:
+            reset_registry_path()
