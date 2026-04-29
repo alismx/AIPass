@@ -29,6 +29,38 @@ from aipass.drone.apps.handlers.json import json_handler
 
 
 # ---------------------------------------------------------------------------
+# Path containment validation
+# ---------------------------------------------------------------------------
+
+
+def _validate_branch_path(branch_path: Path, project_root: Path, branch_name: str) -> bool:
+    """Validate that a resolved branch path is contained within the project root.
+
+    Returns True if the path is safe.  Returns False and logs a warning if
+    the path escapes the project boundary (path-traversal / ghost-branch).
+    """
+    try:
+        resolved = branch_path.resolve()
+        root = project_root.resolve()
+        if not resolved.is_relative_to(root):
+            logger.warning(
+                "SECURITY: branch '%s' path escapes project root: %s (root: %s)",
+                branch_name,
+                resolved,
+                root,
+            )
+            return False
+    except (OSError, ValueError) as exc:
+        logger.warning(
+            "SECURITY: branch '%s' path validation failed: %s",
+            branch_name,
+            exc,
+        )
+        return False
+    return True
+
+
+# ---------------------------------------------------------------------------
 # Registry path resolution
 # ---------------------------------------------------------------------------
 
@@ -218,6 +250,8 @@ def _load_registry_data(registry_path: Path) -> Dict[str, Any]:
             branch_path = Path(raw_path)
             if not branch_path.is_absolute():
                 branch_path = (registry_dir / branch_path).resolve()
+            if not _validate_branch_path(branch_path, registry_dir, name):
+                continue
             entry = dict(branch)
             entry["name"] = name
             entry["path"] = str(branch_path)
