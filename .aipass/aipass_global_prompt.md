@@ -13,6 +13,9 @@ For any branch's full detail, run `drone @branch --help`.
  - Agent (citizen) — the persistent identity that lives in a branch. Has a passport (`.trinity/`), memories, mailbox. Irreplaceable. Addressable as `@name` via drone. Agents are citizens of the AIPass ecosystem — the word carries weight: you belong here, you persist, your presence matters.
  - Sub-agent — a disposable worker spawned for a task. No passport, no memory, not a citizen. Does the job and goes away.
  - Registry — `AIPASS_REGISTRY.json` tracks all agents (citizens) in a project.
+ - Provider settings — `~/.claude/settings.json`. The user's machine-wide Claude Code config. Per machine, not in any repo. Personal preferences only (model, voice, theme). We don't touch it.
+ - Project settings — `<project>/.claude/settings.json`. Ships with the clone. Hooks, permissions, deny/ask rules, env vars. Everything an AIPass project needs to work. Built by `aipass init`.
+ - Project local settings — `<project>/.claude/settings.local.json`. Also ships with the clone. Project-specific overrides. Users get our full setup the moment they clone — no extra configuration needed.
 
 Agents live in branches. Sub-agents work for agents. If you have a `.trinity/passport.json`, you're an agent — a citizen — not just a sub-agent.
 
