@@ -133,6 +133,19 @@ if [ "$PY_OK" != "1" ]; then
     fi
 fi
 
+# --- Check ensurepip (Debian/Ubuntu split it into python3-venv apt package) ---
+if ! $PYTHON -c 'import ensurepip' &>/dev/null 2>&1; then
+    echo ""
+    echo "FAIL: ensurepip is unavailable for $PYTHON."
+    echo "  Without it, 'python3 -m venv' creates a broken venv (no pip, no activate)."
+    echo ""
+    echo "  Debian/Ubuntu:  sudo apt install python3-venv python3-pip"
+    echo "  Fedora/RHEL:    sudo dnf install python3-pip"
+    echo "  Arch:           (included in base python — file a bug if you hit this)"
+    echo ""
+    exit 1
+fi
+
 # --- Create venv ---
 if [ "$IS_WINDOWS" -eq 1 ] && [ -f ".venv/Scripts/python.exe" ]; then
     # Windows: skip venv recreation if python.exe exists (rm -rf unreliable due to file locking)
@@ -240,6 +253,7 @@ if [ ! -d "$SECRETS_DIR" ]; then
     echo "Creating secrets directory at $SECRETS_DIR ..."
     mkdir -p "$SECRETS_DIR"
     chmod 700 "$HOME/.secrets"
+    chmod 700 "$SECRETS_DIR"
     echo "  ~/.secrets/aipass/ ... created"
 else
     echo "Secrets directory already exists — skipping"
@@ -249,6 +263,34 @@ fi
 if [ ! -f "$SECRETS_DIR/.env" ] && [ -f ".env.example" ]; then
     cp .env.example "$SECRETS_DIR/.env"
     echo "  Copied .env.example → ~/.secrets/aipass/.env (add your API keys there)"
+fi
+
+# --- Git identity (commits fail without user.email / user.name) ---
+GIT_EMAIL=$(git config --global user.email 2>/dev/null || true)
+GIT_NAME=$(git config --global user.name 2>/dev/null || true)
+if [ -z "$GIT_EMAIL" ] || [ -z "$GIT_NAME" ]; then
+    echo ""
+    echo "Git identity not configured — commits will fail without it."
+    DEFAULT_EMAIL="aipass.system@gmail.com"
+    DEFAULT_NAME="AIOSAI"
+    if [ -t 0 ]; then
+        # Interactive — prompt with defaults
+        read -r -p "  Git user.email [$DEFAULT_EMAIL]: " INPUT_EMAIL
+        read -r -p "  Git user.name  [$DEFAULT_NAME]: " INPUT_NAME
+        GIT_EMAIL="${INPUT_EMAIL:-$DEFAULT_EMAIL}"
+        GIT_NAME="${INPUT_NAME:-$DEFAULT_NAME}"
+    else
+        # Non-interactive — use defaults
+        GIT_EMAIL="$DEFAULT_EMAIL"
+        GIT_NAME="$DEFAULT_NAME"
+        echo "  Non-interactive mode — using defaults ($GIT_EMAIL / $GIT_NAME)"
+    fi
+    git config --global user.email "$GIT_EMAIL"
+    git config --global user.name "$GIT_NAME"
+    git config --global pull.rebase true
+    echo "  Git identity set: $GIT_NAME <$GIT_EMAIL>"
+else
+    echo "Git identity: $GIT_NAME <$GIT_EMAIL>"
 fi
 
 # --- Generate branch registry ---
@@ -528,6 +570,24 @@ msys = os.environ.get("MSYSTEM", "") + os.environ.get("OSTYPE", "")
 if "MSYS" in msys or "msys" in msys or "MINGW" in msys:
     env_block["PYTHONUTF8"] = "1"
 settings["env"] = env_block
+
+# Deny rules — hard-block tool access to secrets
+permissions = settings.get("permissions", {})
+deny = permissions.get("deny", [])
+secrets_deny = [
+    "Read(~/.secrets/**)",
+    "Read(/home/*/.secrets/**)",
+    "Bash(cat *~/.secrets*)",
+    "Bash(less *~/.secrets*)",
+    "Bash(head *~/.secrets*)",
+    "Bash(tail *~/.secrets*)",
+    "Bash(*~/.secrets*)",
+]
+for rule in secrets_deny:
+    if rule not in deny:
+        deny.append(rule)
+permissions["deny"] = deny
+settings["permissions"] = permissions
 
 settings_path.write_text(json.dumps(settings, indent=2) + "\n")
 print(f"  hooks -> {settings_path}")
