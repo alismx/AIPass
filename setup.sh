@@ -264,6 +264,34 @@ if [ ! -f "$SECRETS_DIR/.env" ] && [ -f ".env.example" ]; then
     echo "  Copied .env.example → ~/.secrets/aipass/.env (add your API keys there)"
 fi
 
+# --- Git identity (commits fail without user.email / user.name) ---
+GIT_EMAIL=$(git config --global user.email 2>/dev/null || true)
+GIT_NAME=$(git config --global user.name 2>/dev/null || true)
+if [ -z "$GIT_EMAIL" ] || [ -z "$GIT_NAME" ]; then
+    echo ""
+    echo "Git identity not configured — commits will fail without it."
+    DEFAULT_EMAIL="aipass.system@gmail.com"
+    DEFAULT_NAME="AIOSAI"
+    if [ -t 0 ]; then
+        # Interactive — prompt with defaults
+        read -r -p "  Git user.email [$DEFAULT_EMAIL]: " INPUT_EMAIL
+        read -r -p "  Git user.name  [$DEFAULT_NAME]: " INPUT_NAME
+        GIT_EMAIL="${INPUT_EMAIL:-$DEFAULT_EMAIL}"
+        GIT_NAME="${INPUT_NAME:-$DEFAULT_NAME}"
+    else
+        # Non-interactive — use defaults
+        GIT_EMAIL="$DEFAULT_EMAIL"
+        GIT_NAME="$DEFAULT_NAME"
+        echo "  Non-interactive mode — using defaults ($GIT_EMAIL / $GIT_NAME)"
+    fi
+    git config --global user.email "$GIT_EMAIL"
+    git config --global user.name "$GIT_NAME"
+    git config --global pull.rebase true
+    echo "  Git identity set: $GIT_NAME <$GIT_EMAIL>"
+else
+    echo "Git identity: $GIT_NAME <$GIT_EMAIL>"
+fi
+
 # --- Generate branch registry ---
 if [ ! -f "AIPASS_REGISTRY.json" ]; then
     echo "Generating AIPASS_REGISTRY.json ..."
