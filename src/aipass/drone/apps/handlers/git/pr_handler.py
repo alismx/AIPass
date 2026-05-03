@@ -36,14 +36,40 @@ def _is_permission_error(stderr: str) -> bool:
     return any(ind.lower() in lower for ind in indicators)
 
 
-_FORK_RECOVERY = """
-Push failed due to insufficient permissions. You may be working on a fork.
+def _fork_recovery_message(branch: str, repo_root: str = ".") -> str:
+    """Build a dynamic fork recovery message with actual repo/user info."""
+    origin = "AIOSAI/AIPass"
+    try:
+        r = subprocess.run(
+            ["gh", "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"],
+            capture_output=True,
+            text=True,
+            cwd=repo_root,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            origin = r.stdout.strip()
+    except OSError as exc:
+        logger.info("Could not detect origin repo: %s", exc)
+
+    gh_user = "<your-user>"
+    try:
+        r = subprocess.run(
+            ["gh", "api", "user", "-q", ".login"],
+            capture_output=True,
+            text=True,
+        )
+        if r.returncode == 0 and r.stdout.strip():
+            gh_user = r.stdout.strip()
+    except OSError as exc:
+        logger.info("Could not detect gh user: %s", exc)
+
+    return f"""Push failed due to insufficient permissions. You may be working on a fork.
 
 To contribute from a fork:
-  1. Create a fork:        gh repo fork AIOSAI/AIPass --remote=false --clone=false
-  2. Add fork as remote:   git remote add fork <your-fork-url>
+  1. Create a fork:        gh repo fork {origin} --remote=false --clone=false
+  2. Add fork as remote:   git remote add fork https://github.com/{gh_user}/{origin.split("/")[-1]}.git
   3. Push to your fork:    git push -u fork {branch}
-  4. Open cross-repo PR:   gh pr create -R AIOSAI/AIPass -H <your-user>:{branch} -B main
+  4. Open cross-repo PR:   gh pr create -R {origin} -H {gh_user}:{branch} -B main
 """
 
 
@@ -193,7 +219,7 @@ def create_pr(branch_name: str, description: str, branch_dir: Path) -> dict:
         if push.returncode != 0:
             stderr = push.stderr.strip()
             if _is_permission_error(stderr):
-                result["message"] = _FORK_RECOVERY.format(branch=feature_branch)
+                result["message"] = _fork_recovery_message(feature_branch, str(repo_root))
             else:
                 result["message"] = f"Push failed: {stderr}"
             logger.error(result["message"])

@@ -34,7 +34,7 @@ from aipass.drone.apps.handlers.git.lock_handler import (
 )
 from aipass.drone.apps.handlers.git.pr_handler import (
     _is_permission_error,
-    _FORK_RECOVERY,
+    _fork_recovery_message,
 )
 
 
@@ -218,7 +218,7 @@ def create_system_pr(description: str, caller: str) -> dict:
         if push.returncode != 0:
             stderr = push.stderr.strip()
             if _is_permission_error(stderr):
-                result["message"] = _FORK_RECOVERY.format(branch=feature_branch)
+                result["message"] = _fork_recovery_message(feature_branch, str(repo_root))
             else:
                 result["message"] = f"Push failed: {stderr}"
             logger.error(result["message"])
