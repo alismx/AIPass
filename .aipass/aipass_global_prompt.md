@@ -79,10 +79,11 @@ Allowed:
  - `drone @git fix` — repair broken git states (devpulse only)
  - `git status`, `git diff`, `git log` — read-only, always fine
 
-Forbidden (denied system-wide in `.claude/settings.json`):
- - `git checkout*` — any form, including `-b`, `-`, branch names
- - `git add -f*` / `--force*`
- - Culturally avoid `git commit`, `git push`, `gh pr create` directly — go through drone
+Mechanically blocked by the `git_gate.py` PreToolUse hook (applies to ALL sessions including dispatched agents — bypassPermissions does not skip hooks):
+ - All raw `git` write verbs: `commit`, `push`, `pull`, `merge`, `rebase`, `reset`, `checkout`, `switch`, `branch`, `cherry-pick`, `revert`, `rm`, `mv`, `restore`, `clean`, `config`, `tag`, `stash drop|clear|pop|apply`
+ - All raw `gh` write subcommands (`pr`, `issue`, `repo`, `release`, `workflow`, `run`, `cache`, `secret`, `variable`, `gist`) and any `gh api` call
+ - Edits to `**/.claude/settings*.json`, `**/.claude/hooks/**`, `**/.git/hooks/**` (the enforcement layer itself)
+ - Use `drone @git pr "msg"` instead. Drone calls git via Python subprocess so its operations don't pass through this hook.
 
 If `drone @git system-pr` fails to return HEAD to main, that's a drone bug — report it, don't work around it by staying on a branch.
 

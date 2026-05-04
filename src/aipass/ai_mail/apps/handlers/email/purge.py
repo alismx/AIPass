@@ -20,6 +20,8 @@ v2.0.0: deleted/ now uses directory structure (like sent/).
 """
 
 import json
+import os
+import sys
 import subprocess
 from pathlib import Path
 from datetime import datetime
@@ -35,10 +37,22 @@ MAX_EMAILS = 10
 # Memory branch paths for subprocess vectorization (optional external service)
 # These are resolved relative to repo root if available; vectorization is best-effort
 _REPO_ROOT = find_repo_root()
-MEMORY_PYTHON = _REPO_ROOT / "src" / "aipass" / "memory" / ".venv" / "bin" / "python3"
+_MEMORY_VENV_PYTHON = _REPO_ROOT / "src" / "aipass" / "memory" / ".venv" / "bin" / "python3"
 CHROMA_SUBPROCESS_SCRIPT = (
     _REPO_ROOT / "src" / "aipass" / "memory" / "apps" / "handlers" / "storage" / "chroma_subprocess.py"
 )
+
+
+def _get_memory_python() -> str:
+    env = os.environ.get("AIPASS_MEMORY_PYTHON")
+    if env:
+        return env
+    if _MEMORY_VENV_PYTHON.exists():
+        return str(_MEMORY_VENV_PYTHON)
+    return sys.executable
+
+
+MEMORY_PYTHON = _get_memory_python()
 
 
 def purge_sent_folder(mailbox_path: Path) -> Dict[str, Any]:
