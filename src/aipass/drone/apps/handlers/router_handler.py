@@ -113,7 +113,10 @@ def execute_branch_command(
         cmd_args += [command] + list(args or [])
 
     # Pass caller's CWD so target branches can detect who invoked them
-    caller_env = {"AIPASS_CALLER_CWD": str(Path.cwd())}
+    caller_env = {
+        "AIPASS_CALLER_CWD": str(Path.cwd()),
+        "AIPASS_BRANCH_NAME": branch_name,
+    }
 
     # Detect caller branch name from passport.json, fall back to env var
     # (dispatched agents set AIPASS_BRANCH_NAME which survives cd)
