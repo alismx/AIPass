@@ -131,7 +131,7 @@ startup trigger → check_and_rollover()
 
 ### Subprocess Isolation
 
-All ML operations (torch, sentence-transformers, chromadb) run via subprocess. The main process never imports these heavy libraries. Each embedding call spawns `memory/.venv/bin/python3` with a self-contained script that reads stdin JSON and writes stdout JSON.
+All ML operations (torch, sentence-transformers, chromadb) run via subprocess. The main process never imports these heavy libraries. Each embedding call resolves a Python interpreter via `_get_memory_python()` (env var `AIPASS_MEMORY_PYTHON` → `memory/.venv/bin/python` → `sys.executable`) and runs a self-contained script that reads stdin JSON and writes stdout JSON.
 
 ---
 
