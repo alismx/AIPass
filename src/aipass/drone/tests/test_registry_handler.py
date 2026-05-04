@@ -19,6 +19,7 @@ import pytest
 
 from aipass.drone.apps.handlers.registry_handler import (
     _first_registry_in,
+    _registry_matches_credential,
     _validate_branch_path,
     _verify_registry_credential,
     find_registry,
@@ -387,6 +388,75 @@ class TestFindRegistry:
         result = find_registry()
         assert isinstance(result, Path)
         assert result.name == "AIPASS_REGISTRY.json"
+
+    def test_find_registry_skips_mismatched_continues_up(self, registry_dir: Path, monkeypatch):
+        """find_registry() skips a nested registry with wrong credential and finds the correct one above."""
+        passport_id = "correct-registry-id"
+        wrong_id = "wrong-registry-id"
+
+        _write_registry(registry_dir, _minimal_registry(metadata_id=passport_id))
+
+        nested = registry_dir / "src" / "aipass" / "citizen"
+        nested.mkdir(parents=True)
+        _write_registry(nested, {"metadata": {"id": wrong_id}, "branches": []}, name="CITIZEN_REGISTRY.json")
+
+        _write_passport(nested, {"citizenship": {"registry_id": passport_id}})
+
+        monkeypatch.chdir(nested)
+        result = find_registry()
+        assert result.parent == registry_dir
+        assert result.name == "AIPASS_REGISTRY.json"
+
+    def test_find_registry_returns_matching_nested(self, registry_dir: Path, monkeypatch):
+        """find_registry() returns a nested registry when credentials match."""
+        shared_id = "shared-id"
+
+        _write_registry(registry_dir, _minimal_registry(metadata_id="parent-id"))
+
+        nested = registry_dir / "sub"
+        nested.mkdir()
+        _write_registry(nested, _minimal_registry(metadata_id=shared_id), name="SUB_REGISTRY.json")
+        _write_passport(nested, {"citizenship": {"registry_id": shared_id}})
+
+        monkeypatch.chdir(nested)
+        result = find_registry()
+        assert result.parent == nested
+        assert result.name == "SUB_REGISTRY.json"
+
+
+# ===================================================================
+# 7b. _registry_matches_credential()
+# ===================================================================
+
+
+class TestRegistryMatchesCredential:
+    def test_returns_true_when_ids_match(self, registry_dir: Path, monkeypatch):
+        """Returns True when passport and registry IDs agree."""
+        shared_id = "match-id"
+        path = _write_registry(registry_dir, _minimal_registry(metadata_id=shared_id))
+        _write_passport(registry_dir, {"citizenship": {"registry_id": shared_id}})
+        monkeypatch.chdir(registry_dir)
+        assert _registry_matches_credential(path) is True
+
+    def test_returns_false_on_mismatch(self, registry_dir: Path, monkeypatch):
+        """Returns False when passport and registry IDs disagree."""
+        path = _write_registry(registry_dir, _minimal_registry(metadata_id="reg-A"))
+        _write_passport(registry_dir, {"citizenship": {"registry_id": "reg-B"}})
+        monkeypatch.chdir(registry_dir)
+        assert _registry_matches_credential(path) is False
+
+    def test_returns_true_when_registry_has_no_id(self, registry_dir: Path, monkeypatch):
+        """Returns True when registry has no metadata.id."""
+        path = _write_registry(registry_dir, _minimal_registry())
+        _write_passport(registry_dir, {"citizenship": {"registry_id": "some-id"}})
+        monkeypatch.chdir(registry_dir)
+        assert _registry_matches_credential(path) is True
+
+    def test_returns_true_when_no_passport(self, registry_dir: Path, monkeypatch):
+        """Returns True when no passport.json exists."""
+        path = _write_registry(registry_dir, _minimal_registry(metadata_id="some-id"))
+        monkeypatch.chdir(registry_dir)
+        assert _registry_matches_credential(path) is True
 
 
 # ===================================================================

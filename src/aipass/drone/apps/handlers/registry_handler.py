@@ -77,27 +77,61 @@ def _first_registry_in(directory: Path) -> Optional[Path]:
     return matches[0] if matches else None
 
 
+def _registry_matches_credential(registry_path: Path) -> bool:
+    """Check whether a candidate registry matches the nearest passport.
+
+    Returns True when the registry is acceptable (IDs match, or either
+    side is missing an ID).  Returns False only when both IDs exist and
+    disagree — the caller should skip this registry and keep walking.
+    """
+    try:
+        with open(registry_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        registry_id = data.get("metadata", {}).get("id") if isinstance(data, dict) else None
+        if not registry_id:
+            return True
+
+        cwd = Path.cwd()
+        for parent in [cwd] + list(cwd.parents):
+            candidate = parent / ".trinity" / "passport.json"
+            if candidate.is_file():
+                with open(candidate, "r", encoding="utf-8") as f:
+                    passport = json.load(f)
+                passport_id = passport.get("citizenship", {}).get("registry_id")
+                if not passport_id:
+                    return True
+                return passport_id == registry_id
+        return True
+    except Exception as exc:
+        logger.warning("Credential pre-check failed for %s: %s", registry_path, exc)
+        return True
+
+
 def find_registry() -> Path:
     """Find a *_REGISTRY.json by walking up from this file's location.
 
     Search order:
     1. Explicitly set path via set_registry_path()
     2. AIPASS_REGISTRY environment variable
-    3. Walk up from cwd
+    3. Walk up from cwd (skipping registries that fail credential check)
     4. AIPASS_HOME env var — for external projects where CWD walk finds nothing
     5. Walk up from drone package location
     6. Default: package-relative path
 
-    The first directory that contains any *_REGISTRY.json is treated
-    as the project boundary.  If that directory holds more than one
-    match, the alphabetically-first file is returned.
+    When a candidate registry's metadata.id conflicts with the nearest
+    passport's registry_id, it is skipped and the walk continues upward.
     """
     # Walk up from cwd FIRST — this is where the user is working
     cwd = Path.cwd()
     for parent in [cwd] + list(cwd.parents):
         hit = _first_registry_in(parent)
         if hit is not None:
-            return hit
+            if _registry_matches_credential(hit):
+                return hit
+            logger.warning(
+                "Skipping mismatched registry at %s — continuing walk-up",
+                hit,
+            )
 
     # AIPASS_HOME fallback — for external projects where CWD walk finds nothing
     aipass_home = os.environ.get("AIPASS_HOME")
