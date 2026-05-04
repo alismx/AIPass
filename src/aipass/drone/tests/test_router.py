@@ -143,6 +143,20 @@ class TestExecuteBranchCommand:
         assert env["AIPASS_CALLER_CWD"] == str(Path.cwd())
 
     @patch("aipass.drone.apps.handlers.router_handler.execute_command")
+    def test_sets_aipass_branch_name_to_target(self, mock_exec, branch_dir: Path):
+        """AIPASS_BRANCH_NAME is set to the target branch name on dispatch."""
+        mock_exec.return_value = CommandResult(stdout="", stderr="", exit_code=0, branch="", command="")
+
+        execute_branch_command(
+            branch_path=str(branch_dir),
+            branch_name="fakebranch",
+            command="test",
+        )
+
+        env = mock_exec.call_args.kwargs.get("env", {})
+        assert env["AIPASS_BRANCH_NAME"] == "fakebranch"
+
+    @patch("aipass.drone.apps.handlers.router_handler.execute_command")
     def test_timeout_propagated_to_executor(self, mock_exec, branch_dir: Path):
         """Timeout value is forwarded to execute_command."""
         mock_exec.return_value = CommandResult(stdout="", stderr="", exit_code=0, branch="", command="")
