@@ -675,17 +675,76 @@ def print_help() -> None:
 
 
 # --- COMMAND HANDLER ---
+def _handle_init_scaffold(args: list[str]) -> int:
+    """Handle `aipass init [target] [name]` — instant project scaffold."""
+    from aipass.aipass.apps.handlers.init.bootstrap import init_project
+
+    target = Path(args[0]) if args else Path.cwd()
+    project_name = args[1] if len(args) > 1 else None
+    try:
+        result = init_project(target, project_name)
+        console.print(f"[green]✓[/green] Project initialized at {target}")
+        json_handler.log_operation("aipass_init", {"target": str(target), "result": result})
+        return 0
+    except Exception as exc:
+        logger.warning("[init_flow] scaffold failed: %s", exc)
+        console.print(f"[red]✗[/red] Init failed: {exc}")
+        return 1
+
+
+def _handle_init_update(args: list[str]) -> int:
+    """Handle `aipass init update [target]` — refresh managed scaffold files."""
+    from aipass.aipass.apps.handlers.init.bootstrap import update_project
+
+    target = Path(args[0]) if args else Path.cwd()
+    try:
+        result = update_project(target)
+        console.print(f"[green]✓[/green] Project updated at {target}")
+        json_handler.log_operation("aipass_init_update", {"target": str(target), "result": result})
+        return 0
+    except Exception as exc:
+        logger.warning("[init_flow] update failed: %s", exc)
+        console.print(f"[red]✗[/red] Update failed: {exc}")
+        return 1
+
+
+def _handle_init_agent(args: list[str]) -> int:
+    """Handle `aipass init agent <name>` — create a new agent via spawn."""
+    if not args:
+        console.print("[red]✗[/red] Usage: aipass init agent <name>")
+        return 1
+    agent_name = args[0]
+    import subprocess as _sp
+
+    cmd = ["drone", "@spawn", "create", f"src/{agent_name}"]
+    console.print(f"[dim]Running: {' '.join(cmd)}[/dim]")
+    result = _sp.run(cmd, capture_output=False)
+    return result.returncode
+
+
 def handle_command(command: str, args: list[str]) -> bool:
     """Route init subcommands. Returns True if handled, False otherwise."""
     if command != COMMAND:
         return False
 
     if not args:
-        print_introspection()
+        err = _preflight_check()
+        if err:
+            console.print(f"[red]✗[/red] {err}")
+            sys.exit(1)
+        sys.exit(_handle_init_scaffold([]))
         return True
 
     if args[0] in ("--help", "-h", "help"):
         print_help()
+        return True
+
+    if args[0] == "agent":
+        sys.exit(_handle_init_agent(args[1:]))
+        return True
+
+    if args[0] == "update":
+        sys.exit(_handle_init_update(args[1:]))
         return True
 
     if args[0] == "run" or args[0].startswith("--"):
@@ -719,9 +778,15 @@ def handle_command(command: str, args: list[str]) -> bool:
             "init_run",
             {"non_interactive": non_interactive, "dry_run": dry_run, "exit": result},
         )
+        sys.exit(result)
         return True
 
-    print_help()
+    # Positional args = target path and/or project name for scaffold
+    err = _preflight_check()
+    if err:
+        console.print(f"[red]✗[/red] {err}")
+        sys.exit(1)
+    sys.exit(_handle_init_scaffold(args))
     return True
 
 

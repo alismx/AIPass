@@ -13,6 +13,11 @@
     },
     {
       "file": "apps/modules/init_flow.py",
+      "standard": "architecture",
+      "reason": "12-stage init flow + scaffold routing + preflight guard. Cohesive unit — splitting breaks the resumable-progress contract. DPLAN-0164 transfer adds routing handlers here intentionally."
+    },
+    {
+      "file": "apps/modules/init_flow.py",
       "standard": "permission_flags",
       "reason": "The --dangerously-skip-permissions string is a CLI flag NAME passed verbatim to the user's chosen tool (claude). It is not a code-level permission bypass in this module."
     },
