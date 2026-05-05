@@ -198,12 +198,13 @@ class TestHandleCommand:
         assert handle_command("doctor", []) is False
         assert handle_command("profile", ["set", "name", "X"]) is False
 
-    def test_no_args_calls_introspection(self, tmp_local_json) -> None:
-        """'init' with no args calls print_introspection."""
-        with patch("aipass.aipass.apps.modules.init_flow.print_introspection") as mock_pi:
-            result = handle_command("init", [])
-        assert result is True
-        mock_pi.assert_called_once()
+    def test_no_args_runs_scaffold(self, tmp_local_json) -> None:
+        """'init' with no args runs project scaffold."""
+        with patch("aipass.aipass.apps.modules.init_flow._preflight_check", return_value=None):
+            with patch("aipass.aipass.apps.modules.init_flow._handle_init_scaffold", return_value=0):
+                with pytest.raises(SystemExit) as exc_info:
+                    handle_command("init", [])
+        assert exc_info.value.code == 0
 
     def test_help_flag(self) -> None:
         """--help flag routes to print_help."""
@@ -221,22 +222,33 @@ class TestHandleCommand:
 
     def test_run_subcommand_calls_run_init(self, tmp_local_json) -> None:
         """'init run' routes to run_init."""
-        with patch("aipass.aipass.apps.modules.init_flow.run_init", return_value=0) as mock_run:
-            result = handle_command("init", ["run"])
-        assert result is True
+        with patch("aipass.aipass.apps.modules.init_flow._preflight_check", return_value=None):
+            with patch("aipass.aipass.apps.modules.init_flow.run_init", return_value=0) as mock_run:
+                with pytest.raises(SystemExit) as exc_info:
+                    handle_command("init", ["run"])
+        assert exc_info.value.code == 0
         mock_run.assert_called_once()
 
-    def test_unknown_subcommand_falls_to_print_help(self, tmp_local_json) -> None:
-        """Unknown subcommand falls through to print_help."""
-        with patch("aipass.aipass.apps.modules.init_flow.print_help") as mock_help:
-            result = handle_command("init", ["status"])
-        assert result is True
-        mock_help.assert_called_once()
+    def test_positional_args_treated_as_scaffold_target(self, tmp_local_json) -> None:
+        """Positional args are treated as target path for scaffold."""
+        with patch("aipass.aipass.apps.modules.init_flow._preflight_check", return_value=None):
+            with patch("aipass.aipass.apps.modules.init_flow._handle_init_scaffold", return_value=0) as mock_scaffold:
+                with pytest.raises(SystemExit) as exc_info:
+                    handle_command("init", ["/tmp/test-proj"])
+        assert exc_info.value.code == 0
+        mock_scaffold.assert_called_once_with(["/tmp/test-proj"])
 
 
 # =============================================================================
 # TestRunInit
 # =============================================================================
+
+
+@pytest.fixture(autouse=True)
+def _bypass_preflight():
+    """All TestRunInit tests run outside a real AIPass project — bypass the guard."""
+    with patch("aipass.aipass.apps.modules.init_flow._preflight_check", return_value=None):
+        yield
 
 
 class TestRunInit:
