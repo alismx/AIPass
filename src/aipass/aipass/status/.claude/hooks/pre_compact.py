@@ -85,7 +85,7 @@ def _get_git_info():
             text=True,
             timeout=5,
         )
-        status = subprocess.run(
+        subprocess.run(
             ["git", "diff", "--stat", "--cached", "HEAD"],
             capture_output=True,
             text=True,

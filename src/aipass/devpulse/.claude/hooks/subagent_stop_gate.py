@@ -79,7 +79,7 @@ def run_seedgo_checklist(file_path: str) -> list[str]:
 
 def main():
     try:
-        input_data = json.load(sys.stdin)
+        json.load(sys.stdin)
 
         modified = get_modified_py_files()
         if not modified:
