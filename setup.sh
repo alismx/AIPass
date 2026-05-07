@@ -866,7 +866,7 @@ elif [ "$IS_MACOS" -eq 1 ]; then
     LOCAL_BIN="$HOME/.local/bin"
     mkdir -p "$LOCAL_BIN"
 
-    for cmd in drone; do
+    for cmd in drone aipass; do
         if [ -f "$VENV_BIN/$cmd" ]; then
             if ln -sf "$VENV_BIN/$cmd" "$LOCAL_BIN/$cmd"; then
                 echo "  $LOCAL_BIN/$cmd -> $VENV_BIN/$cmd"
@@ -881,7 +881,7 @@ else
     VENV_BIN="$SCRIPT_DIR/.venv/bin"
     LINUX_SYMLINK_DIR=""
 
-    for cmd in drone; do
+    for cmd in drone aipass; do
         if [ -f "$VENV_BIN/$cmd" ]; then
             if sudo ln -sf "$VENV_BIN/$cmd" "/usr/local/bin/$cmd" 2>/dev/null; then
                 echo "  /usr/local/bin/$cmd -> $VENV_BIN/$cmd"
