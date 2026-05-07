@@ -83,7 +83,7 @@ def launch_terminal(cli: str, prompt: str, cwd: str, flag_variant: str = "defaul
         logger.info("[handoff_platform] opened %s in %s (cwd=%s)", term, cli, cwd)
         from aipass.cli.apps.modules import console
 
-        console.print(f"\n  [green]✓[/green] Opened your agent in a new terminal window.")
+        console.print("\n  [green]✓[/green] Opened your agent in a new terminal window.")
         console.print()
         return True
     except OSError as exc:
@@ -119,7 +119,7 @@ def launch_tmux(cli: str, prompt: str, cwd: str, flag_variant: str = "default") 
         logger.info("[handoff_platform] tmux session '%s' started in %s", _TMUX_SESSION, cwd)
         from aipass.cli.apps.modules import console
 
-        console.print(f"\n  [green]✓[/green] Your agent is ready! Run this in your terminal:")
+        console.print("\n  [green]✓[/green] Your agent is ready! Run this in your terminal:")
         console.print(f"\n    [bold green]tmux attach -t {_TMUX_SESSION}[/bold green]\n")
         console.print()
         return True

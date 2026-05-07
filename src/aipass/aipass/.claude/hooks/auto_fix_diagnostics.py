@@ -337,10 +337,8 @@ def main():
 
         # Collect all errors
         errors = []
-        file_type = ""
 
         if file_path.endswith(".py"):
-            file_type = "Python"
             errors = run_python_checks(file_path)
 
             # Seedgo standards checklist
@@ -358,7 +356,6 @@ def main():
             save_diagnostics_state(file_path, ruff_lint_errors + type_errors)
 
         elif file_path.endswith(".json"):
-            file_type = "JSON"
             errors = run_json_checks(file_path)
         else:
             return
