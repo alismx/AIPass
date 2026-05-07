@@ -46,10 +46,10 @@ from aipass.aipass.apps.modules.init_flow import (
 
 @pytest.fixture
 def tmp_local_json(tmp_path: Path) -> Generator[Path, None, None]:
-    """Patch _LOCAL_JSON to a temp path."""
+    """Patch _get_local_json_path to return a temp path."""
     local_json = tmp_path / ".trinity" / "local.json"
     local_json.parent.mkdir(parents=True)
-    with patch("aipass.aipass.apps.modules.init_flow._LOCAL_JSON", local_json):
+    with patch("aipass.aipass.apps.modules.init_flow._get_local_json_path", return_value=local_json):
         yield local_json
 
 
@@ -545,19 +545,19 @@ class TestStages:
     def test_stage_11_default_variant_no_flag(self, tmp_local_json) -> None:
         """Default flag variant does not append --dangerously-skip-permissions."""
         with patch(f"{_MOD}.console"):
-            result = stage_11_handoff(cli_choice="claude", flag_variant="default")
+            result = stage_11_handoff(cli_choice="claude", flag_variant="default", non_interactive=True)
         assert "--dangerously-skip-permissions" not in result["handoff_command"]
 
     def test_stage_11_skip_permissions_variant(self, tmp_local_json) -> None:
         """skip-permissions variant appends the flag for claude."""
         with patch(f"{_MOD}.console"):
-            result = stage_11_handoff(cli_choice="claude", flag_variant="skip-permissions")
+            result = stage_11_handoff(cli_choice="claude", flag_variant="skip-permissions", non_interactive=True)
         assert "--dangerously-skip-permissions" in result["handoff_command"]
 
     def test_stage_11_handoff_command_contains_path(self, tmp_local_json) -> None:
         """Handoff command includes the agent path."""
         with patch(f"{_MOD}.console"):
-            result = stage_11_handoff(agent_path="src/mybot")
+            result = stage_11_handoff(agent_path="src/mybot", non_interactive=True)
         assert "src/mybot" in result["handoff_command"]
 
     def test_stage_12_done_returns_empty(self, tmp_local_json) -> None:
