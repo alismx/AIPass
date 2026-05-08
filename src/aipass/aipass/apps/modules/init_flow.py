@@ -276,10 +276,17 @@ def stage_3_doctor(non_interactive: bool = False, dry_run: bool = False) -> Dict
     console.print("[bold cyan]Step 3/12[/bold cyan] — System health check")
 
     error_count = 0
+    provider_gaps: Dict[str, Any] = {}
     try:
         from aipass.aipass.apps.modules import doctor
 
         error_count = doctor.run_doctor()
+        try:
+            for r in doctor._check_provider_manifest():
+                if r.glyph != doctor.GLYPH_PASS:
+                    provider_gaps[r.label] = r.detail
+        except Exception as exc:
+            logger.warning("[init_flow] provider manifest check failed: %s", exc)
     except Exception as exc:
         logger.warning("[init_flow] doctor run failed: %s", exc)
         warning(f"Doctor check skipped: {exc}")
@@ -290,7 +297,7 @@ def stage_3_doctor(non_interactive: bool = False, dry_run: bool = False) -> Dict
         console.print("[green]✓[/green] Health check passed.")
 
     _save_stage(3, {"doctor_errors": error_count}, dry_run=dry_run)
-    return {"doctor_errors": error_count}
+    return {"doctor_errors": error_count, "provider_gaps": provider_gaps}
 
 
 def stage_4_user_profile(
@@ -478,10 +485,11 @@ def stage_9_ping_sweep(non_interactive: bool = False, dry_run: bool = False) -> 
     # Only attempt ping if we're inside the AIPass source tree.
     aipass_registry = _BRANCH_ROOT.parent / "AIPASS_REGISTRY.json"
     if not aipass_registry.exists():
-        console.print(f"[dim]  Found {len(branches)} agent(s) in this project.[/dim]")
-        console.print(
-            "[dim]  Ping requires a running session — your agents will be reachable after handoff (next step).[/dim]"
-        )
+        if len(branches) == 1:
+            console.print("[dim]  1 agent registered. Ping skipped — ping is for multi-agent projects.[/dim]")
+        else:
+            console.print(f"[dim]  Found {len(branches)} agent(s) in this project.[/dim]")
+            console.print("[dim]  Ping skipped — agents will be reachable after handoff (next step).[/dim]")
         _save_stage(9, {"results": {}, "skipped_standalone": True}, dry_run=dry_run)
         return {"ping_results": {}}
 
@@ -604,6 +612,10 @@ def _write_init_report(agent_path: str, accumulated: Dict[str, Any], dry_run: bo
         "system": system_data,
         "note": "You are the first agent created in this project. You are the orchestrator. After dispatching work to other agents, monitor them with: drone @devpulse watchdog agent @target",
     }
+    provider_gaps = accumulated.get("provider_gaps", {})
+    if provider_gaps:
+        report["provider_gaps"] = provider_gaps
+        report["provider_action"] = "Provider settings need configuring. Tell the user what is missing and point them to provider_manifest.json for details."
     report_path = dropbox / "init_report.json"
     report_path.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
     logger.info("[init_flow] init report written to %s", report_path)

@@ -575,7 +575,6 @@ import os
 env_block = settings.get("env", {})
 env_block["AIPASS_HOME"] = repo_root
 env_block["CLAUDE_CODE_DISABLE_AUTO_MEMORY"] = "1"
-env_block["CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS"] = "1"
 # Windows: force UTF-8 for Rich output in hook processes
 msys = os.environ.get("MSYSTEM", "") + os.environ.get("OSTYPE", "")
 if "MSYS" in msys or "msys" in msys or "MINGW" in msys:
