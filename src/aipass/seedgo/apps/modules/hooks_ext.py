@@ -87,6 +87,34 @@ def run_hooks_test(repo_root: Path) -> None:
 
 
 # =============================================================================
+# SUBCOMMAND: hooks report
+# =============================================================================
+
+
+def run_hooks_report(repo_root: Path, args: list) -> None:
+    """Run hook execution report — delegates to hook_report.py."""
+    import subprocess
+
+    script = repo_root / ".claude" / "hooks" / "hook_report.py"
+    if not script.exists():
+        warning(f"hook_report.py not found at {script}")
+        return
+
+    cmd = ["python3", str(script)] + args
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        if result.stdout:
+            console.print(result.stdout.rstrip())
+        if result.stderr:
+            console.print(f"[red]{result.stderr.rstrip()}[/red]")
+    except subprocess.TimeoutExpired:
+        logger.info("hooks_ext.py: hook_report.py timed out after 30s")
+        warning("hook_report.py timed out after 30s")
+
+    json_handler.log_operation("hooks_report", {"args": args})
+
+
+# =============================================================================
 # SUBCOMMAND: hooks list — helpers
 # =============================================================================
 

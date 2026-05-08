@@ -100,13 +100,38 @@ def run_seedgo_checklist(file_path: str) -> list[str]:
         return []
 
 
+def check_hook_readme_accountability() -> str | None:
+    """Check if hook files changed but README wasn't updated. Returns reminder or None."""
+    if AIPASS_ROOT is None:
+        return None
+    try:
+        result = subprocess.run(
+            ["git", "diff", "--name-only", "HEAD"], capture_output=True, text=True, timeout=5, cwd=str(AIPASS_ROOT)
+        )
+        changed = [line.strip() for line in result.stdout.strip().split("\n") if line.strip()]
+
+        hook_files_changed = any(f.startswith(".claude/hooks/") and f.endswith(".py") for f in changed)
+        readme_changed = ".claude/hooks/README.md" in changed
+
+        if hook_files_changed and not readme_changed:
+            return (
+                "Hook files were modified but .claude/hooks/README.md was not updated. "
+                "Consider updating the README to reflect your changes."
+            )
+    except Exception:
+        pass
+    return None
+
+
 def main():
     try:
-        input_data = json.load(sys.stdin)
+        json.load(sys.stdin)
 
         modified = get_modified_py_files()
         if not modified:
             return  # Nothing to check
+
+        readme_reminder = check_hook_readme_accountability()
 
         all_violations = {}
         for f in modified:
@@ -115,19 +140,23 @@ def main():
                 name = Path(f).name
                 all_violations[name] = vs
 
-        if not all_violations:
-            return  # All clear
+        if all_violations:
+            # Build the block reason
+            lines = ["Standards violations found in files you modified:\n"]
+            for fname, vs in all_violations.items():
+                lines.append(f"  {fname}:")
+                for v in vs:
+                    lines.append(f"    - {v}")
+            lines.append("\nFix these violations before finishing.")
 
-        # Build the block reason
-        lines = ["Standards violations found in files you modified:\n"]
-        for fname, vs in all_violations.items():
-            lines.append(f"  {fname}:")
-            for v in vs:
-                lines.append(f"    - {v}")
-        lines.append("\nFix these violations before finishing.")
+            if readme_reminder:
+                lines.append(f"\n⚠️ {readme_reminder}")
 
-        output = {"decision": "block", "reason": "\n".join(lines)}
-        print(json.dumps(output))
+            output = {"decision": "block", "reason": "\n".join(lines)}
+            print(json.dumps(output))
+        elif readme_reminder:
+            output = {"decision": "allow", "reason": f"⚠️ {readme_reminder}"}
+            print(json.dumps(output))
 
     except Exception:
         pass  # Silent fail — don't block on errors

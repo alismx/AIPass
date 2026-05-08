@@ -308,6 +308,7 @@ def test_subagent_gate_no_block_when_no_violations(capsys):
         patch("sys.stdin", io.StringIO(payload)),
         patch.object(mod, "get_modified_py_files", return_value=["/tmp/foo.py"]),
         patch.object(mod, "run_seedgo_checklist", return_value=[]),
+        patch.object(mod, "check_hook_readme_accountability", return_value=None),
     ):
         mod.main()
 
@@ -324,6 +325,7 @@ def test_subagent_gate_blocks_on_violations(capsys):
         patch("sys.stdin", io.StringIO(payload)),
         patch.object(mod, "get_modified_py_files", return_value=["/tmp/foo.py"]),
         patch.object(mod, "run_seedgo_checklist", return_value=["open() without encoding='utf-8'"]),
+        patch.object(mod, "check_hook_readme_accountability", return_value=None),
     ):
         mod.main()
 
@@ -331,3 +333,50 @@ def test_subagent_gate_blocks_on_violations(capsys):
     assert captured.out.strip() != ""
     output = json.loads(captured.out)
     assert output["decision"] == "block"
+
+
+def test_subagent_gate_readme_reminder_soft(capsys):
+    """Hook files changed without README update → allow with reminder."""
+    mod = _load_hook("subagent_stop_gate.py")
+    payload = json.dumps({"stop_hook_active": True})
+
+    with (
+        patch("sys.stdin", io.StringIO(payload)),
+        patch.object(mod, "get_modified_py_files", return_value=["/tmp/foo.py"]),
+        patch.object(mod, "run_seedgo_checklist", return_value=[]),
+        patch.object(
+            mod,
+            "check_hook_readme_accountability",
+            return_value="Hook files were modified but .claude/hooks/README.md was not updated.",
+        ),
+    ):
+        mod.main()
+
+    captured = capsys.readouterr()
+    output = json.loads(captured.out)
+    assert output["decision"] == "allow"
+    assert "README" in output["reason"]
+
+
+def test_subagent_gate_readme_reminder_appended_to_block(capsys):
+    """Hook files changed + violations → block includes README reminder."""
+    mod = _load_hook("subagent_stop_gate.py")
+    payload = json.dumps({"stop_hook_active": True})
+
+    with (
+        patch("sys.stdin", io.StringIO(payload)),
+        patch.object(mod, "get_modified_py_files", return_value=["/tmp/foo.py"]),
+        patch.object(mod, "run_seedgo_checklist", return_value=["missing docstring"]),
+        patch.object(
+            mod,
+            "check_hook_readme_accountability",
+            return_value="Hook files were modified but .claude/hooks/README.md was not updated.",
+        ),
+    ):
+        mod.main()
+
+    captured = capsys.readouterr()
+    output = json.loads(captured.out)
+    assert output["decision"] == "block"
+    assert "README" in output["reason"]
+    assert "missing docstring" in output["reason"]
