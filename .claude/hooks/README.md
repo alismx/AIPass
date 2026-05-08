@@ -86,7 +86,7 @@ Guarded: `global_prompt_loader.py`, `branch_prompt_loader.py`,
 ### Other events (provider)
 | Script | Event | Purpose |
 |--------|-------|---------|
-| `subagent_stop_gate.py` | SubagentStop | Runs seedgo checklist on subagent-modified files |
+| `subagent_stop_gate.py` | SubagentStop | Runs seedgo checklist on subagent-modified files + hook README reminder |
 | `pre_compact.py` | PreCompact | Injects post-compact recovery context |
 | `stop_sound.py` | Stop | Plays achievement bell |
 | `notification_sound.py` | Notification | Plays notification sound |

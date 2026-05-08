@@ -52,7 +52,7 @@ from aipass.seedgo.apps.handlers.json import json_handler
 from aipass.seedgo.apps.handlers.file import write_text_safe
 
 # Extended subcommands (test + list)
-from aipass.seedgo.apps.modules.hooks_ext import cmd_hooks_list, run_hooks_test
+from aipass.seedgo.apps.modules.hooks_ext import cmd_hooks_list, run_hooks_report, run_hooks_test
 
 # Rich output
 from rich.panel import Panel
@@ -473,6 +473,11 @@ def _cmd_hooks_list() -> None:
     cmd_hooks_list(_get_repo_root())
 
 
+def _cmd_hooks_report(args: list) -> None:
+    """Run hook execution report — delegates to hooks_ext."""
+    run_hooks_report(_get_repo_root(), args)
+
+
 # =============================================================================
 # INTROSPECTION
 # =============================================================================
@@ -507,6 +512,7 @@ def print_introspection() -> None:
         "  [green]drone @seedgo hooks probe --matrix[/green]    [dim]# Full event matrix + markdown report[/dim]"
     )
     console.print("  [green]drone @seedgo hooks test[/green]              [dim]# Run hook test suite[/dim]")
+    console.print("  [green]drone @seedgo hooks report[/green]             [dim]# Hook execution log report[/dim]")
     console.print("  [green]drone @seedgo hooks list[/green]              [dim]# List all wired hooks[/dim]")
     console.print()
 
@@ -572,6 +578,10 @@ def handle_command(command: str, args: List[str]) -> bool:
 
     if subcommand == "test":
         _cmd_hooks_test()
+        return True
+
+    if subcommand == "report":
+        _cmd_hooks_report(args[1:])
         return True
 
     if subcommand == "list":
