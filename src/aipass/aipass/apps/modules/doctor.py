@@ -216,8 +216,20 @@ def _check_identity() -> List[CheckResult]:
 
 
 def _find_manifest() -> Path | None:
-    """Find provider_manifest.json by walking up from CWD or using AIPASS_HOME."""
-    for start in (Path.cwd(), Path(os.environ.get("AIPASS_HOME", ""))):
+    """Find provider_manifest.json by walking up from CWD, AIPASS_HOME env, or settings.json."""
+    aipass_home = os.environ.get("AIPASS_HOME", "")
+    if not aipass_home:
+        settings_path = Path.home() / ".claude" / "settings.json"
+        if settings_path.exists():
+            try:
+                settings_env = json.loads(settings_path.read_text(encoding="utf-8")).get("env", {})
+                aipass_home = settings_env.get("AIPASS_HOME", "")
+            except Exception as exc:
+                logger.info("[doctor] settings.json read for AIPASS_HOME fallback failed: %s", exc)
+
+    for start in (Path.cwd(), Path(aipass_home) if aipass_home else None):
+        if start is None:
+            continue
         p = start.resolve()
         for parent in (p, *p.parents):
             candidate = parent / ".claude" / "provider_manifest.json"
