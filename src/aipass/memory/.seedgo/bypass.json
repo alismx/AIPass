@@ -127,11 +127,6 @@
       "reason": "stdlib logging.getLogger() used at import-time before prax is available. Immediately replaced by get_system_logger() 3 lines below."
     },
     {
-      "file": "apps/handlers/dashboard_push.py",
-      "standard": "debug_print",
-      "reason": "print(ok) is inside a subprocess script string — IPC output to stdout, not debug output."
-    },
-    {
       "file": "apps/handlers/learnings/manager.py",
       "standard": "dead_code",
       "reason": "Called dynamically via module auto-discovery and imported by symbolic extraction pipeline."
@@ -332,11 +327,6 @@
       "reason": "Local variables inside functions, not constants."
     },
     {
-      "file": "apps/handlers/dashboard_push.py",
-      "standard": "naming",
-      "reason": "Local variables inside functions, not constants."
-    },
-    {
       "file": "apps/handlers/central_writer.py",
       "standard": "naming",
       "reason": "Local variables inside functions, not constants."
@@ -450,11 +440,6 @@
       "file": "apps/modules/search.py",
       "standard": "deep_nesting",
       "reason": "handle_command() has deep nesting from search options parsing and result formatting."
-    },
-    {
-      "file": "apps/handlers/dashboard_push.py",
-      "standard": "deep_nesting",
-      "reason": "_find_branches_near_rollover() iterates nested JSON structures — nesting reflects data depth."
     },
     {
       "file": "apps/handlers/templates/differ.py",
@@ -605,6 +590,21 @@
       "file": "tests/test_json_handler.py",
       "standard": "meta",
       "reason": "Test file — META block present at lines 1-7; hook false-positive on test file format."
+    },
+    {
+      "file": "tests/test_orchestrator_exec.py",
+      "standard": "architecture",
+      "reason": "Test file — lives in tests/ by design, not in 3-layer apps/ structure."
+    },
+    {
+      "file": "tests/test_orchestrator_exec.py",
+      "standard": "encapsulation",
+      "reason": "Test file — direct handler imports are correct for unit testing handler internals."
+    },
+    {
+      "file": "tests/test_orchestrator_exec.py",
+      "standard": "meta",
+      "reason": "Test file — META block present at lines 1-8; hook false-positive on test file format."
     }
   ],
   "notes": {

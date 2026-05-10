@@ -501,18 +501,6 @@ def execute_rollover() -> Dict[str, Any]:
         except Exception as e:
             logger.warning(f"[rollover] Central writer unavailable: {e}")
 
-        # Post-rollover: push dashboard
-        try:
-            from aipass.memory.apps.handlers.dashboard_push import push_memory_bank_dashboard
-
-            dash_ok = push_memory_bank_dashboard()
-            if dash_ok:
-                logger.info("[rollover] Dashboard pushed")
-            else:
-                logger.warning("[rollover] Dashboard push returned False")
-        except Exception as e:
-            logger.warning(f"[rollover] Dashboard push unavailable: {e}")
-
         # Post-rollover: process memory pool if files waiting
         try:
             from aipass.memory.apps.handlers.intake.pool_processor import process_memory_pool

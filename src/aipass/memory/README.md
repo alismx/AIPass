@@ -100,8 +100,7 @@ memory/
 │       ├── templates/           # pusher.py, differ.py, spawn_pusher.py — template distribution
 │       ├── tracking/            # line_counter.py — metadata line count tracking
 │       ├── vector/              # embedder.py, embed_subprocess.py — sentence-transformer embeddings
-│       ├── central_writer.py    # Central memory write operations
-│       └── dashboard_push.py    # Dashboard status push
+│       └── central_writer.py    # Central memory write operations
 ├── config/                      # memory_bank.config.json — per-branch rollover limits
 ├── templates/                   # LOCAL.template.json, OBS.template — schema templates
 ├── tests/                       # 450 tests (16/16 module coverage)
