@@ -30,48 +30,56 @@ from aipass.drone.apps.handlers.git.lock_handler import (
 )
 
 
-def _is_permission_error(stderr: str) -> bool:
-    """Check if a push failure is a permission/auth error (fork scenario)."""
-    indicators = ["403", "permission", "denied", "could not read Username"]
+def _has_credential_helper() -> bool:
+    """Check whether git has a credential.helper configured at any level."""
+    try:
+        r = subprocess.run(
+            ["git", "config", "--get-all", "credential.helper"],
+            capture_output=True,
+            text=True,
+        )
+        return r.returncode == 0 and bool(r.stdout.strip())
+    except OSError as exc:
+        logger.warning("credential helper check failed: %s", exc)
+        return False
+
+
+def _diagnose_push_failure(stderr: str, branch: str) -> str:
+    """Produce an actionable error message for a failed git push.
+
+    Distinguishes between:
+    - No credential helper (most common on fresh setups)
+    - Expired or invalid token
+    - Actual permission / fork issues
+    """
     lower = stderr.lower()
-    return any(ind.lower() in lower for ind in indicators)
+    auth_indicators = ["403", "could not read username", "terminal prompts disabled"]
+    permission_indicators = ["permission", "denied"]
 
-
-def _fork_recovery_message(branch: str, repo_root: str = ".") -> str:
-    """Build a dynamic fork recovery message with actual repo/user info."""
-    origin = "AIOSAI/AIPass"
-    try:
-        r = subprocess.run(
-            ["gh", "repo", "view", "--json", "nameWithOwner", "-q", ".nameWithOwner"],
-            capture_output=True,
-            text=True,
-            cwd=repo_root,
+    if not _has_credential_helper():
+        return (
+            "Push failed: no git credential helper configured.\n"
+            "  git cannot obtain auth tokens for push.\n"
+            "  Fix: gh auth setup-git\n"
+            '  Then retry: drone @git pr "<description>"'
         )
-        if r.returncode == 0 and r.stdout.strip():
-            origin = r.stdout.strip()
-    except OSError as exc:
-        logger.info("Could not detect origin repo: %s", exc)
 
-    gh_user = "<your-user>"
-    try:
-        r = subprocess.run(
-            ["gh", "api", "user", "-q", ".login"],
-            capture_output=True,
-            text=True,
+    if any(ind in lower for ind in auth_indicators):
+        return (
+            "Push failed: authentication error (token may be expired or invalid).\n"
+            f"  stderr: {stderr}\n"
+            "  Check: gh auth status\n"
+            "  Fix:   gh auth login"
         )
-        if r.returncode == 0 and r.stdout.strip():
-            gh_user = r.stdout.strip()
-    except OSError as exc:
-        logger.info("Could not detect gh user: %s", exc)
 
-    return f"""Push failed due to insufficient permissions. You may be working on a fork.
+    if any(ind in lower for ind in permission_indicators):
+        return (
+            f"Push failed: permission denied for branch '{branch}'.\n"
+            f"  stderr: {stderr}\n"
+            "  Check repo write access: gh api repos/:owner/:repo --jq '.permissions'"
+        )
 
-To contribute from a fork:
-  1. Create a fork:        gh repo fork {origin} --remote=false --clone=false
-  2. Add fork as remote:   git remote add fork https://github.com/{gh_user}/{origin.split("/")[-1]}.git
-  3. Push to your fork:    git push -u fork {branch}
-  4. Open cross-repo PR:   gh pr create -R {origin} -H {gh_user}:{branch} -B main
-"""
+    return f"Push failed: {stderr}"
 
 
 def _slugify(description: str) -> str:
@@ -227,11 +235,7 @@ def create_pr(branch_name: str, description: str, branch_dir: Path) -> dict:
             cwd=str(repo_root),
         )
         if push.returncode != 0:
-            stderr = push.stderr.strip()
-            if _is_permission_error(stderr):
-                result["message"] = _fork_recovery_message(feature_branch, str(repo_root))
-            else:
-                result["message"] = f"Push failed: {stderr}"
+            result["message"] = _diagnose_push_failure(push.stderr.strip(), feature_branch)
             logger.error(result["message"])
             return result
 
