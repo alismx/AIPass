@@ -26,7 +26,11 @@ from aipass.drone.apps.handlers.git.lock_handler import (
 )
 from aipass.drone.apps.handlers.git.status_handler import get_branch_status
 from aipass.drone.apps.handlers.git.sync_handler import sync_main
-from aipass.drone.apps.handlers.git.pr_handler import create_pr
+from aipass.drone.apps.handlers.git.pr_handler import (
+    _diagnose_push_failure,
+    _has_credential_helper,
+    create_pr,
+)
 from aipass.drone.apps.modules.git_module import (
     DRONE_MODULE,
     _detect_branch_dir,
@@ -509,6 +513,82 @@ class TestPRHandler:
         pathspec_idx = commit_cmd.index("--")
         pathspec = commit_cmd[pathspec_idx + 1]
         assert "src/aipass/api" in pathspec, f"pathspec should target branch_dir, got: {pathspec}"
+
+
+class TestDiagnosePushFailure:
+    """Tests for _has_credential_helper and _diagnose_push_failure."""
+
+    def test_has_credential_helper_true(self) -> None:
+        """Returns True when git credential.helper is configured."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "store\n"
+        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", return_value=mock_result):
+            assert _has_credential_helper() is True
+
+    def test_has_credential_helper_false_no_config(self) -> None:
+        """Returns False when git config returns non-zero (no helper set)."""
+        mock_result = MagicMock()
+        mock_result.returncode = 1
+        mock_result.stdout = ""
+        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", return_value=mock_result):
+            assert _has_credential_helper() is False
+
+    def test_has_credential_helper_false_empty_stdout(self) -> None:
+        """Returns False when git config returns 0 but stdout is whitespace-only."""
+        mock_result = MagicMock()
+        mock_result.returncode = 0
+        mock_result.stdout = "   \n"
+        with patch("aipass.drone.apps.handlers.git.pr_handler.subprocess.run", return_value=mock_result):
+            assert _has_credential_helper() is False
+
+    def test_has_credential_helper_oserror(self) -> None:
+        """Returns False when subprocess raises OSError."""
+        with patch(
+            "aipass.drone.apps.handlers.git.pr_handler.subprocess.run",
+            side_effect=OSError("git not found"),
+        ):
+            assert _has_credential_helper() is False
+
+    def test_diagnose_no_credential_helper(self) -> None:
+        """Suggests gh auth setup-git when no credential helper is configured."""
+        with patch("aipass.drone.apps.handlers.git.pr_handler._has_credential_helper", return_value=False):
+            msg = _diagnose_push_failure("fatal: could not read Username", "feat/test")
+        assert "no git credential helper configured" in msg.lower()
+        assert "gh auth setup-git" in msg
+
+    def test_diagnose_auth_error_403(self) -> None:
+        """Identifies 403 as an authentication/token error."""
+        with patch("aipass.drone.apps.handlers.git.pr_handler._has_credential_helper", return_value=True):
+            msg = _diagnose_push_failure("The requested URL returned error: 403", "feat/test")
+        assert "authentication error" in msg.lower()
+        assert "gh auth login" in msg
+
+    def test_diagnose_auth_error_terminal_prompts(self) -> None:
+        """Identifies terminal prompts disabled as an auth error."""
+        with patch("aipass.drone.apps.handlers.git.pr_handler._has_credential_helper", return_value=True):
+            msg = _diagnose_push_failure("terminal prompts disabled", "feat/test")
+        assert "authentication error" in msg.lower()
+
+    def test_diagnose_permission_denied(self) -> None:
+        """Identifies permission denied as a repo access issue."""
+        with patch("aipass.drone.apps.handlers.git.pr_handler._has_credential_helper", return_value=True):
+            msg = _diagnose_push_failure("Permission denied to AIOSAI/repo", "feat/test")
+        assert "permission denied" in msg.lower()
+        assert "feat/test" in msg
+
+    def test_diagnose_unknown_error_passthrough(self) -> None:
+        """Passes through unrecognized errors with stderr content."""
+        with patch("aipass.drone.apps.handlers.git.pr_handler._has_credential_helper", return_value=True):
+            msg = _diagnose_push_failure("some unknown git error", "feat/test")
+        assert msg == "Push failed: some unknown git error"
+
+    def test_diagnose_credential_check_takes_priority(self) -> None:
+        """No credential helper is checked first, even if stderr also matches auth indicators."""
+        with patch("aipass.drone.apps.handlers.git.pr_handler._has_credential_helper", return_value=False):
+            msg = _diagnose_push_failure("403 forbidden", "feat/test")
+        assert "credential helper" in msg.lower()
+        assert "403" not in msg
 
 
 # ===========================================================================

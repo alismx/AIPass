@@ -26,7 +26,11 @@ ENV PATH="/home/testuser/.local/bin:$PATH"
 RUN python3 -m pip install --upgrade pip --break-system-packages 2>/dev/null || true
 
 USER testuser
-RUN mkdir -p /home/testuser/workspace /home/testuser/.claude
-WORKDIR /home/testuser
+RUN mkdir -p /home/testuser/Projects /home/testuser/.claude
+WORKDIR /home/testuser/Projects
 
+ENV HOME=/home/testuser
 ENV PATH="/home/testuser/.local/bin:$PATH"
+
+RUN echo 'export HOME=/home/testuser' >> /home/testuser/.bashrc && \
+    echo 'export PATH="$HOME/.local/bin:$PATH"' >> /home/testuser/.bashrc

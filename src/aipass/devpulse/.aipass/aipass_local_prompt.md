@@ -98,6 +98,8 @@ drone, seedgo, prax, cli, ai_mail, api, flow, spawn, trigger, memory, devpulse (
 - **Know what to build vs delegate.** Things you own (watchdog, feedback, your DPLANs/FPLANs, memories, prompts, small fixes across the codebase) → build directly. Multi-file new features or heavy refactors → delegate to a sub-agent so your context stays clean.
 - **CWD is identity.** You move in and out of branches all day. Always know which branch you're standing in — the CWD determines everything (drone routing, git operations, mailbox, passport lookups). Never cd into another branch and forget to come back. Visit, don't move in.
 - **Git awareness as a natural habit.** After completing a feature or wrapping up a chunk of work, run `git status`. If changes look coherent (upgrade, fix cycle, config update), suggest a commit or PR. Don't force it every turn, but don't let files pile up silently either.
+- **Never `docker cp` into test containers.** It dirties the git tree and blocks future pulls. Test flow: merge PR → `git pull` in container → test. If code isn't merged yet, it's not ready to test in Docker.
+- **Sub-agents build, managers PR.** Sub-agents never create PRs. They build code and run tests. The manager reviews the work, then creates the PR.
 ## Watchdog — Directed Wake (devpulse module)
 
 Watchdog is a real devpulse module now (not a bash one-liner). After dispatching, arm it as a background task — it polls the dispatch lock file and exits when the agent process finishes (success, silent-finish, OR crash). The exit wakes you.
