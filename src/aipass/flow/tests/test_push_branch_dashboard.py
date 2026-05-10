@@ -357,10 +357,10 @@ class TestLoadRegistry:
     """Tests for _load_registry."""
 
     def test_merges_multiple_registries(self, tmp_path):
-        """Merges plans from multiple registry files."""
+        """Merges plans from multiple registry files using composite keys."""
         mod = _import_mod()
-        fplan_reg = {"plans": {"1": {"subject": "fplan one"}}, "next_number": 5}
-        dplan_reg = {"plans": {"2": {"subject": "dplan one"}}, "next_number": 10}
+        fplan_reg = {"plans": {"1": {"subject": "fplan one", "file_path": "/p/FPLAN-0001_test.md"}}, "next_number": 5}
+        dplan_reg = {"plans": {"2": {"subject": "dplan one", "file_path": "/p/DPLAN-0002_test.md"}}, "next_number": 10}
         (tmp_path / "fplan_registry.json").write_text(json.dumps(fplan_reg), encoding="utf-8")
         (tmp_path / "dplan_registry.json").write_text(json.dumps(dplan_reg), encoding="utf-8")
 
@@ -370,8 +370,8 @@ class TestLoadRegistry:
         ):
             result = mod._load_registry()
 
-        assert "1" in result["plans"]
-        assert "2" in result["plans"]
+        assert "FPLAN-0001" in result["plans"]
+        assert "DPLAN-0002" in result["plans"]
         assert result["next_number"] == 10
 
     def test_handles_missing_registry(self, tmp_path):
@@ -410,7 +410,7 @@ class TestLoadRegistry:
         """Skips a corrupt registry file and continues with others."""
         mod = _import_mod()
         (tmp_path / "bad_registry.json").write_text("not json!", encoding="utf-8")
-        good_reg = {"plans": {"1": {"subject": "good"}}, "next_number": 5}
+        good_reg = {"plans": {"1": {"subject": "good", "file_path": "/p/GOOD-0001_test.md"}}, "next_number": 5}
         (tmp_path / "good_registry.json").write_text(json.dumps(good_reg), encoding="utf-8")
 
         with (
@@ -423,7 +423,7 @@ class TestLoadRegistry:
         ):
             result = mod._load_registry()
 
-        assert "1" in result["plans"]
+        assert "GOOD-0001" in result["plans"]
         assert result["next_number"] == 5
 
 
@@ -440,14 +440,14 @@ class TestFilterBranchPlans:
         mod = _import_mod()
         registry = {
             "plans": {
-                "1": {
+                "FPLAN-0001": {
                     "subject": "Plan A",
                     "status": "open",
                     "created": "2026-04-20",
                     "file_path": str(tmp_path / "FPLAN-0001_plan_a.md"),
                     "location": str(tmp_path),
                 },
-                "2": {
+                "FPLAN-0002": {
                     "subject": "Plan B",
                     "status": "open",
                     "created": "2026-04-22",
@@ -470,7 +470,7 @@ class TestFilterBranchPlans:
         other_path.mkdir()
         registry = {
             "plans": {
-                "1": {
+                "FPLAN-0001": {
                     "subject": "Elsewhere",
                     "status": "open",
                     "created": "2026-04-20",
@@ -490,7 +490,7 @@ class TestFilterBranchPlans:
         recent_ts = (datetime.now(timezone.utc) - timedelta(days=2)).isoformat()
         registry = {
             "plans": {
-                "1": {
+                "FPLAN-0001": {
                     "subject": "Recently closed",
                     "status": "closed",
                     "created": "2026-04-18",
@@ -511,7 +511,7 @@ class TestFilterBranchPlans:
         old_ts = (datetime.now(timezone.utc) - timedelta(days=30)).isoformat()
         registry = {
             "plans": {
-                "1": {
+                "FPLAN-0001": {
                     "subject": "Old closed",
                     "status": "closed",
                     "created": "2026-03-01",
@@ -531,7 +531,7 @@ class TestFilterBranchPlans:
         plans = {}
         for i in range(1, 9):
             ts = (datetime.now(timezone.utc) - timedelta(hours=i)).isoformat()
-            plans[str(i)] = {
+            plans[f"FPLAN-{str(i).zfill(4)}"] = {
                 "subject": f"Closed plan {i}",
                 "status": "closed",
                 "created": "2026-04-20",
@@ -549,7 +549,7 @@ class TestFilterBranchPlans:
         mod = _import_mod()
         registry = {
             "plans": {
-                "1": {
+                "FPLAN-0001": {
                     "subject": "Bad timestamp",
                     "status": "closed",
                     "created": "2026-04-20",
@@ -568,21 +568,21 @@ class TestFilterBranchPlans:
         mod = _import_mod()
         registry = {
             "plans": {
-                "1": {
+                "FPLAN-0001": {
                     "subject": "Oldest",
                     "status": "open",
                     "created": "2026-04-01",
                     "file_path": str(tmp_path / "FPLAN-0001_oldest.md"),
                     "location": str(tmp_path),
                 },
-                "2": {
+                "FPLAN-0002": {
                     "subject": "Newest",
                     "status": "open",
                     "created": "2026-04-25",
                     "file_path": str(tmp_path / "FPLAN-0002_newest.md"),
                     "location": str(tmp_path),
                 },
-                "3": {
+                "FPLAN-0003": {
                     "subject": "Middle",
                     "status": "open",
                     "created": "2026-04-15",
@@ -597,11 +597,11 @@ class TestFilterBranchPlans:
         assert active[2]["subject"] == "Oldest"
 
     def test_extracts_plan_prefix_from_filepath(self, tmp_path):
-        """Extracts correct plan prefix (DPLAN, TDPLAN, etc.) from file_path."""
+        """Uses composite key as plan ID directly."""
         mod = _import_mod()
         registry = {
             "plans": {
-                "42": {
+                "DPLAN-0042": {
                     "subject": "Dev plan",
                     "status": "open",
                     "created": "2026-04-20",
@@ -683,7 +683,7 @@ class TestPushFlowToBranchDashboard:
 
         mock_registry = {
             "plans": {
-                "1": {
+                "FPLAN-0001": {
                     "subject": "Active plan",
                     "status": "open",
                     "created": "2026-04-20",

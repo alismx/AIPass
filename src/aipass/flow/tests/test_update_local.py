@@ -180,8 +180,8 @@ class TestReadRegistry:
 
         result = mod._read_registry()
         assert result is not None
-        assert "1" in result["plans"]
-        assert "2" in result["plans"]
+        assert "FPLAN-0001" in result["plans"]
+        assert "DPLAN-0002" in result["plans"]
 
     def test_keeps_highest_next_number(self, setup_paths):
         """Should keep the highest next_number across registries."""
@@ -233,7 +233,7 @@ class TestReadRegistry:
 
         result = mod._read_registry()
         assert result is not None
-        assert result["plans"]["1"]["subject"] == "Solo plan"
+        assert result["plans"]["FPLAN-0001"]["subject"] == "Solo plan"
         assert result["next_number"] == 2
 
 
@@ -250,24 +250,29 @@ class TestExtractFlowPlans:
         mod = _import_mod()
         registry = {
             "plans": {
-                "1": {"subject": "A", "status": "open", "location": "flow", "file_path": "FPLAN-0001.md"},
-                "2": {"subject": "B", "status": "open", "location": "drone", "file_path": "FPLAN-0002.md"},
-                "3": {"subject": "C", "status": "open", "location": "flow/sub", "file_path": "FPLAN-0003.md"},
+                "FPLAN-0001": {"subject": "A", "status": "open", "location": "flow", "file_path": "FPLAN-0001.md"},
+                "FPLAN-0002": {"subject": "B", "status": "open", "location": "drone", "file_path": "FPLAN-0002.md"},
+                "FPLAN-0003": {"subject": "C", "status": "open", "location": "flow/sub", "file_path": "FPLAN-0003.md"},
             }
         }
         active, closed = mod._extract_flow_plans(registry)
         assert len(active) == 2
         plan_ids = [p["plan_id"] for p in active]
-        assert "FPLAN-1" in plan_ids
-        assert "FPLAN-3" in plan_ids
+        assert "FPLAN-0001" in plan_ids
+        assert "FPLAN-0003" in plan_ids
 
     def test_partitions_by_status(self):
         """Should separate open and closed plans."""
         mod = _import_mod()
         registry = {
             "plans": {
-                "1": {"subject": "Open", "status": "open", "location": "flow", "file_path": "FPLAN-0001.md"},
-                "2": {"subject": "Closed", "status": "closed", "location": "flow", "file_path": "FPLAN-0002.md"},
+                "FPLAN-0001": {"subject": "Open", "status": "open", "location": "flow", "file_path": "FPLAN-0001.md"},
+                "FPLAN-0002": {
+                    "subject": "Closed",
+                    "status": "closed",
+                    "location": "flow",
+                    "file_path": "FPLAN-0002.md",
+                },
             }
         }
         active, closed = mod._extract_flow_plans(registry)
@@ -276,12 +281,12 @@ class TestExtractFlowPlans:
         assert active[0]["status"] == "open"
         assert closed[0]["status"] == "closed"
 
-    def test_extracts_prefix_from_file_path(self):
-        """Should derive the plan prefix from the filename."""
+    def test_extracts_prefix_from_composite_key(self):
+        """Should use composite key as plan_id directly."""
         mod = _import_mod()
         registry = {
             "plans": {
-                "4": {
+                "DPLAN-0004": {
                     "subject": "Dev",
                     "status": "open",
                     "location": "flow",
@@ -290,14 +295,14 @@ class TestExtractFlowPlans:
             }
         }
         active, _ = mod._extract_flow_plans(registry)
-        assert active[0]["plan_id"] == "DPLAN-4"
+        assert active[0]["plan_id"] == "DPLAN-0004"
 
     def test_extracts_tdplan_prefix(self):
         """Should handle TDPLAN prefix correctly."""
         mod = _import_mod()
         registry = {
             "plans": {
-                "7": {
+                "TDPLAN-0007": {
                     "subject": "Test plan",
                     "status": "open",
                     "location": "flow",
@@ -306,14 +311,14 @@ class TestExtractFlowPlans:
             }
         }
         active, _ = mod._extract_flow_plans(registry)
-        assert active[0]["plan_id"] == "TDPLAN-7"
+        assert active[0]["plan_id"] == "TDPLAN-0007"
 
-    def test_defaults_to_fplan_when_no_prefix_match(self):
-        """Should default to FPLAN when filename has no recognizable prefix."""
+    def test_uses_key_as_plan_id(self):
+        """Should use the composite key directly as plan_id."""
         mod = _import_mod()
         registry = {
             "plans": {
-                "9": {
+                "FPLAN-0009": {
                     "subject": "Mystery",
                     "status": "open",
                     "location": "flow",
@@ -322,29 +327,29 @@ class TestExtractFlowPlans:
             }
         }
         active, _ = mod._extract_flow_plans(registry)
-        assert active[0]["plan_id"] == "FPLAN-9"
+        assert active[0]["plan_id"] == "FPLAN-0009"
 
     def test_sorts_active_and_closed_by_plan_id(self):
         """Should sort both lists by plan_id."""
         mod = _import_mod()
         registry = {
             "plans": {
-                "3": {"subject": "C", "status": "open", "location": "flow", "file_path": "FPLAN-0003.md"},
-                "1": {"subject": "A", "status": "open", "location": "flow", "file_path": "FPLAN-0001.md"},
-                "5": {"subject": "E", "status": "closed", "location": "flow", "file_path": "FPLAN-0005.md"},
-                "2": {"subject": "B", "status": "closed", "location": "flow", "file_path": "FPLAN-0002.md"},
+                "FPLAN-0003": {"subject": "C", "status": "open", "location": "flow", "file_path": "FPLAN-0003.md"},
+                "FPLAN-0001": {"subject": "A", "status": "open", "location": "flow", "file_path": "FPLAN-0001.md"},
+                "FPLAN-0005": {"subject": "E", "status": "closed", "location": "flow", "file_path": "FPLAN-0005.md"},
+                "FPLAN-0002": {"subject": "B", "status": "closed", "location": "flow", "file_path": "FPLAN-0002.md"},
             }
         }
         active, closed = mod._extract_flow_plans(registry)
-        assert [p["plan_id"] for p in active] == ["FPLAN-1", "FPLAN-3"]
-        assert [p["plan_id"] for p in closed] == ["FPLAN-2", "FPLAN-5"]
+        assert [p["plan_id"] for p in active] == ["FPLAN-0001", "FPLAN-0003"]
+        assert [p["plan_id"] for p in closed] == ["FPLAN-0002", "FPLAN-0005"]
 
     def test_handles_timestamps(self):
         """Should include created and closed timestamps when present."""
         mod = _import_mod()
         registry = {
             "plans": {
-                "1": {
+                "FPLAN-0001": {
                     "subject": "With timestamps",
                     "status": "closed",
                     "location": "flow",
@@ -365,7 +370,7 @@ class TestExtractFlowPlans:
         mod = _import_mod()
         registry = {
             "plans": {
-                "1": {
+                "FPLAN-0001": {
                     "subject": "No times",
                     "status": "open",
                     "location": "flow",
@@ -389,8 +394,8 @@ class TestExtractFlowPlans:
         mod = _import_mod()
         registry = {
             "plans": {
-                "1": {"subject": "A", "status": "open", "location": "Flow", "file_path": "FPLAN-0001.md"},
-                "2": {"subject": "B", "status": "open", "location": "FLOW", "file_path": "FPLAN-0002.md"},
+                "FPLAN-0001": {"subject": "A", "status": "open", "location": "Flow", "file_path": "FPLAN-0001.md"},
+                "FPLAN-0002": {"subject": "B", "status": "open", "location": "FLOW", "file_path": "FPLAN-0002.md"},
             }
         }
         active, _ = mod._extract_flow_plans(registry)
@@ -722,4 +727,4 @@ class TestUpdateDashboardLocal:
         mod.update_dashboard_local()
         dashboard = _read_json(mod.DASHBOARD_FILE)
         assert len(dashboard["flow_plans"]["active"]) == 1
-        assert dashboard["flow_plans"]["active"][0]["plan_id"] == "FPLAN-1"
+        assert dashboard["flow_plans"]["active"][0]["plan_id"] == "FPLAN-0001"

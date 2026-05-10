@@ -315,7 +315,6 @@ class TestCalculateQuickStatusStandalone:
         assert result["new_mail"] == 0
         assert result["opened_mail"] == 0
         assert result["active_plans"] == 0
-        assert result["commons_mentions"] == 0
         assert result["action_required"] is False
         assert result["summary"] == "All clear"
 
@@ -337,29 +336,18 @@ class TestCalculateQuickStatusStandalone:
         assert result["action_required"] is True
         assert "2 active plans" in result["summary"]
 
-    def test_commons_mentions_triggers_action_required(self):
-        """Commons mentions > 0 sets action_required to True."""
-        ops = _load_ops()
-        sections = {"commons_activity": {"mentions": 5}}
-        result = ops._calculate_quick_status_standalone(sections)
-        assert result["commons_mentions"] == 5
-        assert result["action_required"] is True
-        assert "5 mentions" in result["summary"]
-
     def test_combined_summary_includes_all_parts(self):
         """Summary string includes all active counts."""
         ops = _load_ops()
         sections = {
             "ai_mail": {"new": 2, "opened": 1},
             "flow": {"active_plans": 3},
-            "commons_activity": {"mentions": 4},
         }
         result = ops._calculate_quick_status_standalone(sections)
         assert result["action_required"] is True
         assert "2 new emails" in result["summary"]
         assert "1 opened" in result["summary"]
         assert "3 active plans" in result["summary"]
-        assert "4 mentions" in result["summary"]
 
     def test_unread_field_falls_back_from_new(self):
         """ai_mail may use 'unread' instead of 'new' -- code checks both."""
@@ -399,7 +387,7 @@ class TestCreateFreshDashboard:
             assert "ai_mail" in result["sections"]
             assert "flow" in result["sections"]
             assert "memory" in result["sections"]
-            assert "commons_activity" in result["sections"]
+            assert "commons_activity" not in result["sections"]
             assert result["quick_status"]["action_required"] is False
         finally:
             ops._PRAX_ROOT = original
@@ -849,16 +837,11 @@ class TestDiffDashboardTemplate:
                     "last_updated": "",
                 },
                 "memory": {"managed_by": "memory", "last_updated": ""},
-                "commons_activity": {
-                    "managed_by": "the_commons",
-                    "last_updated": "",
-                },
             },
             "quick_status": {
                 "new_mail": 0,
                 "opened_mail": 0,
                 "active_plans": 0,
-                "commons_mentions": 0,
                 "action_required": False,
                 "summary": "",
             },
@@ -909,16 +892,11 @@ class TestDiffDashboardTemplate:
                     "last_updated": "2026-01-01",
                 },
                 "memory": {"managed_by": "memory", "last_updated": "2026-01-01"},
-                "commons_activity": {
-                    "managed_by": "the_commons",
-                    "last_updated": "2026-01-01",
-                },
             },
             "quick_status": {
                 "new_mail": 0,
                 "opened_mail": 0,
                 "active_plans": 0,
-                "commons_mentions": 0,
                 "action_required": False,
                 "summary": "",
             },
@@ -1001,6 +979,7 @@ class TestDiffDashboardTemplate:
                 "summary": "",
             },
         }
+        # commons_activity, bulletin_board, commons_mentions are deprecated — push should remove them
         (branch_dir / "DASHBOARD.local.json").write_text(json.dumps(dashboard), encoding="utf-8")
 
         result = mod.diff_dashboard_template()
@@ -1079,13 +1058,6 @@ class TestPushDashboardTemplate:
                     "managed_by": "memory",
                     "vectors_stored": 0,
                     "notes": {},
-                    "last_updated": "",
-                },
-                "commons_activity": {
-                    "managed_by": "the_commons",
-                    "mentions": 0,
-                    "new_posts_since_last_visit": 0,
-                    "new_comments_since_last_visit": 0,
                     "last_updated": "",
                 },
             },
@@ -1169,7 +1141,9 @@ class TestPushDashboardTemplate:
 
         data = json.loads((tmp_path / "flow" / "DASHBOARD.local.json").read_text(encoding="utf-8"))
         assert "bulletin_board" not in data["sections"]
+        assert "commons_activity" not in data["sections"]
         assert "pending_bulletins" not in data.get("quick_status", {})
+        assert "commons_mentions" not in data.get("quick_status", {})
         assert data["_warning"] == "AUTO-GENERATED"
         assert data["sections"]["ai_mail"]["new"] == 3
 
@@ -1751,7 +1725,7 @@ class TestHandleDiffTemplate:
                     {
                         "branch": "FLOW",
                         "status": "needs_update",
-                        "additions": ["+ commons_activity"],
+                        "additions": ["+ memory"],
                         "removals": ["- bulletin_board"],
                         "modifications": ["~ ai_mail.new default changed"],
                     },

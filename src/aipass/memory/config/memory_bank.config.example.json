@@ -11,10 +11,6 @@
     },
     "per_branch": {}
   },
-  "dashboard_push": {
-    "enabled": false,
-    "interval_seconds": 300
-  },
   "intake": {
     "enabled": false,
     "pool_dir": "memory_pool"

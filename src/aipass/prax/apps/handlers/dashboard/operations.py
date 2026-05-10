@@ -147,13 +147,6 @@ def create_fresh_dashboard(branch_path: Path) -> Dict:
             "ai_mail": {"managed_by": "ai_mail", "new": 0, "opened": 0, "total": 0, "last_updated": ""},
             "flow": {"managed_by": "flow", "active_plans": 0, "recently_closed": [], "last_updated": ""},
             "memory": {"managed_by": "memory", "vectors_stored": 0, "notes": {}, "last_updated": ""},
-            "commons_activity": {
-                "managed_by": "the_commons",
-                "mentions": 0,
-                "new_posts_since_last_visit": 0,
-                "new_comments_since_last_visit": 0,
-                "last_updated": "",
-            },
         },
     }
 
@@ -210,21 +203,16 @@ def _calculate_quick_status_standalone(sections: Dict) -> Dict:
     """
     ai_mail = sections.get("ai_mail", {})
     flow = sections.get("flow", {})
-    commons = sections.get("commons_activity", {})
 
     new_mail_raw = ai_mail.get("new", ai_mail.get("unread", 0))
     opened_raw = ai_mail.get("opened", 0)
     active_plans_raw = flow.get("active_plans", 0)
-    mentions_raw = commons.get("mentions", 0)
 
-    # Coerce to int — some branches store lists instead of counts
     new_mail = len(new_mail_raw) if isinstance(new_mail_raw, list) else int(new_mail_raw or 0)
     opened_mail = len(opened_raw) if isinstance(opened_raw, list) else int(opened_raw or 0)
     active_plans = len(active_plans_raw) if isinstance(active_plans_raw, list) else int(active_plans_raw or 0)
-    mentions = len(mentions_raw) if isinstance(mentions_raw, list) else int(mentions_raw or 0)
 
-    # Action required if new mail, active plans, or commons mentions
-    action_required = new_mail > 0 or active_plans > 0 or mentions > 0
+    action_required = new_mail > 0 or active_plans > 0
 
     parts = []
     if new_mail > 0:
@@ -233,14 +221,11 @@ def _calculate_quick_status_standalone(sections: Dict) -> Dict:
         parts.append(f"{opened_mail} opened")
     if active_plans > 0:
         parts.append(f"{active_plans} active plans")
-    if mentions > 0:
-        parts.append(f"{mentions} mentions")
 
     return {
         "new_mail": new_mail,
         "opened_mail": opened_mail,
         "active_plans": active_plans,
-        "commons_mentions": mentions,
         "action_required": action_required,
         "summary": ", ".join(parts) if parts else "All clear",
     }

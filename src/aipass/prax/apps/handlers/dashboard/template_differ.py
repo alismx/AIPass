@@ -57,13 +57,13 @@ TEMPLATE_FILE = TEMPLATE_DIR / "DASHBOARD.template.json"
 AIPASS_REGISTRY = _find_repo_root() / "AIPASS_REGISTRY.json"
 
 # Deprecated sections that should be flagged for removal
-DEPRECATED_SECTIONS = ["bulletin_board", "devpulse"]
+DEPRECATED_SECTIONS = ["bulletin_board", "devpulse", "commons_activity", "agent_status", "memory_bank"]
 
 # Deprecated quick_status keys that should be flagged
-DEPRECATED_QUICK_STATUS_KEYS = ["pending_bulletins"]
+DEPRECATED_QUICK_STATUS_KEYS = ["pending_bulletins", "commons_mentions"]
 
 # Required sections (from template)
-REQUIRED_SECTIONS = ["ai_mail", "flow", "memory", "commons_activity"]
+REQUIRED_SECTIONS = ["ai_mail", "flow", "memory"]
 
 
 # =============================================================================
@@ -145,7 +145,7 @@ def _diff_branch(branch_name: str, branch_path: Path, template: dict) -> Dict[st
                 result["modifications"].append(f"quick_status: remove {dep_key}")
 
         # Check for missing required quick_status keys
-        required_qs_keys = ["new_mail", "opened_mail", "active_plans", "commons_mentions", "action_required", "summary"]
+        required_qs_keys = ["new_mail", "opened_mail", "active_plans", "action_required", "summary"]
         for key in required_qs_keys:
             if key not in quick_status:
                 result["additions"].append(f"quick_status.{key}")

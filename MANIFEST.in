@@ -1,2 +1,0 @@
-# Include hooks directory for pip packaging
-recursive-include .claude/hooks *.py *.md

@@ -54,10 +54,10 @@ def _notify_failure(subject: str, message: str) -> None:
 
 def _update_central_and_dashboard() -> None:
     """
-    Update memory central stats and push dashboard section after vector writes.
+    Update memory central stats after vector writes.
 
-    Uses subprocess to call sibling handlers (central_writer, dashboard_push)
-    to maintain handler independence. Failures are silent.
+    Uses subprocess to call central_writer to maintain handler independence.
+    Failures are silent.
     """
     import sys
 
@@ -75,22 +75,6 @@ def _update_central_and_dashboard() -> None:
         )
     except Exception as e:
         logger.warning(f"[pool_processor] Central stats update failed: {e}")
-
-    # Push dashboard to all branches
-    try:
-        subprocess.run(
-            [
-                sys.executable,
-                "-c",
-                "from aipass.memory.apps.handlers.dashboard_push import push_memory_bank_dashboard;"
-                "push_memory_bank_dashboard()",
-            ],
-            capture_output=True,
-            text=True,
-            timeout=60,
-        )
-    except Exception as e:
-        logger.warning(f"[pool_processor] Dashboard push failed: {e}")
 
 
 def find_source_file(filename: str) -> Path | None:

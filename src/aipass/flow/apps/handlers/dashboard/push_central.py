@@ -94,19 +94,28 @@ def _get_all_registry_files() -> List[str]:
 def _load_registry() -> Dict[str, Any]:
     """Load all per-type plan registries and merge into a single dict.
 
+    Uses PREFIX-NNNN composite keys to avoid collisions between registries
+    that share the same plan number (e.g. FPLAN-0013 vs DPLAN-0013).
+
     Returns:
         Merged registry dict or empty structure if no files found
     """
     merged: Dict[str, Any] = {"plans": {}, "next_number": 1}
     for registry_file in _get_all_registry_files():
         target = FLOW_JSON_DIR / registry_file
+        reg_prefix = registry_file.replace("_registry.json", "").upper()
         try:
             if not target.exists():
                 continue
             with open(target, "r", encoding="utf-8") as f:
                 data = json.load(f)
             for plan_num, plan_data in data.get("plans", {}).items():
-                merged["plans"][plan_num] = plan_data
+                file_path = plan_data.get("file_path", "")
+                filename = Path(file_path).name if file_path else ""
+                prefix_match = re.match(r"^([A-Z]+PLAN)", filename)
+                prefix = prefix_match.group(1) if prefix_match else reg_prefix
+                composite_key = f"{prefix}-{plan_num.zfill(4)}"
+                merged["plans"][composite_key] = plan_data
             nn = data.get("next_number", 1)
             if nn > merged["next_number"]:
                 merged["next_number"] = nn
@@ -128,21 +137,15 @@ def _extract_flow_plans(registry: Dict[str, Any]) -> tuple[List[Dict], List[Dict
     active = []
     closed = []
 
-    for plan_num, plan_data in plans.items():
+    for plan_key, plan_data in plans.items():
         # Only include plans where location is 'flow' (Flow's own plans)
         location = plan_data.get("location", "")
         if location != str(FLOW_ROOT):
             continue
 
-        # Extract plan prefix from file_path (e.g., DPLAN, FPLAN, TDPLAN)
-        file_path_str = plan_data.get("file_path", "")
-        filename = Path(file_path_str).name if file_path_str else ""
-        prefix_match = re.match(r"^([A-Z]+PLAN)", filename)
-        prefix = prefix_match.group(1) if prefix_match else "FPLAN"
-
-        # Build plan entry
+        # plan_key is composite PREFIX-NNNN from merged registry
         plan_entry = {
-            "plan_id": f"{prefix}-{plan_num.zfill(4)}",
+            "plan_id": plan_key,
             "subject": plan_data.get("subject", ""),
             "status": plan_data.get("status", "open"),
             "created": plan_data.get("created", ""),
