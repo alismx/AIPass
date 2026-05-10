@@ -158,7 +158,7 @@ def _auto_wire_provider(manifest_path: Path, interactive: bool = True) -> List[s
             settings["hooks"][event] = event_hooks
 
         already_wired = any(
-            isinstance(h, dict) and script in h.get("command", "")
+            isinstance(h, dict) and script in json.dumps(h)
             for h in event_hooks
         )
         if not already_wired:
@@ -166,15 +166,17 @@ def _auto_wire_provider(manifest_path: Path, interactive: bool = True) -> List[s
                 hook_path = f"~/.claude/hooks/{script}"
             else:
                 hook_path = f".claude/hooks/{script}"
-            entry: Dict[str, object] = {
+            cmd_entry: Dict[str, object] = {
                 "type": "command",
                 "command": f"{sys.executable} {hook_path}",
             }
-            if hook.get("matcher"):
-                entry["matcher"] = hook["matcher"]
             if hook.get("timeout"):
-                entry["timeout"] = hook["timeout"]
-            event_hooks.append(entry)
+                cmd_entry["timeout"] = hook["timeout"]
+            wrapper: Dict[str, object] = {
+                "matcher": hook.get("matcher", ""),
+                "hooks": [cmd_entry],
+            }
+            event_hooks.append(wrapper)
             actions.append(f"Wired hook {script} -> {event}")
 
     # Env vars
