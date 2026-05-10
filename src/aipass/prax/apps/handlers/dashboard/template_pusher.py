@@ -61,23 +61,16 @@ VERSION_FILE = TEMPLATE_DIR / ".dashboard_version.json"
 AIPASS_REGISTRY = _find_repo_root() / "AIPASS_REGISTRY.json"
 
 # Deprecated sections to REMOVE during push
-DEPRECATED_SECTIONS = ["bulletin_board", "devpulse"]
+DEPRECATED_SECTIONS = ["bulletin_board", "devpulse", "commons_activity", "agent_status", "memory_bank"]
 
 # Deprecated quick_status keys to REMOVE during push
-DEPRECATED_QUICK_STATUS_KEYS = ["pending_bulletins"]
+DEPRECATED_QUICK_STATUS_KEYS = ["pending_bulletins", "commons_mentions"]
 
 # Required sections with their default data (must match template)
 REQUIRED_SECTIONS = {
     "ai_mail": {"managed_by": "ai_mail", "new": 0, "opened": 0, "total": 0, "last_updated": ""},
     "flow": {"managed_by": "flow", "active_plans": 0, "recently_closed": [], "last_updated": ""},
     "memory": {"managed_by": "memory", "vectors_stored": 0, "notes": {}, "last_updated": ""},
-    "commons_activity": {
-        "managed_by": "the_commons",
-        "mentions": 0,
-        "new_posts_since_last_visit": 0,
-        "new_comments_since_last_visit": 0,
-        "last_updated": "",
-    },
 }
 
 
@@ -132,22 +125,16 @@ def _calculate_quick_status(sections: Dict) -> Dict:
     """
     ai_mail = sections.get("ai_mail", {})
     flow = sections.get("flow", {})
-    commons = sections.get("commons_activity", {})
 
     new_mail = ai_mail.get("new", ai_mail.get("unread", 0))
     opened_mail = ai_mail.get("opened", 0)
     active_plans_raw = flow.get("active_plans", 0)
-    # Handle active_plans being a list (some branches store plan list) or int
     active_plans = len(active_plans_raw) if isinstance(active_plans_raw, list) else int(active_plans_raw or 0)
-    mentions = commons.get("mentions", 0)
 
-    # Ensure numeric types for comparisons
     new_mail = int(new_mail or 0)
     opened_mail = int(opened_mail or 0)
-    mentions = int(mentions or 0)
 
-    # Action required if new mail, active plans, or commons mentions
-    action_required = new_mail > 0 or active_plans > 0 or mentions > 0
+    action_required = new_mail > 0 or active_plans > 0
 
     parts = []
     if new_mail > 0:
@@ -156,14 +143,11 @@ def _calculate_quick_status(sections: Dict) -> Dict:
         parts.append(f"{opened_mail} opened")
     if active_plans > 0:
         parts.append(f"{active_plans} active plans")
-    if mentions > 0:
-        parts.append(f"{mentions} mentions")
 
     return {
         "new_mail": new_mail,
         "opened_mail": opened_mail,
         "active_plans": active_plans,
-        "commons_mentions": mentions,
         "action_required": action_required,
         "summary": ", ".join(parts) if parts else "All clear",
     }

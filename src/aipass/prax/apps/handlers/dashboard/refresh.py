@@ -16,7 +16,7 @@ AIPASS owns all dashboards - services only maintain their central files.
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from aipass.prax.apps.modules.logger import get_direct_logger
 
@@ -31,7 +31,7 @@ from ..central.reader import read_all_centrals
 from aipass.prax.apps.handlers.json import json_handler
 
 # Sections managed by the refresh path — everything else is write-through only
-REFRESH_MANAGED_SECTIONS = {"ai_mail", "flow", "memory", "commons_activity"}
+REFRESH_MANAGED_SECTIONS = {"ai_mail", "flow", "memory"}
 
 
 def _find_repo_root() -> Path:
@@ -152,41 +152,9 @@ def _extract_memory_section(centrals: Dict, branch_path: Path) -> Dict:
     return {"managed_by": "memory", "vectors_stored": local_vectors, "notes": {}, "last_updated": mb_last_updated}
 
 
-def _extract_commons_section(centrals: Dict, branch_name: str) -> Optional[Dict]:
-    """
-    Extract commons_activity section from COMMONS.central.json.
-
-    Returns None if no commons central data exists, signaling the caller
-    to preserve existing write-through data instead of overwriting with zeros.
-
-    Args:
-        centrals: Dict of all central file data
-        branch_name: Uppercase branch name
-
-    Returns:
-        Dict with commons activity data, or None if no central data
-    """
-    commons_data = centrals.get("commons")
-    if not commons_data:
-        return None
-
-    branch_stats = commons_data.get("branch_stats", {})
-    stats = branch_stats.get(branch_name, {})
-
-    return {
-        "managed_by": "the_commons",
-        "mentions": stats.get("mentions", 0),
-        "new_posts_since_last_visit": stats.get("new_posts_since_last_visit", 0),
-        "new_comments_since_last_visit": stats.get("new_comments_since_last_visit", 0),
-        "last_updated": stats.get("last_updated", ""),
-    }
-
-
 def _calculate_quick_status(sections: Dict) -> Dict:
     """
     Calculate quick_status from live section data (v3 schema).
-
-    bulletin_board removed (FPLAN-0373). commons mentions added.
 
     Args:
         sections: All dashboard sections dict
@@ -196,16 +164,12 @@ def _calculate_quick_status(sections: Dict) -> Dict:
     """
     ai_mail = sections.get("ai_mail", {})
     flow = sections.get("flow", {})
-    commons = sections.get("commons_activity", {})
 
-    # v2 schema: read "new" first, fall back to "unread" for backward compat
     new_mail = ai_mail.get("new", ai_mail.get("unread", 0))
     opened_mail = ai_mail.get("opened", 0)
     active_plans = flow.get("active_plans", 0)
-    mentions = commons.get("mentions", 0)
 
-    # Action required if new mail, active plans, or commons mentions
-    action_required = new_mail > 0 or active_plans > 0 or mentions > 0
+    action_required = new_mail > 0 or active_plans > 0
 
     parts = []
     if new_mail > 0:
@@ -214,35 +178,14 @@ def _calculate_quick_status(sections: Dict) -> Dict:
         parts.append(f"{opened_mail} opened")
     if active_plans > 0:
         parts.append(f"{active_plans} active plans")
-    if mentions > 0:
-        parts.append(f"{mentions} mentions")
 
     return {
         "new_mail": new_mail,
         "opened_mail": opened_mail,
         "active_plans": active_plans,
-        "commons_mentions": mentions,
         "action_required": action_required,
         "summary": ", ".join(parts) if parts else "All clear",
     }
-
-
-def _preserve_commons_section(dashboard: Dict, branch_path: Path, branch_name: str, centrals: Dict) -> None:
-    """Populate commons section from centrals or preserve existing write-through data."""
-    commons_section = _extract_commons_section(centrals, branch_name)
-    if commons_section is not None:
-        dashboard["sections"]["commons_activity"] = commons_section
-        return
-    existing_path = branch_path / "DASHBOARD.local.json"
-    if not existing_path.exists():
-        return
-    try:
-        existing = json.loads(existing_path.read_text())
-        existing_commons = existing.get("sections", {}).get("commons_activity")
-        if existing_commons:
-            dashboard["sections"]["commons_activity"] = existing_commons
-    except (json.JSONDecodeError, OSError) as e:
-        logger.warning("Failed to read existing commons data for %s: %s", branch_name, e)
 
 
 def _preserve_write_through_sections(dashboard: Dict, branch_path: Path, branch_name: str) -> None:
@@ -296,7 +239,6 @@ def refresh_all_dashboards() -> Dict:
             dashboard["sections"]["flow"] = _extract_flow_section(centrals, branch_name)
             dashboard["sections"]["memory"] = _extract_memory_section(centrals, branch_path)
 
-            _preserve_commons_section(dashboard, branch_path, branch_name, centrals)
             _preserve_write_through_sections(dashboard, branch_path, branch_name)
 
             # Calculate quick status
@@ -356,7 +298,6 @@ def refresh_single_dashboard(branch_path: Path) -> Dict:
         dashboard["sections"]["flow"] = _extract_flow_section(centrals, branch_name)
         dashboard["sections"]["memory"] = _extract_memory_section(centrals, branch_path)
 
-        _preserve_commons_section(dashboard, branch_path, branch_name, centrals)
         _preserve_write_through_sections(dashboard, branch_path, branch_name)
 
         dashboard["quick_status"] = _calculate_quick_status(dashboard["sections"])

@@ -37,7 +37,6 @@ def calculate_quick_status(sections: Dict) -> Dict:
     Calculate quick status from live section data.
 
     Reads directly from section fields pushed by each service.
-    bulletin_board is dropped (FPLAN-0373); commons mentions added.
 
     Args:
         sections: All dashboard sections
@@ -47,16 +46,12 @@ def calculate_quick_status(sections: Dict) -> Dict:
     """
     ai_mail = sections.get("ai_mail", {})
     flow = sections.get("flow", {})
-    commons = sections.get("commons_activity", {})
 
-    # v2 schema: read "new" first, fall back to "unread" for backward compat
     new_mail = ai_mail.get("new", ai_mail.get("unread", 0))
     opened_mail = ai_mail.get("opened", 0)
     active_plans = flow.get("active_plans", 0)
-    mentions = commons.get("mentions", 0)
 
-    # Action required if new mail, active plans, or commons mentions
-    action_required = new_mail > 0 or active_plans > 0 or mentions > 0
+    action_required = new_mail > 0 or active_plans > 0
 
     summary_parts = []
     if new_mail:
@@ -65,14 +60,11 @@ def calculate_quick_status(sections: Dict) -> Dict:
         summary_parts.append(f"{opened_mail} opened")
     if active_plans:
         summary_parts.append(f"{active_plans} active plans")
-    if mentions:
-        summary_parts.append(f"{mentions} mentions")
 
     result = {
         "new_mail": new_mail,
         "opened_mail": opened_mail,
         "active_plans": active_plans,
-        "commons_mentions": mentions,
         "action_required": action_required,
         "summary": ", ".join(summary_parts) if summary_parts else "All clear",
     }

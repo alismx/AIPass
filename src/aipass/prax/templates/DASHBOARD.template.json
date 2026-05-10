@@ -6,7 +6,6 @@
     "new_mail": 0,
     "opened_mail": 0,
     "active_plans": 0,
-    "commons_mentions": 0,
     "action_required": false,
     "summary": ""
   },
@@ -28,13 +27,6 @@
       "managed_by": "memory",
       "vectors_stored": 0,
       "notes": {},
-      "last_updated": ""
-    },
-    "commons_activity": {
-      "managed_by": "the_commons",
-      "mentions": 0,
-      "new_posts_since_last_visit": 0,
-      "new_comments_since_last_visit": 0,
       "last_updated": ""
     }
   }
