@@ -192,6 +192,10 @@ def check_lock_status() -> dict:
         except PermissionError as exc:
             # Process exists but we can't signal it — not orphaned
             logger.warning("check_lock_status: PID %d exists but permission denied for signal check: %s", pid, exc)
+        except OSError:
+            # On Windows, os.kill(pid, 0) raises OSError for non-existent PIDs
+            logger.info("check_lock_status: PID %d not found (OSError) — lock is orphaned", pid)
+            orphaned = True
 
     status = "active"
     if orphaned:

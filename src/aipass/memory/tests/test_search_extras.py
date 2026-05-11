@@ -229,15 +229,17 @@ class TestSearchVectorsSubprocess:
         mock_result.returncode = 0
         mock_result.stdout = fake_output
 
+        db_path = Path("/tmp/test_chroma")
         with patch.object(subprocess, "run", return_value=mock_result) as mock_run:
             mod.search_vectors_subprocess(
                 query_embedding=[0.1],
-                db_path=Path("/tmp/test_chroma"),
+                db_path=db_path,
             )
 
         call_args = mock_run.call_args
         input_data = json.loads(call_args.kwargs.get("input", call_args[1].get("input", "")))
-        assert input_data["db_path"] == "/tmp/test_chroma"
+        # str(Path) differs by platform; assert matches platform-native string
+        assert input_data["db_path"] == str(db_path)
 
     def test_search_handles_generic_exception(self, monkeypatch):
         """Unexpected exception produces error dict."""

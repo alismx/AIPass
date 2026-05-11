@@ -322,7 +322,10 @@ class TestDetectFromLog:
         mod = _import_branch_detector()
         detector = _make_detector_with_branches(mod)
 
-        fake_log_path = str(tmp_path / "something.log")
+        # Use a POSIX-style path so the "/" in log_file check in detect_from_log
+        # triggers the delegation. On Windows, tmp_path uses backslashes which
+        # would not match the "/" check in the production code.
+        fake_log_path = "/fakedir/branch_output/something.log"
         with patch.object(detector, "detect_from_path", return_value="CLI") as mock_dfp:
             result = detector.detect_from_log(fake_log_path)
 

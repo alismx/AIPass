@@ -104,6 +104,10 @@ def _extract_hook_matchers(hooks_config: dict) -> dict[str, list[str]]:
 # -- Provider hooks snapshot ---------------------------------------------------
 
 
+@pytest.mark.skipif(
+    not (Path.home() / ".claude" / "settings.json").exists(),
+    reason="No provider settings.json (CI environment)",
+)
 class TestProviderHooksSnapshot:
     """Compare ~/.claude/settings.json hooks against known-good baseline."""
 

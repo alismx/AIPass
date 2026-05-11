@@ -148,7 +148,8 @@ def test_handle_command_on_starts_service_when_inactive():
 
     with patch.object(medic, "_systemctl", return_value=True) as mock_ctl:
         with patch.object(medic, "_is_service_active", side_effect=[False, True]):
-            medic.handle_command("on", [])
+            with patch.object(medic, "_ensure_service_installed", return_value=True):
+                medic.handle_command("on", [])
 
     mock_ctl.assert_called_with("start")
 

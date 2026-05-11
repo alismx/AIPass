@@ -180,7 +180,7 @@ def _scan_template_directory(
 
     for item in sorted(template_dir.rglob("*")):
         rel = item.relative_to(template_dir)
-        rel_str = str(rel)
+        rel_str = rel.as_posix()
 
         # Skip excluded directories and their contents
         if any(part in _SKIP_DIRS for part in rel.parts):

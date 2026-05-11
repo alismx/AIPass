@@ -61,7 +61,7 @@ def get_branch_status(branch_dir: Path) -> dict:
         )
         rel_dir = branch_dir
 
-    rel_prefix = str(rel_dir) + "/"
+    rel_prefix = rel_dir.as_posix() + "/"
 
     files = []
     for line in result.stdout.splitlines():
