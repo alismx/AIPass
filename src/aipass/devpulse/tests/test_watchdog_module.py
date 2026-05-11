@@ -324,5 +324,8 @@ def test_agent_subcommand_emits_next_action_breadcrumb(capsys):
 
     captured = capsys.readouterr()
     combined = captured.out + captured.err
-    assert "Next: drone @ai_mail dispatch @drone" in combined
-    assert "state=completed" in combined
+    # Normalize whitespace: Rich console output may wrap differently across
+    # terminal widths (especially on Windows CI where width is narrower).
+    normalized = " ".join(combined.split())
+    assert "Next: drone @ai_mail dispatch @drone" in normalized
+    assert "state=completed" in normalized

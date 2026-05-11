@@ -396,7 +396,7 @@ def _transform_path(template_relative: str, branch_name: str) -> str:
 
     filename = Path(result).name
     if filename in FILE_RENAMES:
-        result = str(Path(result).parent / FILE_RENAMES[filename])
+        result = (Path(result).parent / FILE_RENAMES[filename]).as_posix()
 
     return result
 

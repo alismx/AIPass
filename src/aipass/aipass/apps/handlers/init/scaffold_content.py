@@ -515,4 +515,4 @@ def inbox_json() -> str:
 
 def with_source(content: str, file_path: Path) -> str:
     """Prepend a source header to AI prompt file content."""
-    return f"<!-- Source: {file_path} -->\n{content}"
+    return f"<!-- Source: {file_path.as_posix()} -->\n{content}"

@@ -375,12 +375,14 @@ class TestWatcherOnModified:
 
     def test_skips_non_log_files(self):
         wlw = _import_watchers_lw()
-        wlw.SYSTEM_LOGS_DIR = Path("/fake/system_logs")
+        logs_dir = Path("/fake/system_logs")
+        wlw.SYSTEM_LOGS_DIR = logs_dir
         watcher = wlw.LogFileWatcher()
         watcher._read_new_lines = MagicMock()
         event = MagicMock()
         event.is_directory = False
-        event.src_path = "/fake/system_logs/data.txt"
+        # Use str(Path(...)) so separator matches SYSTEM_LOGS_DIR on all platforms
+        event.src_path = str(logs_dir / "data.txt")
         watcher.on_modified(event)
         watcher._read_new_lines.assert_not_called()
 
@@ -391,29 +393,31 @@ class TestWatcherOnModified:
         watcher._read_new_lines = MagicMock()
         event = MagicMock()
         event.is_directory = False
-        event.src_path = "/other/place/app.log"
+        event.src_path = str(Path("/other/place/app.log"))
         watcher.on_modified(event)
         watcher._read_new_lines.assert_not_called()
 
     def test_processes_valid_log_file(self):
         wlw = _import_watchers_lw()
-        wlw.SYSTEM_LOGS_DIR = Path("/fake/system_logs")
+        logs_dir = Path("/fake/system_logs")
+        wlw.SYSTEM_LOGS_DIR = logs_dir
         watcher = wlw.LogFileWatcher()
         watcher._read_new_lines = MagicMock()
         event = MagicMock()
         event.is_directory = False
-        event.src_path = "/fake/system_logs/app.log"
+        event.src_path = str(logs_dir / "app.log")
         watcher.on_modified(event)
-        watcher._read_new_lines.assert_called_once_with("/fake/system_logs/app.log")
+        watcher._read_new_lines.assert_called_once_with(str(logs_dir / "app.log"))
 
     def test_handles_read_exception(self):
         wlw = _import_watchers_lw()
-        wlw.SYSTEM_LOGS_DIR = Path("/fake/system_logs")
+        logs_dir = Path("/fake/system_logs")
+        wlw.SYSTEM_LOGS_DIR = logs_dir
         watcher = wlw.LogFileWatcher()
         watcher._read_new_lines = MagicMock(side_effect=IOError("disk error"))
         event = MagicMock()
         event.is_directory = False
-        event.src_path = "/fake/system_logs/app.log"
+        event.src_path = str(logs_dir / "app.log")
         watcher.on_modified(event)
 
 

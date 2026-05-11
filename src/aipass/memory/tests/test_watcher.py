@@ -405,8 +405,13 @@ class TestMemoryFileWatcherOnModified:
         mod, mocks = _import_watcher(monkeypatch)
 
         watcher = mod.MemoryFileWatcher()
+        # Use str(Path(...)) to match how on_modified normalizes the key
+        # (Path converts separators on Windows).
+        from pathlib import Path as _P
+
         file_path = "/some/branch/.trinity/local.json"
-        watcher._recent_modifications.add(file_path)
+        file_key = str(_P(file_path))
+        watcher._recent_modifications.add(file_key)
 
         event = MagicMock()
         event.is_directory = False
@@ -417,7 +422,7 @@ class TestMemoryFileWatcherOnModified:
         # Should skip and not call update_line_count
         mocks["update_line_count"].assert_not_called()
         # The file key should be removed from recent modifications after skip
-        assert file_path not in watcher._recent_modifications
+        assert file_key not in watcher._recent_modifications
 
     def test_handles_line_count_update_failure(self, monkeypatch):
         """When update_line_count fails, check_single_file is not called."""

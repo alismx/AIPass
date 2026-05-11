@@ -16,6 +16,7 @@ stay fully isolated from the live filesystem.
 import json
 import uuid
 from datetime import date
+from pathlib import Path
 
 import pytest
 
@@ -835,9 +836,11 @@ def test_init_project_hooks_idempotent_on_rerun(tmp_path):
     if result1["aipass_home"] is None:
         pytest.skip("AIPASS_HOME not detectable in this environment")
 
-    hook_paths = [f for f in result1["created_files"] if ".claude/hooks/" in f]
+    # Use os.path.join fragment to match platform-specific separators
+    hooks_marker = str(Path(".claude") / "hooks")
+    hook_paths = [f for f in result1["created_files"] if hooks_marker in f]
     assert len(hook_paths) == 7
-    hook_paths_rerun = [f for f in result2["created_files"] if ".claude/hooks/" in f]
+    hook_paths_rerun = [f for f in result2["created_files"] if hooks_marker in f]
     assert len(hook_paths_rerun) == 0
 
 
