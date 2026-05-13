@@ -343,7 +343,8 @@ class TestCommitChanges:
         assert "nothing to commit" in result["stderr"].lower()
 
     def test_commit_all_stages_first(self, repo_dir: Path) -> None:
-        mock_ruff = MagicMock(returncode=0, stdout="", stderr="")
+        mock_ruff_check = MagicMock(returncode=0, stdout="", stderr="")
+        mock_ruff_format = MagicMock(returncode=0, stdout="", stderr="")
         mock_add = MagicMock(returncode=0, stderr="")
         mock_diff = MagicMock(returncode=1, stdout="", stderr="")
         mock_commit = MagicMock(returncode=0, stdout="[main def456] all commit", stderr="")
@@ -354,7 +355,7 @@ class TestCommitChanges:
             patch("shutil.which", return_value="/usr/bin/ruff"),
             patch(
                 "aipass.drone.apps.handlers.git.commit_handler.subprocess.run",
-                side_effect=[mock_ruff, mock_add, mock_diff, mock_commit],
+                side_effect=[mock_ruff_check, mock_ruff_format, mock_add, mock_diff, mock_commit],
             ),
         ):
             result = commit_changes("all commit", branch_dir=branch_dir, all_files=True)
