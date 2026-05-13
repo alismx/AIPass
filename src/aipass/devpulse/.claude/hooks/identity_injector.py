@@ -5,11 +5,32 @@ Identity Injector - Injects branch identity on every prompt.
 Reads from [BRANCH].id.json and outputs core identity fields.
 Finds the branch root by walking up from CWD looking for apps/ or *.id.json.
 
-Version: 1.0.0
+When CWD is inside a project that has its own UserPromptSubmit hooks,
+this provider-level hook exits silently to avoid double-firing.
+
+Version: 1.1.0
 """
 
 import json
 from pathlib import Path
+
+
+def _project_has_own_hooks() -> bool:
+    """Check if CWD is inside a project with its own UserPromptSubmit hooks."""
+    search = Path.cwd()
+    home = Path.home()
+    while search != home and search.parent != search:
+        settings = search / ".claude" / "settings.json"
+        if settings.exists():
+            try:
+                data = json.loads(settings.read_text(encoding="utf-8"))
+                ups = data.get("hooks", {}).get("UserPromptSubmit", [])
+                if ups:
+                    return True
+            except (json.JSONDecodeError, OSError):
+                pass
+        search = search.parent
+    return False
 
 
 def find_repo_root() -> Path | None:
@@ -97,6 +118,9 @@ def format_identity(data: dict) -> str:
 
 
 def main():
+    if _project_has_own_hooks():
+        return
+
     branch_root = find_branch_root()
     if not branch_root:
         return
@@ -115,4 +139,9 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    sys.path.insert(0, str(Path(__file__).resolve().parent))
+    from hook_log import run_and_log
+
+    run_and_log("UserPromptSubmit", "provider", __file__, main)

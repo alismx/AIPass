@@ -28,6 +28,7 @@ from aipass.drone.apps.handlers.git.lock_handler import (
     find_repo_root,
     release_lock,
 )
+from aipass.drone.apps.handlers.git.commit_handler import stage_branch_dir
 
 
 def _has_credential_helper() -> bool:
@@ -166,24 +167,12 @@ def create_pr(branch_name: str, description: str, branch_dir: Path) -> dict:
         lock_acquired = True
 
         # Step 3: Stage only files under branch_dir (on main)
-        try:
-            rel_dir = branch_dir.resolve().relative_to(repo_root.resolve())
-        except ValueError:
-            logger.warning(
-                "create_pr: branch_dir %s not relative to repo root %s, using absolute", branch_dir, repo_root
-            )
-            rel_dir = branch_dir
-
-        add_result = subprocess.run(
-            ["git", "add", str(rel_dir) + "/"],
-            capture_output=True,
-            text=True,
-            cwd=str(repo_root),
-        )
-        if add_result.returncode != 0:
-            result["message"] = f"Failed to stage files: {add_result.stderr.strip()}"
+        stage_result = stage_branch_dir(branch_dir, repo_root)
+        if not stage_result["success"]:
+            result["message"] = stage_result["message"]
             logger.error(result["message"])
             return result
+        rel_dir = stage_result["rel_dir"]
 
         # Step 4: Check if anything was staged
         diff_check = subprocess.run(

@@ -3,7 +3,7 @@ name: Windows Test
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, dev]
     paths:
       - 'setup.sh'
       - 'src/aipass/*/apps/handlers/__init__.py'

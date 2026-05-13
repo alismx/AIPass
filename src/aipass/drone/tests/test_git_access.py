@@ -1,0 +1,577 @@
+# =================== AIPass ====================
+# Name: test_git_access.py
+# Description: Tests for tier-based git access, new handlers, and PR deprecation
+# Version: 1.0.0
+# Created: 2026-05-12
+# Modified: 2026-05-12
+# =============================================
+
+"""Tests for tier-based git access, new handlers (diff, log, commit, checkout), and PR deprecation."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+from unittest.mock import MagicMock, patch
+
+import pytest
+
+from aipass.drone.apps.plugins.devpulse_ops.auth import (
+    GIT_ACCESS_TIERS,
+    verify_git_access,
+)
+from aipass.drone.apps.handlers.git.diff_handler import get_branch_diff
+from aipass.drone.apps.handlers.git.log_handler import get_git_log
+from aipass.drone.apps.handlers.git.commit_handler import commit_changes, stage_branch_dir
+from aipass.drone.apps.handlers.git.checkout_handler import checkout_branch
+from aipass.drone.apps.modules.git_module import handle_command
+
+
+# ===========================================================================
+# Fixtures
+# ===========================================================================
+
+
+@pytest.fixture()
+def devpulse_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Create a temp directory with a devpulse passport."""
+    trinity = tmp_path / ".trinity"
+    trinity.mkdir()
+    passport = trinity / "passport.json"
+    passport.write_text(
+        json.dumps({"branch_info": {"branch_name": "devpulse"}}),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
+@pytest.fixture()
+def seedgo_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Create a temp directory with a non-owner passport."""
+    trinity = tmp_path / ".trinity"
+    trinity.mkdir()
+    passport = trinity / "passport.json"
+    passport.write_text(
+        json.dumps({"branch_info": {"branch_name": "seedgo"}}),
+        encoding="utf-8",
+    )
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
+@pytest.fixture()
+def repo_dir(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Create a temp repo root with AIPASS_REGISTRY.json."""
+    registry = tmp_path / "AIPASS_REGISTRY.json"
+    registry.write_text("{}", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    return tmp_path
+
+
+# ===========================================================================
+# 1. GIT_ACCESS_TIERS config structure
+# ===========================================================================
+
+
+class TestGitAccessTiers:
+    """Verify the tier config is correctly structured."""
+
+    def test_tiers_has_global_and_owner(self) -> None:
+        assert "global" in GIT_ACCESS_TIERS
+        assert "owner" in GIT_ACCESS_TIERS
+
+    def test_global_commands(self) -> None:
+        cmds = GIT_ACCESS_TIERS["global"]["commands"]
+        assert "status" in cmds
+        assert "diff" in cmds
+        assert "log" in cmds
+        assert "lock" in cmds
+
+    def test_owner_commands(self) -> None:
+        cmds = GIT_ACCESS_TIERS["owner"]["commands"]
+        assert "commit" in cmds
+        assert "checkout" in cmds
+        assert "sync" in cmds
+        assert "unlock" in cmds
+        assert "system-pr" in cmds
+        assert "merge" in cmds
+        assert "smart-sync" in cmds
+        assert "fix" in cmds
+
+    def test_owner_allowed_callers(self) -> None:
+        allowed = GIT_ACCESS_TIERS["owner"]["allowed_callers"]
+        assert allowed == ["devpulse"]
+
+    def test_pr_not_in_any_tier(self) -> None:
+        all_cmds = GIT_ACCESS_TIERS["global"]["commands"] + GIT_ACCESS_TIERS["owner"]["commands"]
+        assert "pr" not in all_cmds
+
+
+# ===========================================================================
+# 2. verify_git_access — tier enforcement
+# ===========================================================================
+
+
+class TestVerifyGitAccessGlobal:
+    """Global-tier commands should pass for any caller."""
+
+    def test_status_allowed_for_any_branch(self, devpulse_dir: Path) -> None:
+        assert verify_git_access("status") == "devpulse"
+
+    def test_diff_allowed_for_seedgo(self, seedgo_dir: Path) -> None:
+        assert verify_git_access("diff") == "seedgo"
+
+    def test_log_allowed_for_any_branch(self, seedgo_dir: Path) -> None:
+        assert verify_git_access("log") == "seedgo"
+
+    def test_lock_allowed_for_any_branch(self, seedgo_dir: Path) -> None:
+        assert verify_git_access("lock") == "seedgo"
+
+
+class TestVerifyGitAccessOwner:
+    """Owner-tier commands should only pass for devpulse."""
+
+    def test_commit_allowed_for_devpulse(self, devpulse_dir: Path) -> None:
+        assert verify_git_access("commit") == "devpulse"
+
+    def test_commit_denied_for_seedgo(self, seedgo_dir: Path) -> None:
+        with pytest.raises(PermissionError, match="not authorized"):
+            verify_git_access("commit")
+
+    def test_checkout_denied_for_seedgo(self, seedgo_dir: Path) -> None:
+        with pytest.raises(PermissionError, match="not authorized"):
+            verify_git_access("checkout")
+
+    def test_sync_denied_for_seedgo(self, seedgo_dir: Path) -> None:
+        with pytest.raises(PermissionError, match="not authorized"):
+            verify_git_access("sync")
+
+    def test_unlock_denied_for_seedgo(self, seedgo_dir: Path) -> None:
+        with pytest.raises(PermissionError, match="not authorized"):
+            verify_git_access("unlock")
+
+    def test_system_pr_denied_for_seedgo(self, seedgo_dir: Path) -> None:
+        with pytest.raises(PermissionError, match="not authorized"):
+            verify_git_access("system-pr")
+
+
+class TestVerifyGitAccessPrDeprecated:
+    """PR command should be denied with deprecation message."""
+
+    def test_pr_deprecated_for_devpulse(self, devpulse_dir: Path) -> None:
+        with pytest.raises(PermissionError, match="deprecated"):
+            verify_git_access("pr")
+
+    def test_pr_deprecated_for_any_branch(self, seedgo_dir: Path) -> None:
+        with pytest.raises(PermissionError, match="deprecated"):
+            verify_git_access("pr")
+
+
+class TestVerifyGitAccessUnknown:
+    """Unknown commands should be denied."""
+
+    def test_unknown_command_denied(self, devpulse_dir: Path) -> None:
+        with pytest.raises(PermissionError, match="Unknown git command"):
+            verify_git_access("nonexistent")
+
+
+# ===========================================================================
+# 3. diff_handler
+# ===========================================================================
+
+
+class TestDiffHandler:
+    """Scoped git diff tests."""
+
+    def test_basic_diff(self, repo_dir: Path) -> None:
+        diff_output = (
+            "diff --git a/src/aipass/api/foo.py b/src/aipass/api/foo.py\n"
+            "--- a/src/aipass/api/foo.py\n"
+            "+++ b/src/aipass/api/foo.py\n"
+            "@@ -1,3 +1,4 @@\n"
+            "+new line\n"
+            "diff --git a/src/aipass/drone/bar.py b/src/aipass/drone/bar.py\n"
+            "--- a/src/aipass/drone/bar.py\n"
+            "+++ b/src/aipass/drone/bar.py\n"
+        )
+        mock_result = MagicMock(returncode=0, stdout=diff_output, stderr="")
+        branch_dir = repo_dir / "src" / "aipass" / "api"
+
+        with patch("aipass.drone.apps.handlers.git.diff_handler.subprocess.run", return_value=mock_result):
+            result = get_branch_diff(branch_dir)
+
+        assert result["files_changed"] == 1
+        assert "src/aipass/api/foo.py" in result["diff"]
+        assert "src/aipass/drone/bar.py" not in result["diff"]
+
+    def test_staged_diff(self, repo_dir: Path) -> None:
+        mock_result = MagicMock(returncode=0, stdout="", stderr="")
+        branch_dir = repo_dir / "src" / "aipass" / "api"
+
+        with patch("aipass.drone.apps.handlers.git.diff_handler.subprocess.run", return_value=mock_result) as mock_run:
+            get_branch_diff(branch_dir, staged=True)
+
+        cmd = mock_run.call_args[0][0]
+        assert "--staged" in cmd
+
+    def test_empty_diff(self, repo_dir: Path) -> None:
+        mock_result = MagicMock(returncode=0, stdout="", stderr="")
+        branch_dir = repo_dir / "src" / "aipass" / "api"
+
+        with patch("aipass.drone.apps.handlers.git.diff_handler.subprocess.run", return_value=mock_result):
+            result = get_branch_diff(branch_dir)
+
+        assert result["files_changed"] == 0
+        assert result["diff"] == ""
+
+    def test_git_failure(self, repo_dir: Path) -> None:
+        mock_result = MagicMock(returncode=128, stderr="fatal: not a git repo", stdout="")
+        branch_dir = repo_dir / "src" / "aipass" / "api"
+
+        with patch("aipass.drone.apps.handlers.git.diff_handler.subprocess.run", return_value=mock_result):
+            result = get_branch_diff(branch_dir)
+
+        assert result["files_changed"] == 0
+        assert "error" in result["message"].lower()
+
+    def test_os_error(self, repo_dir: Path) -> None:
+        branch_dir = repo_dir / "src" / "aipass" / "api"
+
+        with patch("aipass.drone.apps.handlers.git.diff_handler.subprocess.run", side_effect=OSError("git not found")):
+            result = get_branch_diff(branch_dir)
+
+        assert result["files_changed"] == 0
+        assert "failed" in result["message"].lower()
+
+
+# ===========================================================================
+# 4. log_handler
+# ===========================================================================
+
+
+class TestLogHandler:
+    """Git log tests."""
+
+    def test_basic_log(self, repo_dir: Path) -> None:
+        log_output = "abc1234 feat: first\ndef5678 fix: second\n"
+        mock_result = MagicMock(returncode=0, stdout=log_output, stderr="")
+
+        with patch("aipass.drone.apps.handlers.git.log_handler.subprocess.run", return_value=mock_result):
+            result = get_git_log(count=5)
+
+        assert result["count"] == 2
+        assert len(result["entries"]) == 2
+
+    def test_custom_count_passed_to_git(self, repo_dir: Path) -> None:
+        mock_result = MagicMock(returncode=0, stdout="", stderr="")
+
+        with patch("aipass.drone.apps.handlers.git.log_handler.subprocess.run", return_value=mock_result) as mock_run:
+            get_git_log(count=25)
+
+        cmd = mock_run.call_args[0][0]
+        assert "-25" in cmd
+
+    def test_git_failure(self, repo_dir: Path) -> None:
+        mock_result = MagicMock(returncode=128, stderr="fatal: bad default", stdout="")
+
+        with patch("aipass.drone.apps.handlers.git.log_handler.subprocess.run", return_value=mock_result):
+            result = get_git_log()
+
+        assert result["count"] == 0
+        assert "error" in result["message"].lower()
+
+    def test_os_error(self, repo_dir: Path) -> None:
+        with patch("aipass.drone.apps.handlers.git.log_handler.subprocess.run", side_effect=OSError("git not found")):
+            result = get_git_log()
+
+        assert result["count"] == 0
+        assert "failed" in result["message"].lower()
+
+
+# ===========================================================================
+# 5. commit_handler
+# ===========================================================================
+
+
+class TestStageBranchDir:
+    """Shared staging utility tests."""
+
+    def test_stage_success(self, repo_dir: Path) -> None:
+        mock_result = MagicMock(returncode=0, stderr="")
+        branch_dir = repo_dir / "src" / "aipass" / "api"
+
+        with patch("aipass.drone.apps.handlers.git.commit_handler.subprocess.run", return_value=mock_result):
+            result = stage_branch_dir(branch_dir, repo_dir)
+
+        assert result["success"] is True
+
+    def test_stage_failure(self, repo_dir: Path) -> None:
+        mock_result = MagicMock(returncode=1, stderr="fatal: pathspec error")
+        branch_dir = repo_dir / "src" / "aipass" / "api"
+
+        with patch("aipass.drone.apps.handlers.git.commit_handler.subprocess.run", return_value=mock_result):
+            result = stage_branch_dir(branch_dir, repo_dir)
+
+        assert result["success"] is False
+        assert "failed" in result["message"].lower()
+
+
+class TestCommitChanges:
+    """Commit handler tests."""
+
+    def test_commit_staged(self, repo_dir: Path) -> None:
+        mock_diff = MagicMock(returncode=1, stdout="", stderr="")
+        mock_commit = MagicMock(returncode=0, stdout="[main abc123] test commit", stderr="")
+
+        with patch(
+            "aipass.drone.apps.handlers.git.commit_handler.subprocess.run",
+            side_effect=[mock_diff, mock_commit],
+        ):
+            result = commit_changes("test commit")
+
+        assert result["exit_code"] == 0
+        assert "abc123" in result["stdout"]
+
+    def test_commit_nothing_staged(self, repo_dir: Path) -> None:
+        mock_diff = MagicMock(returncode=0, stdout="", stderr="")
+
+        with patch("aipass.drone.apps.handlers.git.commit_handler.subprocess.run", return_value=mock_diff):
+            result = commit_changes("test commit")
+
+        assert result["exit_code"] == 1
+        assert "nothing to commit" in result["stderr"].lower()
+
+    def test_commit_all_stages_first(self, repo_dir: Path) -> None:
+        mock_add = MagicMock(returncode=0, stderr="")
+        mock_diff = MagicMock(returncode=1, stdout="", stderr="")
+        mock_commit = MagicMock(returncode=0, stdout="[main def456] all commit", stderr="")
+
+        branch_dir = repo_dir / "src" / "aipass" / "api"
+
+        with patch(
+            "aipass.drone.apps.handlers.git.commit_handler.subprocess.run",
+            side_effect=[mock_add, mock_diff, mock_commit],
+        ):
+            result = commit_changes("all commit", branch_dir=branch_dir, all_files=True)
+
+        assert result["exit_code"] == 0
+
+    def test_commit_os_error(self, repo_dir: Path) -> None:
+        mock_diff = MagicMock(returncode=1, stdout="", stderr="")
+
+        with patch(
+            "aipass.drone.apps.handlers.git.commit_handler.subprocess.run",
+            side_effect=[mock_diff, OSError("git not found")],
+        ):
+            result = commit_changes("test commit")
+
+        assert result["exit_code"] == 1
+        assert "failed" in result["stderr"].lower()
+
+
+# ===========================================================================
+# 6. checkout_handler
+# ===========================================================================
+
+
+class TestCheckoutHandler:
+    """Branch checkout with hard guard tests."""
+
+    def test_checkout_main_allowed(self, repo_dir: Path) -> None:
+        mock_status = MagicMock(returncode=0, stdout="", stderr="")
+        mock_checkout = MagicMock(returncode=0, stdout="", stderr="Switched to branch 'main'")
+
+        with patch(
+            "aipass.drone.apps.handlers.git.checkout_handler.subprocess.run",
+            side_effect=[mock_status, mock_checkout],
+        ):
+            result = checkout_branch("main")
+
+        assert result["exit_code"] == 0
+        assert result["current_branch"] == "main"
+
+    def test_checkout_dev_allowed(self, repo_dir: Path) -> None:
+        mock_status = MagicMock(returncode=0, stdout="", stderr="")
+        mock_checkout = MagicMock(returncode=0, stdout="", stderr="Switched to branch 'dev'")
+
+        with patch(
+            "aipass.drone.apps.handlers.git.checkout_handler.subprocess.run",
+            side_effect=[mock_status, mock_checkout],
+        ):
+            result = checkout_branch("dev")
+
+        assert result["exit_code"] == 0
+        assert result["current_branch"] == "dev"
+
+    def test_checkout_feature_branch_denied(self) -> None:
+        result = checkout_branch("feat/my-feature")
+        assert result["exit_code"] == 1
+        assert "denied" in result["stderr"].lower()
+        assert result["current_branch"] == ""
+
+    def test_checkout_arbitrary_branch_denied(self) -> None:
+        result = checkout_branch("release/v2")
+        assert result["exit_code"] == 1
+        assert "denied" in result["stderr"].lower()
+
+    def test_checkout_dirty_tree_aborts(self, repo_dir: Path) -> None:
+        mock_status = MagicMock(returncode=0, stdout=" M some/file.py\n", stderr="")
+
+        with patch("aipass.drone.apps.handlers.git.checkout_handler.subprocess.run", return_value=mock_status):
+            result = checkout_branch("main")
+
+        assert result["exit_code"] == 1
+        assert "uncommitted" in result["stderr"].lower()
+
+    def test_checkout_git_failure(self, repo_dir: Path) -> None:
+        mock_status = MagicMock(returncode=0, stdout="", stderr="")
+        mock_checkout = MagicMock(returncode=1, stdout="", stderr="error: pathspec 'main' did not match")
+
+        with patch(
+            "aipass.drone.apps.handlers.git.checkout_handler.subprocess.run",
+            side_effect=[mock_status, mock_checkout],
+        ):
+            result = checkout_branch("main")
+
+        assert result["exit_code"] == 1
+        assert result["current_branch"] == ""
+
+
+# ===========================================================================
+# 7. PR deprecation through handle_command
+# ===========================================================================
+
+
+class TestPrDeprecation:
+    """PR command returns deprecation message via centralized auth."""
+
+    def test_pr_returns_deprecation(self, devpulse_dir: Path) -> None:
+        result = handle_command("pr", ["some description"])
+        assert result["exit_code"] == 1
+        assert "deprecated" in result["stderr"].lower()
+
+    def test_pr_no_args_also_deprecated(self, devpulse_dir: Path) -> None:
+        result = handle_command("pr")
+        assert result["exit_code"] == 1
+        assert "deprecated" in result["stderr"].lower()
+
+
+# ===========================================================================
+# 8. New commands via handle_command routing
+# ===========================================================================
+
+
+class TestNewCommandRouting:
+    """Verify new commands route through handle_command correctly."""
+
+    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access", return_value="test_branch")
+    def test_diff_routes(self, _mock_auth: MagicMock, repo_dir: Path) -> None:
+        trinity = repo_dir / ".trinity"
+        trinity.mkdir()
+        passport = trinity / "passport.json"
+        passport.write_text(json.dumps({"branch_info": {"branch_name": "test_branch"}}))
+
+        mock_result = MagicMock(returncode=0, stdout="", stderr="")
+        with patch("aipass.drone.apps.handlers.git.diff_handler.subprocess.run", return_value=mock_result):
+            result = handle_command("diff")
+        assert result["exit_code"] == 0
+
+    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access", return_value="test_branch")
+    def test_log_routes(self, _mock_auth: MagicMock, repo_dir: Path) -> None:
+        mock_result = MagicMock(returncode=0, stdout="abc123 test\n", stderr="")
+        with patch("aipass.drone.apps.handlers.git.log_handler.subprocess.run", return_value=mock_result):
+            result = handle_command("log")
+        assert result["exit_code"] == 0
+        assert "abc123" in result["stdout"]
+
+    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access", return_value="devpulse")
+    def test_commit_no_args_error(self, _mock_auth: MagicMock) -> None:
+        result = handle_command("commit")
+        assert result["exit_code"] == 1
+        assert "usage" in result["stderr"].lower()
+
+    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access", return_value="devpulse")
+    def test_checkout_no_args_error(self, _mock_auth: MagicMock) -> None:
+        result = handle_command("checkout")
+        assert result["exit_code"] == 1
+        assert "usage" in result["stderr"].lower()
+
+    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access", return_value="devpulse")
+    def test_checkout_routes_to_handler(self, _mock_auth: MagicMock, repo_dir: Path) -> None:
+        mock_status = MagicMock(returncode=0, stdout="", stderr="")
+        mock_checkout = MagicMock(returncode=0, stdout="", stderr="")
+        with patch(
+            "aipass.drone.apps.handlers.git.checkout_handler.subprocess.run",
+            side_effect=[mock_status, mock_checkout],
+        ):
+            result = handle_command("checkout", ["main"])
+        assert result["exit_code"] == 0
+
+    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access", return_value="devpulse")
+    def test_checkout_guard_rejects_feature(self, _mock_auth: MagicMock) -> None:
+        result = handle_command("checkout", ["feat/bad"])
+        assert result["exit_code"] == 1
+        assert "denied" in result["stderr"].lower()
+
+
+# ===========================================================================
+# 9. Help text includes new commands and tiers
+# ===========================================================================
+
+
+class TestUpdatedHelp:
+    """Help and introspection reflect new commands and tiers."""
+
+    def test_help_includes_diff(self) -> None:
+        from aipass.drone.apps.modules.git_module import get_help
+
+        text = get_help()
+        assert "diff" in text
+
+    def test_help_includes_log(self) -> None:
+        from aipass.drone.apps.modules.git_module import get_help
+
+        text = get_help()
+        assert "log" in text
+
+    def test_help_includes_commit(self) -> None:
+        from aipass.drone.apps.modules.git_module import get_help
+
+        text = get_help()
+        assert "commit" in text
+
+    def test_help_includes_checkout(self) -> None:
+        from aipass.drone.apps.modules.git_module import get_help
+
+        text = get_help()
+        assert "checkout" in text
+
+    def test_help_shows_tier_sections(self) -> None:
+        from aipass.drone.apps.modules.git_module import get_help
+
+        text = get_help()
+        assert "global" in text.lower()
+        assert "owner" in text.lower()
+
+    def test_help_marks_pr_deprecated(self) -> None:
+        from aipass.drone.apps.modules.git_module import get_help
+
+        text = get_help()
+        assert "deprecated" in text.lower()
+
+    def test_introspection_includes_new_handlers(self) -> None:
+        from aipass.drone.apps.modules.git_module import get_introspective
+
+        text = get_introspective()
+        assert "diff_handler" in text
+        assert "log_handler" in text
+        assert "commit_handler" in text
+        assert "checkout_handler" in text
+
+    def test_introspection_shows_tiers(self) -> None:
+        from aipass.drone.apps.modules.git_module import get_introspective
+
+        text = get_introspective()
+        assert "global" in text.lower()
+        assert "owner" in text.lower()
