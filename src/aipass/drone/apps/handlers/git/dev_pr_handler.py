@@ -1,0 +1,84 @@
+# =================== AIPass ====================
+# Name: dev_pr_handler.py
+# Description: Dev branch PR handler — push dev and create PR to main
+# Version: 1.0.0
+# Created: 2026-05-12
+# Modified: 2026-05-12
+# =============================================
+
+"""Dev branch PR handler — push dev and create PR to main."""
+
+from __future__ import annotations
+
+import subprocess
+
+from aipass.prax import logger
+from aipass.drone.apps.handlers.json import json_handler
+from aipass.drone.apps.handlers.git.lock_handler import find_repo_root
+
+
+def create_dev_pr(description: str) -> dict:
+    """Push dev branch and create a PR to main.
+
+    Verifies HEAD is on dev, pushes to origin, then creates a PR via gh CLI.
+
+    Returns:
+        Dict with success, message, and pr_url keys.
+    """
+    repo_root = find_repo_root()
+
+    try:
+        head = subprocess.run(
+            ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+            capture_output=True,
+            text=True,
+            cwd=str(repo_root),
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        logger.error("Failed to detect current branch: %s", exc)
+        return {"success": False, "message": f"Failed to detect current branch: {exc}", "pr_url": ""}
+
+    current_branch = head.stdout.strip()
+    if current_branch != "dev":
+        return {
+            "success": False,
+            "message": f"Not on dev branch (current: {current_branch}). Switch to dev first.",
+            "pr_url": "",
+        }
+
+    try:
+        push = subprocess.run(
+            ["git", "push", "origin", "dev"],
+            capture_output=True,
+            text=True,
+            cwd=str(repo_root),
+        )
+    except (OSError, subprocess.SubprocessError) as exc:
+        logger.error("git push origin dev failed: %s", exc)
+        return {"success": False, "message": f"Push failed: {exc}", "pr_url": ""}
+
+    if push.returncode != 0:
+        return {"success": False, "message": f"Push failed: {push.stderr.strip()}", "pr_url": ""}
+
+    try:
+        pr = subprocess.run(
+            ["gh", "pr", "create", "--head", "dev", "--base", "main", "--title", description],
+            capture_output=True,
+            text=True,
+            cwd=str(repo_root),
+        )
+    except FileNotFoundError as exc:
+        logger.warning("gh CLI not found: %s", exc)
+        return {"success": False, "message": "gh CLI not found. Install: https://cli.github.com/", "pr_url": ""}
+    except (OSError, subprocess.SubprocessError) as exc:
+        logger.error("gh pr create failed: %s", exc)
+        return {"success": False, "message": f"PR creation failed: {exc}", "pr_url": ""}
+
+    if pr.returncode != 0:
+        return {"success": False, "message": f"PR creation failed: {pr.stderr.strip()}", "pr_url": ""}
+
+    pr_url = pr.stdout.strip()
+    json_handler.log_operation("create_dev_pr", {"pr_url": pr_url, "description": description})
+    logger.info("Dev PR created: %s", pr_url)
+
+    return {"success": True, "message": f"PR created: {pr_url}", "pr_url": pr_url}

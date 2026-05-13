@@ -8,3 +8,6 @@ from . import diff_handler as diff_handler
 from . import log_handler as log_handler
 from . import commit_handler as commit_handler
 from . import checkout_handler as checkout_handler
+from . import dev_pr_handler as dev_pr_handler
+from . import branches_handler as branches_handler
+from . import delete_branch_handler as delete_branch_handler
