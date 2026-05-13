@@ -155,6 +155,21 @@
       "reason": "Test file imports lock_handler directly to test its public interface. Unit tests require direct access to implementation components."
     },
     {
+      "file": "tests/test_git_access.py",
+      "standard": "architecture",
+      "reason": "Test file — intentionally outside 3-layer structure. tests/ is a peer of apps/, not part of it."
+    },
+    {
+      "file": "tests/test_git_access.py",
+      "standard": "encapsulation",
+      "reason": "Test file imports handlers directly to test their public interface. Unit tests require direct access to implementation components."
+    },
+    {
+      "file": "tests/test_git_access.py",
+      "standard": "documentation",
+      "reason": "Test class docstrings describe intent; per-method docstrings would be noise for assertion-named test methods."
+    },
+    {
       "file": "tests/test_system_pr.py",
       "standard": "architecture",
       "reason": "Test file — intentionally outside 3-layer structure. tests/ is a peer of apps/, not part of it."
@@ -179,6 +194,18 @@
       "standard": "unused_function",
       "lines": [232, 263],
       "reason": "Public CRUD API surface (update_command, command_exists) — tested, available for programmatic use. No CLI subcommand wired yet."
+    },
+    {
+      "file": "apps/handlers/git/pr_handler.py",
+      "standard": "unused_function",
+      "lines": [108],
+      "reason": "create_pr() is deprecated per FPLAN-0210 — pr command blocked at auth tier. Handler kept for backwards compatibility; still tested in test_git_module.py."
+    },
+    {
+      "file": "apps/plugins/devpulse_ops/auth.py",
+      "standard": "unused_function",
+      "lines": [84],
+      "reason": "verify_caller() replaced by verify_git_access() for centralized auth. Still exported as public API and tested directly in test_system_pr.py."
     }
   ],
   "notes": {

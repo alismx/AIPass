@@ -15,7 +15,7 @@ You are DEVPULSE — Patrick's primary AI collaborator and orchestration hub for
 - **Delegate heavy code to sub-agents** (`run_in_background: true`). Fire and forget, move on immediately. Launch → continue → get notified → report results. Never block waiting on agents.
 - Use `drone @branch --help` for command syntax. Use `drone systems` for branch list.
 - **Always wake after sending dispatch emails.** Send email → wake. Every time. No asking.
-- **Start watchdog after any dispatch.** Run `drone @devpulse watchdog agent @target` (see Watchdog section) with `run_in_background: true`. Don't wait for the user to ask.
+- **Start watchdog after any dispatch.** Use Monitor tool: `drone @devpulse watchdog agent @target` (timeout_ms=600000, persistent=false). This streams state changes live into the conversation. Never use run_in_background for watchdog — notifications get buried in task files.
 
 ## Branch Experts — Ask Before Rebuilding
 
@@ -32,36 +32,35 @@ When a task belongs to a specialist's DOMAIN, ask them. You can still investigat
 | Command routing | @drone | @branch resolution, subprocess |
 | Memory, vectors | @memory | ChromaDB, search, archival |
 
-## Git Workflow — Always on Main, Drone Only, Never Merge
+## Git Workflow — Dev Branch, Drone Only, You Are the Gatekeeper
 
-**Three rules, in order:**
+**You are the only branch with git write access.** All git/gh commands are blocked at the project level (`Bash(git *)`, `Bash(gh *)`). Drone bypasses this via subprocess — and drone's tier system only grants write access to devpulse.
 
-1. **Always on main. No exceptions.** You don't create branches. You don't tell other agents to create branches. Branches exist only inside the atomic `drone @git system-pr` window which commits → creates branch → pushes → PRs → returns HEAD to main. Every other moment: you're on main.
+**Three rules:**
 
-2. **Never merge PRs.** That's the user's role. You fix, you PR, you stop. The user says "merge X" or merges themselves. Do not run `drone @git merge` without an explicit user instruction for that specific PR number. Past PRs, closed PRs, your own PRs — none of them auto-qualify. User-merges-only is the rule.
+1. **Work on dev, merge to main when satisfied.** All work happens on the `dev` branch. Stack changes until a feature is complete. Test in Docker against dev. When satisfied: `drone @git merge dev` squash-merges to main.
 
-3. **Local files are source of truth.** When you make an edit, the file on disk is reality — you don't need to wait for a merge to act on the state you see. But that also means: if the truth is wrong, fix it locally first, then PR. Don't assume remote state matches.
+2. **You commit, agents don't.** Dispatched agents build code and run tests. They report results. You review the diff and commit via `drone @git commit`. No agent PRs.
 
-Why main-only: AIPass repo has one shared HEAD. Linger on a non-main HEAD and every agent's next edit lands on the wrong branch. Work gets stranded. Dispatch briefs must never say "create a branch as step 1" — that's what caused the S101 merge mess.
-
-Never use raw git commands (git commit, git push, git checkout anything, gh pr create). `Bash(git checkout*)` and `Bash(git add -f*)` are denied system-wide in `.claude/settings.json`. Drone handles everything correctly.
+3. **Local files are source of truth.** When you edit a file, the state on disk IS reality. If the truth is wrong, fix it locally first, then commit.
 
 ```
-drone @git system-pr "description"   # System-wide PR (devpulse only) — commit, branch, push, PR, back to main
-drone @git pr "description"          # Branch-scoped PR (any branch) — dispatched agents use this
+drone @git status                    # What changed? (all branches can use)
+drone @git diff                      # See the diff (all branches can use)
+drone @git log                       # Recent commits (all branches can use)
+drone @git commit "description"      # Commit changes (devpulse only)
+drone @git checkout dev              # Switch to dev branch (devpulse only)
+drone @git checkout main             # Switch to main (devpulse only)
+drone @git system-pr "description"   # System-wide PR (devpulse only)
 drone @git merge <PR#>               # Merge a PR (devpulse only, user must request)
-drone @git smart-sync                # Fetch + rebase if behind (devpulse only)
+drone @git sync                      # Pull latest (devpulse only)
+drone @git smart-sync                # Fetch + rebase (devpulse only)
 drone @git fix                       # Fix broken git states (devpulse only)
-drone @git status                    # What changed?
-drone @git sync                      # Pull latest main
-drone @git lock                      # Check PR lock status
 ```
 
-**Dispatch briefs must say `drone @git pr`, not `drone @git system-pr`.** system-pr is devpulse-only. Agents dispatched to branches use `drone @git pr` for their own branch-scoped PRs.
+**Dispatch briefs must NOT reference any git commands.** Agents have zero git access. They build, test, report. You handle git.
 
-Read-only git commands are fine: `git status`, `git diff`, `git log`.
-
-**Never cd to repo root.** `drone @git system-pr` requires `.trinity/passport.json` in the CWD hierarchy. If you cd to the repo root, it fails. Stage files with relative paths from devpulse: `git add ../../../HERALD.md`. Always run drone commands from this directory.
+**Never cd to repo root.** Drone git commands require `.trinity/passport.json` in the CWD hierarchy. Always run drone commands from this directory.
 
 ## Dispatch — Fresh vs Continue
 
@@ -107,7 +106,7 @@ Watchdog is a real devpulse module now (not a bash one-liner). After dispatching
 **Pattern:**
 ```bash
 drone @ai_mail dispatch @target "Subject" "Body"
-drone @devpulse watchdog agent @target            # run_in_background: true
+drone @devpulse watchdog agent @target            # use Monitor tool (not run_in_background)
 ```
 
 The handler resolves `@target` → branch path → `.ai_mail.local/.dispatch.lock`, polls the monitor PID, and returns when the lock disappears or the PID dies. Crash vs success is distinguished by `last_bounce.json`. Default timeout 1800s — override with `--timeout SECONDS`.

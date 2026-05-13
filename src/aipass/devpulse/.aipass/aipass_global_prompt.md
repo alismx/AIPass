@@ -81,12 +81,11 @@ drone @memory archive              # Archive memories to vector store
 drone @memory search <query>       # Search archived memories
 ```
 
-### Git Workflow
+### Git
 ```
-drone @git pr 'description'        # Create a pull request
 drone @git status                  # Git status (branch-scoped)
-drone @git sync                    # Sync with main
-drone @git lock / unlock           # Lock/unlock the repo
+drone @git diff                    # See changes in your branch
+drone @git log                     # Recent commits
 ```
 
 ### Infrastructure

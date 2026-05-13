@@ -1,6 +1,10 @@
-"""Git workflow handlers — lock, status, sync, PR."""
+"""Git workflow handlers — lock, status, sync, PR, diff, log, commit, checkout."""
 
 from . import lock_handler as lock_handler  # explicit re-export for type checkers
 from . import status_handler as status_handler
 from . import sync_handler as sync_handler
 from . import pr_handler as pr_handler
+from . import diff_handler as diff_handler
+from . import log_handler as log_handler
+from . import commit_handler as commit_handler
+from . import checkout_handler as checkout_handler

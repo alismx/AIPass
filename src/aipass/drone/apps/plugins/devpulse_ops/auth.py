@@ -24,6 +24,27 @@ from aipass.seedgo.apps.modules.permissions import TRUSTED_CROSS_WRITERS
 
 ALLOWED_CALLERS: list[str] = list(TRUSTED_CROSS_WRITERS)
 
+GIT_ACCESS_TIERS: dict[str, dict] = {
+    "global": {
+        "commands": ["status", "diff", "log", "lock", "issue", "run", "workflow"],
+        "description": "Read-only — available to all branches",
+    },
+    "owner": {
+        "commands": [
+            "commit",
+            "checkout",
+            "sync",
+            "unlock",
+            "system-pr",
+            "merge",
+            "smart-sync",
+            "fix",
+        ],
+        "allowed_callers": ["devpulse"],
+        "description": "Write operations — project owner only",
+    },
+}
+
 
 def _find_caller() -> str:
     """Walk up from CWD to find passport.json and return branch name.
@@ -83,3 +104,46 @@ def verify_caller() -> str:
     )
     logger.info("Caller '%s' authorized for devpulse operations", name)
     return name
+
+
+def verify_git_access(command: str) -> str:
+    """Check if the calling branch is authorized for this git command.
+
+    Uses GIT_ACCESS_TIERS to determine access level. Global-tier commands
+    are available to all branches; owner-tier commands require the caller
+    to be in the allowed_callers list.
+
+    Returns:
+        The caller's branch name if authorized.
+
+    Raises:
+        PermissionError: If the caller is not authorized for this command.
+    """
+    if command == "pr":
+        raise PermissionError("Agent PRs are deprecated. Build code, run tests, report results. Devpulse handles git.")
+
+    global_cmds = GIT_ACCESS_TIERS["global"]["commands"]
+    owner_tier = GIT_ACCESS_TIERS["owner"]
+
+    if command in global_cmds:
+        caller = _find_caller()
+        json_handler.log_operation(
+            "git_access_verify",
+            {"caller": caller, "command": command, "tier": "global"},
+        )
+        return caller
+
+    if command in owner_tier["commands"]:
+        caller = _find_caller()
+        allowed = owner_tier["allowed_callers"]
+        if caller not in allowed:
+            msg = f"Branch '{caller}' is not authorized for '{command}'. Only {allowed} can use owner-tier commands."
+            logger.error(msg)
+            raise PermissionError(msg)
+        json_handler.log_operation(
+            "git_access_verify",
+            {"caller": caller, "command": command, "tier": "owner"},
+        )
+        return caller
+
+    raise PermissionError(f"Unknown git command: '{command}'")

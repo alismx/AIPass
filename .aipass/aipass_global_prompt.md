@@ -49,46 +49,22 @@ Secrets live outside the repo at `~/.secrets/aipass/` — API keys, tokens, cred
  - `drone systems` — list all registered branches
  - `drone --help` — full drone reference
 
-# Git — Always on Main
+# Git — Zero Direct Access
 
-**ONE rule: every agent works on `main`. No exceptions.**
+**You have no git access.** All `git` and `gh` commands are blocked at the project level. Drone is the only git interface.
 
-You do not create branches. You do not `git checkout -b`. You do not tell another agent to "create a branch first." Branches only exist during the atomic window inside `drone @git system-pr` which: commits → creates branch → pushes → opens PR → **returns HEAD to main**. That command owns the branch lifecycle end to end. You own nothing about branches.
+Read-only awareness (available to all branches):
+ - `drone @git status` — what changed in your branch directory
+ - `drone @git diff` — see the actual changes
+ - `drone @git log` — recent commit history
 
-Workflow:
-1. You're on main. Always.
-2. Make edits directly on main.
-3. When the work is ready to ship: `drone @git system-pr "description"`.
-4. That command commits + branches + pushes + PRs + returns you to main. One action.
-5. STOP. The user merges. Do not run `drone @git merge` unless the user explicitly tells you to merge a specific PR number in this session.
+Everything else — commits, pushes, merges, branch switching — is handled by devpulse. You build code, you run tests, you report results. Devpulse reviews and commits.
 
-Never merge. Ever. User-merges-only. Past PRs, your own PRs, closed PRs — none of them auto-qualify. You fix, you PR, you stop.
+Drone runs git via Python subprocess, so its operations bypass the settings.json deny rules. This is by design — drone is the gate, not a workaround.
 
-Local files are source of truth. When you edit a file, the state on disk IS reality — you don't wait for a merge to act on what you see locally. This also means: if the truth is wrong, fix it locally, then PR.
+Local files are source of truth. When you edit a file, the state on disk IS reality. If the truth is wrong, fix it locally.
 
-Why this matters: the AIPass repo has ONE shared HEAD across all branches. If any agent lingers on a non-main HEAD, every other agent's next edit lands on the wrong branch. Files get stranded. Work gets lost. Conflicts pile up. We've lived this pain — don't repeat it.
-
-Rules exist to help, not to control. These rules came from fixing actual bugs. Trust them.
-
-Allowed:
- - `drone @git status` — what changed?
- - `drone @git sync` — pull latest main
- - `drone @git system-pr "msg"` — ship your work (devpulse only)
- - `drone @git merge <PR#>` — squash-merge a reviewed PR (devpulse only)
- - `drone @git smart-sync` — fetch + rebase (devpulse only)
- - `drone @git fix` — repair broken git states (devpulse only)
- - `git status`, `git diff`, `git log`, `git branch` (list), `git tag` (list), `git remote` (list/show) — read-only, always fine
-
-Mechanically blocked by the `git_gate.py` PreToolUse hook (applies to ALL sessions including dispatched agents — bypassPermissions does not skip hooks):
- - All raw `git` write verbs: `commit`, `push`, `pull`, `merge`, `rebase`, `reset`, `checkout`, `switch`, `cherry-pick`, `revert`, `rm`, `mv`, `restore`, `clean`, `config`, `stash drop|clear|pop|apply`
- - Destructive `git branch` flags only (`-d`, `-D`, `-m`, `-M`, `--delete`, `--move`, `--set-upstream-to`, `--unset-upstream`). Read-only branch listing is allowed.
- - Destructive `git tag` flags only (`-d`, `--delete`, `-f`, `--force`). Tag listing is allowed.
- - Destructive `git remote` subcommands (`add`, `remove`, `rename`, `set-url`, `prune`). Remote listing/show is allowed.
- - All raw `gh` write subcommands (`pr`, `issue`, `repo`, `release`, `workflow`, `run`, `cache`, `secret`, `variable`, `gist`) and any `gh api` call. Exception: project owners with `citizenship.owner: true` in their passport bypass gh blocking.
- - Edits to `**/.claude/settings*.json`, `**/.claude/hooks/**`, `**/.git/hooks/**` (the enforcement layer itself)
- - Use `drone @git pr "msg"` instead. Drone calls git via Python subprocess so its operations don't pass through this hook.
-
-If `drone @git system-pr` fails to return HEAD to main, that's a drone bug — report it, don't work around it by staying on a branch.
+The `git_gate.py` PreToolUse hook enforces this mechanically — it applies to ALL sessions including dispatched agents. bypassPermissions does not skip hooks.
 
 # aipass init
 
@@ -186,44 +162,23 @@ Archive commands:
 
 # Git Workflow
 
-**Drone is the only git interface. Period.** All PR workflow goes through drone. Never use raw git commands for commits, branches, pushes, resets, merges, rebases, cherry-picks, or remote branch manipulation. Drone handles everything atomically with a lockfile that prevents concurrent PR collisions.
+**Drone is the only git interface.** All git/gh commands are denied at the project level. Drone handles everything via Python subprocess (bypasses settings.json deny rules by design).
 
-**If you think you need a raw git command to fix a git problem, STOP. You don't.** Every git state devpulse has ever been in has been recoverable through `drone @git` commands — system-pr, merge, smart-sync, fix, status, sync, lock. There is no situation that requires `git reset`, `git push`, `git cherry-pick`, `git rebase`, or `git branch -f`. Reaching for them has always made things worse. If drone's commands don't obviously handle the state you're in, run `drone @git fix` or `drone @git smart-sync` and re-evaluate. If still stuck, ASK THE USER — do not improvise with raw git.
-
-Manual git is not a shortcut. It is a trap. Drone exists so you don't get stuck. Use it.
-
-Always work on main. Edit files in your branch directory on the main branch. When ready to submit:
-
- - `drone @git pr "description"` — full PR workflow (lock, branch, commit, push, PR, back to main)
+You have read-only awareness via drone:
  - `drone @git status` — what changed in your branch directory
- - `drone @git sync` — pull latest main
- - `drone @git lock` — check the PR lock state
- - `drone @git --help` — full git reference
+ - `drone @git diff` — see the actual diff
+ - `drone @git log` — recent commits
 
-`drone @git pr` does everything atomically: acquires a lock (so no other branch can PR simultaneously), creates a feature branch, stages only your files, commits with your Co-Authored-By signature, pushes, creates the PR on GitHub, returns to main, releases the lock.
+All write operations (commit, push, merge, checkout) are restricted to devpulse via tier-based access control. Dispatched agents build code and run tests — devpulse reviews the diff and commits.
 
-**Blocked system-wide via `.claude/settings.json` permission gate:** `git checkout*` (any form — switch, discard, new branch), `git add -f*`, `git add --force*`. These are denied for every agent including devpulse. Use `drone @git sync` to switch to main, `drone @git fix` to recover from broken states.
-
-**Mechanically blocked via `.git/hooks/pre-commit`:** `git commit` is rejected on any branch except main (also catches detached HEAD). `git push`, `gh pr create` — go through drone.
-
-**Allowed read-only:** `git status`, `git diff`, `git log`, `git branch` (list), `git tag` (list), `git remote` (list/show), `git stash` (safe transient save).
-
-**If `drone @git pr` fails because the PR lock is held**, wait 30 seconds and retry. Keep retrying until the lock clears — do not skip the PR step, do not commit directly to main, do not give up. The lock means another agent is mid-PR; it will release shortly. `drone @git lock` shows the current lock state.
-
-Never merge. Only devpulse or the user merges PRs. If your PR gets feedback, fix it and run `drone @git pr` again.
-
-Local main is always ahead of origin — that's normal. `drone @git pr` commits on local main first, then pushes a feature branch for the PR. Don't `git pull` to fix it. The user merges and pulls when they choose.
-
-Respect .gitignore — only commit what `git status` shows. Gitignored patterns like `.trinity/`, `.ai_mail.local/`, `DPLAN-*`, `*.local.*`, `logs/`, `.chroma/` are ignored for a reason. Don't go looking for files to commit. Changes drive commits, not file existence.
-
-**Before you PR, run ruff on your diff.** Two commands, every time, no exceptions:
+**Before submitting code, run ruff:**
 
 ```
-ruff check --fix src/ tests/   # Auto-fix lint errors (unused imports, f-strings, etc.)
-ruff format src/ tests/        # Auto-format (whitespace, line breaks, quote style)
+ruff check --fix src/ tests/
+ruff format src/ tests/
 ```
 
-CI runs both as a gate — if you don't run them locally, CI catches it and your PR sits red until someone fixes it. Make this part of muscle memory: edit code → run ruff → `drone @git pr`. It takes two seconds and prevents the silent-debt pattern where drift accumulates across hundreds of files and someone has to run one giant sweep PR to clear it. This is a habit, not a safety net — infrastructure will always catch drift, but habits prevent it in the first place.
+Respect .gitignore — only track what `git status` shows. Gitignored patterns like `.trinity/`, `.ai_mail.local/`, `DPLAN-*`, `*.local.*`, `logs/`, `.chroma/` are ignored for a reason.
 
 # How to Work
 

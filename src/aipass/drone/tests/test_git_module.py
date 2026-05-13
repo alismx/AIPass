@@ -614,9 +614,14 @@ class TestGitModuleRouting:
         result = handle_command("bogus")
         assert result["exit_code"] == 1
         assert "unknown" in result["stderr"].lower()
-        assert "pr" in result["stderr"]
 
-    def test_lock_routes_to_handler(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    @patch(
+        "aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access",
+        return_value="test_branch",
+    )
+    def test_lock_routes_to_handler(
+        self, _mock_auth: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """lock command routes to check_lock_status."""
         registry = tmp_path / "AIPASS_REGISTRY.json"
         registry.write_text("{}", encoding="utf-8")
@@ -627,13 +632,15 @@ class TestGitModuleRouting:
         data = json.loads(result["stdout"])
         assert data["locked"] is False
 
-    def test_unlock_requires_force(self) -> None:
+    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access", return_value="devpulse")
+    def test_unlock_requires_force(self, _mock_auth: MagicMock) -> None:
         """unlock without --force returns error."""
         result = handle_command("unlock")
         assert result["exit_code"] == 1
         assert "--force" in result["stderr"]
 
-    def test_unlock_with_force(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access", return_value="devpulse")
+    def test_unlock_with_force(self, _mock_auth: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """unlock --force routes to force_unlock."""
         registry = tmp_path / "AIPASS_REGISTRY.json"
         registry.write_text("{}", encoding="utf-8")
@@ -642,7 +649,10 @@ class TestGitModuleRouting:
         result = handle_command("unlock", ["--force"])
         assert result["exit_code"] == 0
 
-    def test_sync_routes_to_handler(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access", return_value="devpulse")
+    def test_sync_routes_to_handler(
+        self, _mock_auth: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
         """sync command routes to sync_main."""
         registry = tmp_path / "AIPASS_REGISTRY.json"
         registry.write_text("{}", encoding="utf-8")
@@ -661,7 +671,8 @@ class TestGitModuleRouting:
 
         assert result["exit_code"] == 0
 
-    def test_status_no_branch_dir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access", return_value="test_branch")
+    def test_status_no_branch_dir(self, _mock_auth: MagicMock, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
         """status outside a branch directory returns error."""
         monkeypatch.chdir(tmp_path)
         result = handle_command("status")
@@ -669,17 +680,16 @@ class TestGitModuleRouting:
         assert "cannot detect" in result["stderr"].lower()
 
     def test_pr_no_args(self) -> None:
-        """pr with no arguments returns usage error."""
+        """pr command is deprecated."""
         result = handle_command("pr")
         assert result["exit_code"] == 1
-        assert "usage" in result["stderr"].lower()
+        assert "deprecated" in result["stderr"].lower()
 
-    def test_pr_no_branch_dir(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-        """pr outside a branch directory returns error."""
-        monkeypatch.chdir(tmp_path)
+    def test_pr_no_branch_dir(self) -> None:
+        """pr command is deprecated regardless of context."""
         result = handle_command("pr", ["some description"])
         assert result["exit_code"] == 1
-        assert "cannot detect" in result["stderr"].lower()
+        assert "deprecated" in result["stderr"].lower()
 
 
 class TestDetectBranchDir:
@@ -756,7 +766,7 @@ class TestGitModuleHelp:
         """Command-specific help returns relevant text."""
         text = get_help("pr")
         assert "pr" in text.lower()
-        assert "description" in text.lower()
+        assert "deprecated" in text.lower()
 
     def test_introspective(self) -> None:
         """Introspection lists connected handlers."""

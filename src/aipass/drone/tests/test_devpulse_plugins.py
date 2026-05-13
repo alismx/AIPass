@@ -518,26 +518,32 @@ class TestGitModuleRouting:
         assert "sync_plugin" in intro
         assert "fix_plugin" in intro
 
-    def test_handle_merge_no_args(self) -> None:
+    @patch(
+        "aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access",
+        return_value="devpulse",
+    )
+    def test_handle_merge_no_args(self, _mock_access: MagicMock) -> None:
         from aipass.drone.apps.modules.git_module import handle_command
 
         result = handle_command("merge", [])
         assert result["exit_code"] == 1
         assert "Usage" in result["stderr"]
 
-    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_caller")
+    @patch(
+        "aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access",
+        return_value="devpulse",
+    )
     @patch("aipass.drone.apps.plugins.devpulse_ops.merge_plugin.find_repo_root")
     @patch("aipass.drone.apps.plugins.devpulse_ops.merge_plugin.subprocess.run")
     def test_handle_merge_routes_correctly(
         self,
         mock_run: MagicMock,
         mock_root: MagicMock,
-        mock_verify: MagicMock,
+        _mock_access: MagicMock,
         tmp_path: Path,
     ) -> None:
         from aipass.drone.apps.modules.git_module import handle_command
 
-        mock_verify.return_value = "devpulse"
         mock_root.return_value = tmp_path
 
         proc = MagicMock()
@@ -549,19 +555,21 @@ class TestGitModuleRouting:
         result = handle_command("merge", ["42"])
         assert result["exit_code"] == 0
 
-    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_caller")
+    @patch(
+        "aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access",
+        return_value="devpulse",
+    )
     @patch("aipass.drone.apps.plugins.devpulse_ops.sync_plugin.find_repo_root")
     @patch("aipass.drone.apps.plugins.devpulse_ops.sync_plugin.subprocess.run")
     def test_handle_smart_sync_routes_correctly(
         self,
         mock_run: MagicMock,
         mock_root: MagicMock,
-        mock_verify: MagicMock,
+        _mock_access: MagicMock,
         tmp_path: Path,
     ) -> None:
         from aipass.drone.apps.modules.git_module import handle_command
 
-        mock_verify.return_value = "devpulse"
         mock_root.return_value = tmp_path
 
         def side_effect(cmd: list[str], **kwargs: object) -> MagicMock:
@@ -579,19 +587,21 @@ class TestGitModuleRouting:
         result = handle_command("smart-sync", [])
         assert result["exit_code"] == 0
 
-    @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_caller")
+    @patch(
+        "aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access",
+        return_value="devpulse",
+    )
     @patch("aipass.drone.apps.plugins.devpulse_ops.fix_plugin.find_repo_root")
     @patch("aipass.drone.apps.plugins.devpulse_ops.fix_plugin.subprocess.run")
     def test_handle_fix_routes_correctly(
         self,
         mock_run: MagicMock,
         mock_root: MagicMock,
-        mock_verify: MagicMock,
+        _mock_access: MagicMock,
         tmp_path: Path,
     ) -> None:
         from aipass.drone.apps.modules.git_module import handle_command
 
-        mock_verify.return_value = "devpulse"
         mock_root.return_value = tmp_path
         git_dir = tmp_path / ".git"
         git_dir.mkdir()
