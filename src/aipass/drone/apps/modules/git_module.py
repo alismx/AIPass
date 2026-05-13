@@ -29,6 +29,9 @@ from aipass.drone.apps.handlers.git import (
     log_handler,
     commit_handler,
     checkout_handler,
+    dev_pr_handler,
+    branches_handler,
+    delete_branch_handler,
 )
 
 DRONE_MODULE = {
@@ -42,6 +45,7 @@ _COMMANDS = (
     "diff",
     "log",
     "lock",
+    "branches",
     "issue",
     "run",
     "workflow",
@@ -49,6 +53,8 @@ _COMMANDS = (
     "checkout",
     "sync",
     "unlock",
+    "dev-pr",
+    "delete-branch",
     "system-pr",
     "merge",
     "smart-sync",
@@ -133,6 +139,12 @@ def handle_command(command: str | None = None, args: list[str] | None = None) ->
         return _handle_log(args)
     if command == "lock":
         return _handle_lock()
+    if command == "branches":
+        return _handle_branches()
+    if command == "dev-pr":
+        return _handle_dev_pr(args)
+    if command == "delete-branch":
+        return _handle_delete_branch(args)
     if command == "commit":
         return _handle_commit(args)
     if command == "checkout":
@@ -189,6 +201,47 @@ def _handle_gh_passthrough(subcommand: str, args: list[str]) -> dict:
             "stderr": f"gh {subcommand} timed out after 60s",
             "exit_code": 1,
         }
+
+
+def _handle_branches() -> dict:
+    """Handle the branches subcommand (global tier)."""
+    result = branches_handler.list_remote_branches()
+    if result["branches"]:
+        return {
+            "stdout": "\n".join(result["branches"]),
+            "stderr": "",
+            "exit_code": 0,
+        }
+    return {"stdout": result["message"], "stderr": "", "exit_code": 0}
+
+
+def _handle_dev_pr(args: list[str]) -> dict:
+    """Handle the dev-pr subcommand (owner tier)."""
+    if not args:
+        return {
+            "stdout": "",
+            "stderr": "Usage: drone @git dev-pr <description>",
+            "exit_code": 1,
+        }
+    description = " ".join(args)
+    result = dev_pr_handler.create_dev_pr(description)
+    if result["success"]:
+        return {"stdout": result["message"], "stderr": "", "exit_code": 0}
+    return {"stdout": "", "stderr": result["message"], "exit_code": 1}
+
+
+def _handle_delete_branch(args: list[str]) -> dict:
+    """Handle the delete-branch subcommand (owner tier)."""
+    if not args:
+        return {
+            "stdout": "",
+            "stderr": "Usage: drone @git delete-branch <name>",
+            "exit_code": 1,
+        }
+    result = delete_branch_handler.delete_remote_branch(args[0])
+    if result["success"]:
+        return {"stdout": result["message"], "stderr": "", "exit_code": 0}
+    return {"stdout": "", "stderr": result["message"], "exit_code": 1}
 
 
 def _handle_system_pr(args: list[str], caller: str) -> dict:
