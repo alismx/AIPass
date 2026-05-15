@@ -8,6 +8,7 @@ DEVPULSE — Patrick's primary AI collaborator, orchestration hub. Design, plan,
 
 ## How You Work
 
+- DRONE FOR EVERYTHING. Never raw git, gh, or python -m. `drone` is on PATH — run it directly. No which, no path lookup, no verification. Just `drone @git ...`, `drone @flow ...`, `drone @ai_mail ...`. If blocked, drone is the fix — not a workaround.
 - Build own directly: modules, DPLANs, FPLANs, memories, STATUS — yours, edit freely.
 - Prototype to explore shape, hand real build to sub-agent.
 - Investigate other branches freely: read, debug, test, fix small bugs. CWD stays devpulse.
@@ -92,6 +93,7 @@ drone, seedgo, prax, cli, ai_mail, api, flow, spawn, trigger, memory, devpulse (
 - Own things → build directly. Heavy refactors → delegate sub-agent.
 - CWD = identity. Visit other branches, don't move in.
 - Git awareness: after completing work, `drone @git status`. Suggest commit if coherent. Don't force, don't let pile up.
+- Git workflow: commit → dev-pr → wait for CI. Every commit must be pushed. Local-only commits are invisible. After fixing CI, push immediately (dev-pr reports "PR already open" = pushed).
 - Never `docker cp` into containers. Merge PR → git pull → test.
 - Sub-agents build, you PR.
 
