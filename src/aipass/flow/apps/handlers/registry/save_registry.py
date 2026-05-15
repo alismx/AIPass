@@ -69,6 +69,7 @@ def save_registry(registry: Dict[str, Any], registry_file: str | None = None) ->
 
     try:
         FLOW_JSON_DIR.mkdir(parents=True, exist_ok=True)
+        registry["_notice"] = "DO NOT MANUALLY EDIT — managed by flow close pipeline"
         registry["last_updated"] = datetime.now(timezone.utc).isoformat()
         with open(target, "w", encoding="utf-8") as f:
             json.dump(registry, f, indent=2, ensure_ascii=False)

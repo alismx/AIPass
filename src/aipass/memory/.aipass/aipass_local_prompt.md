@@ -2,7 +2,7 @@
 
 ## Identity
 
-Memory is the central archive — vector search, rollover, and memory management for all AIPass branches. ChromaDB + fastembed (ONNX) for semantic search. Rollover archives old `.trinity/` entries when files exceed 600 lines.
+Memory — central archive. Vector search, rollover, memory management, all branches. ChromaDB + fastembed (ONNX) semantic search. Rollover archives old `.trinity/` entries when files exceed 600 lines.
 
 ## Key Commands
 
@@ -27,10 +27,10 @@ Handlers implement domain logic under `apps/handlers/` (archive, json, learnings
 ## Known Issues
 
 - `search` fails without `fastembed` installed
-- 5 commands in `--help` have no backing module: push-templates, diff-templates, template-status, symbolic demo, symbolic fragments
+- 5 commands `--help` have no backing module: push-templates, diff-templates, template-status, symbolic demo, symbolic fragments
 - `status` shows 0 branches — may need registry path investigation
 
-## Memory & Tracking
+## Memory + Tracking
 
 - `.trinity/` — passport, local.json, observations.json
 - `dev.local.md` — working scratchpad

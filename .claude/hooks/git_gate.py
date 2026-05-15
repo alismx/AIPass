@@ -55,7 +55,13 @@ BLOCKED_GIT_REMOTE_RE = re.compile(
     r"(?<![@\w/.])git\s+remote\s+(add|remove|rename|set-url|set-branches|set-head|prune)\b"
 )
 
-BLOCKED_GH_API_RE = re.compile(r"(?<![@\w/.])gh\s+api\b")
+BLOCKED_GH_API_RE = re.compile(
+    r"(?<![@\w/.])gh\s+api\b.*("
+    r"-X\s+(POST|PUT|PATCH|DELETE)"
+    r"|--method\s+(POST|PUT|PATCH|DELETE)"
+    r"|-f\b|--field\b|-F\b|--raw-field\b|--input\b"
+    r")"
+)
 
 BLOCKED_GH_RE = re.compile(
     r"(?<![@\w/.])gh\s+(pr|issue|repo|release|workflow|run|cache|secret|variable|gist)"

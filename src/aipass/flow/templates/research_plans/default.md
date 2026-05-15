@@ -2,29 +2,29 @@
 
 Tag: research, external-repo, {tag}
 
-> One-line summary of what this repo/project does and why we're looking at it
+> One-line summary: what this repo/project does + why we're looking
 
 ---
 
 ## What is an RPLAN?
 
-Research Plans (RPLANs) are for **studying external work** -- analyzing repos, packages, libraries, and projects to extract patterns, ideas, and lessons that could benefit AIPass.
+Research Plans (RPLANs) are **studying external work** -- analyzing repos, packages, libraries, projects to extract patterns, ideas, lessons that could benefit AIPass.
 
 **This is for:**
-- Analyzing an external repo or pip package
-- Documenting architecture, patterns, and design decisions found
-- Identifying what AIPass could learn from or adapt
+- Analyzing external repo or pip package
+- Documenting architecture, patterns, design decisions found
+- Identifying what AIPass could learn or adapt
 - Recording honest assessments -- what's good, what's not, what's relevant
 - Preserving research so you don't repeat it next session
 
 **This is NOT for:**
-- Building code -- that's an FPLAN
-- Planning AIPass features -- that's a DPLAN (create one if this research inspires a build)
-- Quick glances -- if it takes 5 minutes, just note it in memories
+- Building code -- that's FPLAN
+- Planning AIPass features -- that's DPLAN (create one if research inspires build)
+- Quick glances -- if takes 5 minutes, just note in memories
 
-**RPLANs live in the external repo's root directory**, not in a branch. When you revisit that repo later, the research is right there waiting. The RPLAN is the artifact that makes the research recoverable.
+**RPLANs live in external repo's root directory**, not in branch. When you revisit that repo later, research is right there waiting. RPLAN is artifact that makes research recoverable.
 
-**Never trim an RPLAN.** Raw findings, dead ends, and "this looked promising but wasn't" are all valuable. Future you will thank past you.
+**Never trim RPLAN.** Raw findings, dead ends, "this looked promising but wasn't" -- all valuable. Future you will thank past you.
 
 ---
 
@@ -32,21 +32,21 @@ Research Plans (RPLANs) are for **studying external work** -- analyzing repos, p
 
 | Field | Value |
 |-------|-------|
-| **Repo/Package** | Name and source URL |
+| **Repo/Package** | Name + source URL |
 | **Installed via** | pip install / git clone / both |
 | **Version analyzed** | Version number or commit hash |
-| **License** | License type and notable restrictions |
+| **License** | License type + notable restrictions |
 | **Language** | Primary language(s) |
 | **Size** | Approximate LOC or file count |
 | **Local path** | Where it lives on disk |
 
 ## What It Does
 
-High-level description of the project. What problem does it solve? Who is it for? How does it work at a conceptual level?
+High-level description. What problem does it solve? Who is it for? How does it work conceptually?
 
 ## Architecture
 
-How the codebase is structured. Key directories, entry points, data flow. Include a tree or diagram if helpful.
+How codebase structured. Key directories, entry points, data flow. Include tree or diagram if helpful.
 
 ```
 project/
@@ -57,20 +57,20 @@ project/
 
 ## Key Files Analyzed
 
-For each significant file reviewed:
+Each significant file reviewed:
 
 ### filename.py (LOC count)
 - **Purpose:** What it does
-- **Core pattern:** The main approach or algorithm
+- **Core pattern:** Main approach or algorithm
 - **What's clever:** Notable design decisions
 - **AIPass relevance:** How this could inform our work
 - **Gotchas:** Limitations or issues noticed
 
-*(Repeat for each file worth documenting)*
+*(Repeat each file worth documenting)*
 
 ## Patterns Worth Adopting
 
-What did we find that AIPass could learn from? Be specific -- not "their memory is good" but "they use prefix-indexed keys like AGENT:id:STATE:type for O(k) queries, which could improve our ChromaDB tagging."
+What did we find AIPass could learn? Be specific -- not "their memory is good" but "they use prefix-indexed keys like AGENT:id:STATE:type for O(k) queries, which could improve our ChromaDB tagging."
 
 | Pattern | Where Found | AIPass Application | Priority |
 |---------|-------------|-------------------|----------|
@@ -78,24 +78,24 @@ What did we find that AIPass could learn from? Be specific -- not "their memory 
 
 ## Patterns to Avoid
 
-What did we find that we should NOT copy? Bad practices, overcomplicated approaches, things that don't fit our architecture.
+What we should NOT copy? Bad practices, overcomplicated approaches, things that don't fit our architecture.
 
 ## Honest Assessment
 
 - **What they do better than us:**
 - **What we do better than them:**
-- **Overlap with AIPass:**
+- **Overlap AIPass:**
 - **Key differentiator:**
 
 ## Next Steps
 
-- [ ] Create DPLAN if any patterns are worth building
+- [ ] Create DPLAN if any patterns worth building
 - [ ] Note findings in relevant branch memories
-- [ ] Share with relevant branches via dispatch if applicable
+- [ ] Share relevant branches via dispatch if applicable
 
 ## Relationships
 - **Related DPLANs:** Link any design plans this research inspired
-- **Related branches:** Which AIPass branches would benefit from these findings
+- **Related branches:** Which AIPass branches would benefit
 - **Discovered via:** How we found this project (recommendation, search, dependency, etc.)
 
 ## Notes

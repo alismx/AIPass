@@ -386,7 +386,14 @@ def _prompt_auto_wire(
     env_count = len(missing_env)
     perm_count = len(missing_deny) + len(missing_ask)
     logger.warning("[doctor] %d hooks, %d env vars, %d permissions missing", hook_count, env_count, perm_count)
-    console.print(f"\n[bold]{hook_count} hooks, {env_count} env vars, {perm_count} permissions missing[/bold]")
+    parts = []
+    if hook_count:
+        parts.append(f"{hook_count} hooks")
+    if env_count:
+        parts.append(f"{env_count} env vars")
+    if perm_count:
+        parts.append(f"{perm_count} permissions")
+    console.print(f"\n[bold]{', '.join(parts)} missing[/bold]")
     console.print("[dim]Review details: .claude/hooks/README.md[/dim]")
 
     try:

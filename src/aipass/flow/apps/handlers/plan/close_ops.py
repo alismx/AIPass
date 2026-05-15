@@ -122,6 +122,122 @@ def _find_relocated_plan(plan_file: Path) -> Path | None:
     return None
 
 
+def _find_unregistered_plan_file(prefix: str, plan_key: str) -> Path | None:
+    """Search src/aipass/ for a plan file matching PREFIX-plan_key not in any registry."""
+    aipass_root = FLOW_ROOT.parent
+    pattern = f"{prefix}-{plan_key}*.md"
+    skip_parts = {".backup", ".archive", "__pycache__", ".git", "processed_plans"}
+
+    for match in aipass_root.rglob(pattern):
+        if any(part in skip_parts for part in match.parts):
+            continue
+        return match
+
+    return None
+
+
+def _self_heal_unregistered_plan(
+    prefix: str,
+    plan_key: str,
+    plan_file: Path,
+    registry: Dict[str, Any],
+    reg_file: str,
+    save_registry_fn: Any,
+    load_registry_fn: Any,
+    messages: List[Dict[str, Any]],
+) -> tuple[str, Dict[str, Any]]:
+    """Register an unregistered plan file and handle number collisions.
+
+    Returns (actual_plan_key, updated_registry).
+    """
+    import re as _re
+
+    messages.append(
+        {
+            "type": "warning",
+            "text": "Plan file found but not registered — likely created manually. Initiating self-heal.",
+        }
+    )
+    messages.append({"type": "dim", "text": f"  Found: {plan_file}"})
+
+    actual_key = plan_key
+
+    if plan_key in registry.get("plans", {}):
+        next_num = registry.get("next_number", int(plan_key) + 1)
+        actual_key = f"{next_num:04d}"
+        messages.append(
+            {
+                "type": "warning",
+                "text": f"  Number {plan_key} already registered as {prefix}-{plan_key}. "
+                f"Bumping to next available: {prefix}-{actual_key}.",
+            }
+        )
+
+    try:
+        from aipass.flow.apps.handlers.template.plan_type_loader import discover_plan_types
+
+        for _type_key, config in discover_plan_types().items():
+            other_prefix = config.get("prefix", "")
+            if other_prefix == prefix:
+                continue
+            other_reg_file = config.get("registry_file")
+            if not other_reg_file:
+                continue
+            try:
+                other_registry = load_registry_fn(registry_file=other_reg_file)
+                if plan_key in other_registry.get("plans", {}):
+                    messages.append(
+                        {
+                            "type": "dim",
+                            "text": f"  Note: {other_prefix}-{plan_key} also exists in {other_prefix} registry",
+                        }
+                    )
+            except Exception as e:
+                logger.warning(f"[{MODULE_NAME}] Failed to check cross-prefix registry '{other_reg_file}': {e}")
+                continue
+    except Exception as e:
+        logger.warning(f"[{MODULE_NAME}] Cross-prefix collision check failed: {e}")
+
+    stem = plan_file.stem
+    subject = "Manually created plan"
+    try:
+        after_prefix = _re.sub(r"^[A-Z]+PLAN-\d{4}_", "", stem)
+        after_prefix = _re.sub(r"_\d{4}-\d{2}-\d{2}$", "", after_prefix)
+        if after_prefix:
+            subject = after_prefix.replace("_", " ")
+    except Exception as e:
+        logger.warning(f"[{MODULE_NAME}] Failed to extract subject from filename '{stem}': {e}")
+
+    entry = {
+        "location": str(plan_file.parent),
+        "relative_path": plan_file.parent.name,
+        "created": datetime.now(timezone.utc).isoformat(),
+        "subject": subject,
+        "status": "open",
+        "file_path": str(plan_file),
+        "template_type": "default",
+        "self_healed": True,
+    }
+
+    registry["plans"][actual_key] = entry
+    num_val = int(actual_key) + 1
+    if registry.get("next_number", 0) <= int(actual_key):
+        registry["next_number"] = num_val
+    save_registry_fn(registry, registry_file=reg_file)
+
+    messages.append(
+        {
+            "type": "success",
+            "text": f"  Registered {prefix}-{actual_key}: {subject}",
+        }
+    )
+
+    logger.info(f"[{MODULE_NAME}] Self-healed: registered {prefix}-{actual_key} from file {plan_file}")
+    json_handler.log_operation("self_heal_register", {"prefix": prefix, "plan_key": actual_key, "file": str(plan_file)})
+
+    return actual_key, registry
+
+
 def _spawn_background_runner():
     """Spawn post_close_runner.py as a fully detached background process"""
     bg_runner = FLOW_ROOT / "apps" / "modules" / "post_close_runner.py"
@@ -212,13 +328,31 @@ def close_plan_impl(
         # 3. VALIDATE: Check plan exists (handler)
         exists, error_msg = validate_plan_exists(plan_key, registry)
         if not exists:
-            logger.warning(f"[{MODULE_NAME}] {error_msg}")
-            return {
-                "success": False,
-                "messages": [{"type": "error", "text": "not_found", "plan_num": plan_key}],
-                "plan_key": plan_key,
-                "cancelled": False,
-            }
+            # SELF-HEAL: Check if plan file exists on disk but not in registry
+            prefix = _extract_prefix(plan_num) or "FPLAN"
+            if not reg_file:
+                reg_file = f"{prefix.lower()}_registry.json"
+            plan_file_found = _find_unregistered_plan_file(prefix, plan_key)
+
+            if plan_file_found:
+                plan_key, registry = _self_heal_unregistered_plan(
+                    prefix,
+                    plan_key,
+                    plan_file_found,
+                    registry,
+                    reg_file,
+                    save_registry,
+                    load_registry,
+                    messages,
+                )
+            else:
+                logger.warning(f"[{MODULE_NAME}] {error_msg}")
+                return {
+                    "success": False,
+                    "messages": [{"type": "error", "text": "not_found", "plan_num": plan_key}],
+                    "plan_key": plan_key,
+                    "cancelled": False,
+                }
 
         plan_info = registry["plans"][plan_key]
         plan_file = Path(plan_info.get("file_path", ""))
@@ -496,6 +630,41 @@ def close_plan_impl(
             logger.info(f"[{MODULE_NAME}] Trigger module not available, skipping event fire")
         except Exception as e:
             logger.warning(f"[{MODULE_NAME}] Trigger fire failed (non-critical): {e}")
+
+        # --- VERIFY: Physical state check for self-healed plans ---
+        if plan_info.get("self_healed"):
+            messages.append({"type": "step", "text": "[VERIFY] Checking physical state..."})
+            try:
+                from aipass.flow.apps.handlers.mbank.process import PROCESSED_PLANS_DIR as _VERIFY_DIR
+
+                original_source = Path(plan_info.get("file_path", ""))
+                dest = _VERIFY_DIR / original_source.name
+                if dest.exists():
+                    messages.append({"type": "dim", "text": f"  [OK] File in processed_plans/: {original_source.name}"})
+                else:
+                    messages.append({"type": "warning", "text": "  [FAIL] File NOT found in processed_plans/"})
+                if not original_source.exists():
+                    messages.append(
+                        {"type": "dim", "text": f"  [OK] Source location clean: {original_source.parent.name}/"}
+                    )
+                else:
+                    messages.append(
+                        {"type": "warning", "text": f"  [FAIL] Source file still exists at: {original_source}"}
+                    )
+                verify_reg = load_registry(registry_file=reg_file) if reg_file else load_registry()
+                verify_info = verify_reg.get("plans", {}).get(plan_key, {})
+                if verify_info.get("status") == "closed":
+                    messages.append({"type": "dim", "text": "  [OK] Registry status: closed"})
+                else:
+                    messages.append(
+                        {
+                            "type": "warning",
+                            "text": f"  [FAIL] Registry status: {verify_info.get('status', 'unknown')}",
+                        }
+                    )
+            except Exception as e:
+                logger.warning(f"[{MODULE_NAME}] Self-heal verification failed: {e}")
+                messages.append({"type": "warning", "text": f"  Verification error: {e}"})
 
         json_handler.log_operation("plan_closed", {"plan_key": plan_key, "success": True})
         return {

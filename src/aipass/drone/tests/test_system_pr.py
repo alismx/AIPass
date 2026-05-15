@@ -319,11 +319,11 @@ class TestGitModuleSystemPrRouting:
         assert "system-pr" in help_text
 
     def test_get_help_system_pr_specific(self) -> None:
-        """get_help('system-pr') output mentions owner as the tier label."""
+        """get_help('system-pr') output mentions deprecation."""
         from aipass.drone.apps.modules.git_module import get_help
 
         help_text = get_help("system-pr")
-        assert "owner" in help_text.lower()
+        assert "deprecated" in help_text.lower()
 
     def test_get_introspective_includes_plugin(self) -> None:
         """get_introspective() output mentions the devpulse_ops plugin."""
@@ -334,12 +334,12 @@ class TestGitModuleSystemPrRouting:
 
     @patch("aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access", return_value="devpulse")
     def test_handle_system_pr_no_args(self, mock_verify: MagicMock) -> None:
-        """handle_command('system-pr', []) exits with code 1 and a Usage message."""
+        """handle_command('system-pr', []) exits with code 1 and deprecation message."""
         from aipass.drone.apps.modules.git_module import handle_command
 
         result = handle_command("system-pr", [])
         assert result["exit_code"] == 1
-        assert "Usage" in result["stderr"]
+        assert "deprecated" in result["stderr"].lower()
 
     @patch(
         "aipass.drone.apps.plugins.devpulse_ops.auth.verify_git_access",

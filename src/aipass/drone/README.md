@@ -46,8 +46,9 @@ drone @git run list              # Passthrough to gh run list
 drone @git workflow list         # Passthrough to gh workflow list
 
 # Git workflow — owner tier (devpulse only)
-drone @git commit "message"      # Commit staged changes
+drone @git commit "message"      # Commit whatever is already staged
 drone @git commit "msg" --all    # Stage ALL repo changes and commit
+drone @git commit "msg" f1 f2    # Stage only f1 f2, then commit
 drone @git checkout dev          # Switch to dev branch
 drone @git checkout main         # Switch to main branch
 drone @git dev-pr "desc"         # Push dev and create PR to main
@@ -58,7 +59,7 @@ drone @git sync                  # Pull latest (branch-aware: main or dev)
 drone @git sync --autostash      # Sync with autostash for dirty trees
 drone @git smart-sync            # Fetch + detect divergence + rebase
 drone @git unlock --force        # Force-release the PR lock
-drone @git system-pr "desc"      # Legacy system-wide PR (use dev-pr)
+drone @git system-pr "desc"      # DEPRECATED — use dev-pr instead
 drone @git fix                   # Auto-fix stuck rebase / detached HEAD
 drone @git fix --dry-run         # Detect issues without fixing
 
@@ -140,7 +141,7 @@ drone/
 │   │   ├── module_registry.py     # Internal module routing
 │   │   ├── registry.py            # Registry query operations
 │   │   ├── commands.py            # Custom command shortcut orchestrator
-│   │   ├── git_module.py          # Git workflow (tier-based access, 13 commands)
+│   │   ├── git_module.py          # Git workflow (tier-based access, 16 commands)
 │   │   └── scan.py                # Branch command scanning
 │   ├── handlers/                  # Implementation details
 │   │   ├── executor.py            # Safe subprocess execution (timeout, no shell)
@@ -166,8 +167,11 @@ drone/
 │   │       ├── pr_handler.py                # DEPRECATED — returns error message
 │   │       ├── diff_handler.py              # Scoped git diff (--staged support)
 │   │       ├── log_handler.py               # Scoped git log (configurable count)
-│   │       ├── commit_handler.py            # Commit staged changes (--all support)
+│   │       ├── commit_handler.py            # Commit changes (--all, selective files, or pre-staged)
 │   │       ├── checkout_handler.py          # Branch switching (main/dev guard)
+│   │       ├── dev_pr_handler.py            # Push dev and create PR to main
+│   │       ├── branches_handler.py          # List remote branches
+│   │       ├── delete_branch_handler.py     # Delete remote branch (main/dev protected)
 │   │       ├── status_handler.py            # Scoped git status (subprocess)
 │   │       ├── status_handler_gitpython.py  # [prototype] DPLAN-0140 Phase 1, not wired in
 │   │       └── sync_handler.py              # Safe main sync (--autostash support)

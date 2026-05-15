@@ -3,7 +3,7 @@
 
 ## Role
 
-Inter-branch messaging system. Every branch in AIPass communicates through ai_mail. The dispatch pipeline (send + wake) is how work gets assigned to branches autonomously.
+Inter-branch messaging system. Every branch communicates through ai_mail. Dispatch pipeline (send + wake) assigns work autonomously.
 
 ## Key Commands
 
@@ -65,15 +65,15 @@ apps/
 
 ## Critical Rules
 
-- **Identity**: `detect_branch_from_pwd()` checks `AIPASS_CALLER_BRANCH` env var first, falls back to CWD walk-up. NEVER fall back to `Path.cwd()` silently — wrong identity is worse than no identity.
-- **Fallback**: Per-ID commands (view/close/reply) use `_resolve_branch_path()` which falls back to `_AI_MAIL_DIR` when caller detection fails. All handlers return `True` even on error (command was recognized).
-- **Dispatch env**: `dispatch_monitor.py` sets `AIPASS_BRANCH_NAME=<branch>` in spawn_env. Strips `AIPASS_CALLER_*` vars to prevent parent context leaking.
-- **Inbox lock**: `inbox_lock()` uses `fcntl` (POSIX) / `msvcrt` (Windows) for atomic inbox writes.
-- **Purge lifecycle**: Vectorize to Memory Bank first, then delete originals. Deletion gated on vectorization success.
+- **Identity**: `detect_branch_from_pwd()` checks `AIPASS_CALLER_BRANCH` env var first, falls back CWD walk-up. NEVER fall back `Path.cwd()` silently — wrong identity worse than no identity.
+- **Fallback**: Per-ID commands (view/close/reply) use `_resolve_branch_path()` which falls back `_AI_MAIL_DIR` when caller detection fails. All handlers return `True` even on error (command recognized).
+- **Dispatch env**: `dispatch_monitor.py` sets `AIPASS_BRANCH_NAME=<branch>` spawn_env. Strips `AIPASS_CALLER_*` vars — prevents parent context leaking.
+- **Inbox lock**: `inbox_lock()` uses `fcntl` (POSIX) / `msvcrt` (Windows) atomic inbox writes.
+- **Purge lifecycle**: Vectorize Memory Bank first, then delete originals. Deletion gated on vectorization success.
 
 ## Integration Points
 
-- **trigger**: Imports `deliver_email_to_branch()` directly for event-driven email delivery
+- **trigger**: Imports `deliver_email_to_branch()` directly — event-driven email delivery
 - **prax**: Provides `system_logger` used across all handlers
 - **drone**: Routes commands via `handle_command()` pattern; sets caller env vars
-- **seedgo**: 100% compliance, 30+ bypass entries (all documented in `.seedgo/bypass.json`)
+- **seedgo**: 100% compliance, 30+ bypass entries (all documented `.seedgo/bypass.json`)
