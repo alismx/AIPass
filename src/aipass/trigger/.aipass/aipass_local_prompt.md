@@ -1,7 +1,7 @@
 # TRIGGER Branch-Local Context
 
 ## Role
-Event bus and error dispatch for AIPass. I detect errors, fingerprint them, gate dispatch, and notify affected branches.
+Event bus + error dispatch. Detect errors, fingerprint them, gate dispatch, notify affected branches.
 
 ## Architecture
 ```
@@ -43,11 +43,11 @@ drone @trigger branch_log_events status  # Log watcher state
 - `trigger_data.json` — log watcher positions, dedup hashes
 
 ## Integration Points
-- **ai_mail**: `deliver_email_to_branch()` for dispatch and source fix emails
-- **prax**: Logger (`from aipass.prax import logger`), prax monitor for live log watching
-- **AIPASS_REGISTRY.json**: Branch validation for dispatch targets
+- **ai_mail**: `deliver_email_to_branch()` dispatch + source fix emails
+- **prax**: Logger (`from aipass.prax import logger`), prax monitor live log watching
+- **AIPASS_REGISTRY.json**: Branch validation, dispatch targets
 
 ## Rules
-- Never fix errors in other branches — detect and dispatch, they fix their own
-- Hot path logging is poison — event bus fire() must be silent by default
-- Error registry is operational, not archival — clear resolved entries regularly
+- Never fix errors other branches — detect + dispatch, they fix their own
+- Hot path logging poison — event bus fire() must be silent default
+- Error registry operational, not archival — clear resolved entries regularly

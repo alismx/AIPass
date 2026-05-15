@@ -11,7 +11,6 @@
     "deny": [
       "EnterPlanMode",
       "Bash(git *)",
-      "Bash(gh *)",
       "Read(/home/patrick/Patrick-Personal/**)",
       "Edit(/home/patrick/Patrick-Personal/**)",
       "Write(/home/patrick/Patrick-Personal/**)",

@@ -8,24 +8,24 @@ Tag: {tag}
 
 ## What is a TDPLAN?
 
-Team Design Plans (TDPLANs) are for **collaborative thinking across multiple branches** -- capturing ideas, brainstorming, investigating, planning, and making decisions that span branch boundaries. Each participating branch owns a section and works within it.
+Team Design Plans (TDPLANs) are **collaborative thinking across multiple branches** -- capturing ideas, brainstorming, investigating, planning, making decisions that span branch boundaries. Each participating branch owns section + works within it.
 
 **This IS for:**
 - Cross-branch design work where multiple branches each have responsibilities
 - Coordinated planning where branches need to see each other's progress
-- Problems that touch multiple systems and need parallel investigation
+- Problems touching multiple systems needing parallel investigation
 - Shared decision-making where each branch contributes domain expertise
 
 **This is NOT for:**
-- Single-branch thinking -- that's a DPLAN (Design Plan)
-- Building code or executing tasks -- that's an FPLAN (Flow Plan)
+- Single-branch thinking -- that's DPLAN (Design Plan)
+- Building code or executing tasks -- that's FPLAN (Flow Plan)
 - Quick fixes -- just do those directly
 
-**TDPLANs have no fixed structure beyond the Team Sections.** The shared sections above are starting points. Add sections, remove sections, go wherever the thinking takes you. The Team Sections below are the structured part -- each branch owns theirs.
+**TDPLANs have no fixed structure beyond Team Sections.** Shared sections above are starting points. Add sections, remove sections, go wherever thinking takes you. Team Sections below are structured part -- each branch owns theirs.
 
-**When this plan is ready to build**, create FPLANs per branch: `drone @flow create . "Subject"`. Each branch can create their own FPLAN from their section. The TDPLAN stays as the shared design record.
+**When plan ready to build**, create FPLANs per branch: `drone @flow create . "Subject"`. Each branch can create their own FPLAN from their section. TDPLAN stays as shared design record.
 
-**Never trim a TDPLAN.** The story -- conversations, decisions, dead ends, pivots -- is as important as the results.
+**Never trim TDPLAN.** Story -- conversations, decisions, dead ends, pivots -- as important as results.
 
 ---
 
@@ -33,10 +33,10 @@ Team Design Plans (TDPLANs) are for **collaborative thinking across multiple bra
 What we're trying to achieve together
 
 ## The Problem
-What exists now and why it needs multiple branches to solve
+What exists now + why it needs multiple branches to solve
 
 ## The Fix
-High-level approach -- how the pieces fit together across branches
+High-level approach -- how pieces fit together across branches
 
 ## Design Decisions
 
@@ -57,7 +57,7 @@ High-level approach -- how the pieces fit together across branches
 **Owner:** @{tag}
 
 **Responsibilities:**
-- What this branch is responsible for in this plan
+- What this branch responsible for in this plan
 
 **Implementation:**
 - How this branch plans to approach their part
@@ -78,7 +78,7 @@ High-level approach -- how the pieces fit together across branches
 **Owner:** @branch_b
 
 **Responsibilities:**
-- What this branch is responsible for in this plan
+- What this branch responsible for in this plan
 
 **Implementation:**
 - How this branch plans to approach their part
@@ -99,7 +99,7 @@ High-level approach -- how the pieces fit together across branches
 **Owner:** @branch_c
 
 **Responsibilities:**
-- What this branch is responsible for in this plan
+- What this branch responsible for in this plan
 
 **Implementation:**
 - How this branch plans to approach their part
@@ -115,7 +115,7 @@ High-level approach -- how the pieces fit together across branches
 
 ---
 
-Add or remove branch sections as needed. Copy the template above for each participating branch.
+Add or remove branch sections as needed. Copy template above each participating branch.
 
 ---
 
@@ -126,8 +126,8 @@ Captured ideas, brainstorms, future possibilities. Add freely. Any branch can co
 - **Related DPLANs:** None yet
 - **Related FPLANs:** None yet
 - **Related TDPLANs:** None yet
-- **Coordinating branch:** Who created this plan and coordinates
-- **Participating branches:** List all branches with sections
+- **Coordinating branch:** Who created this plan + coordinates
+- **Participating branches:** List * branches with sections
 - **Seedgo standards:** `drone @seedgo audit aipass @branch` | `drone @seedgo standards_query aipass_standards`
 
 ## Status

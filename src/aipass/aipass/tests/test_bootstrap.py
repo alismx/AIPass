@@ -20,11 +20,12 @@ from pathlib import Path
 
 import pytest
 
-from aipass.aipass.apps.handlers.init import bootstrap, scaffold_content as sc
-
-_sanitize_name = bootstrap._sanitize_name
-init_project = bootstrap.init_project
-update_project = bootstrap.update_project
+from aipass.aipass.apps.handlers.init import scaffold_content as sc
+from aipass.aipass.apps.handlers.init.bootstrap import (
+    _sanitize_name,
+    init_project,
+    update_project,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -105,13 +106,13 @@ def test_init_project_creates_all_expected_files(tmp_path):
         target / ".gitignore",
         target / ".claude" / "settings.json",
         target / ".claude" / "commands" / "prep.md",
-        target / ".ai_mail.local" / "inbox.json",
+        target / "src" / "demo" / "__init__.py",
     ]
     for f in expected_files:
         assert f.exists(), f"Expected file not created: {f}"
 
-    # src/ is a directory, not a file
-    assert (target / "src").is_dir(), "Expected src/ directory"
+    # src/<package>/ is a directory with __init__.py
+    assert (target / "src" / "demo").is_dir(), "Expected src/demo/ package directory"
 
     # No .trinity/ should be created (projects are not citizens)
     assert not (target / ".trinity").exists(), ".trinity/ should NOT be created"
@@ -119,7 +120,10 @@ def test_init_project_creates_all_expected_files(tmp_path):
     # No local prompt at project level (belongs in agent dirs only)
     assert not (target / ".aipass" / "aipass_local_prompt.md").exists()
 
-    # 11 items + 1 command (prep.md) + 7 shipped hooks (when AIPASS_HOME detected) = 19
+    # No project-level mailbox (agents have their own)
+    assert not (target / ".ai_mail.local").exists(), ".ai_mail.local/ should NOT be at project level"
+
+    # 10 items + 1 command (prep.md) + 7 shipped hooks + package_dir + __init__.py = 19
     assert len(result["created_files"]) == 19
 
 
@@ -404,14 +408,10 @@ def test_init_project_skips_existing_optional_files(tmp_path):
     src_dir = target / "src"
     src_dir.mkdir()
 
-    mail_dir = target / ".ai_mail.local"
-    mail_dir.mkdir()
-    (mail_dir / "inbox.json").write_text("{}\n", encoding="utf-8")
-
     result = init_project(target, project_name="eta")
 
-    # Registry + prep.md + 7 shipped hooks = 9 (everything else pre-existed)
-    assert len(result["created_files"]) == 9
+    # Registry + prep.md + 7 shipped hooks + package_dir + __init__.py = 11
+    assert len(result["created_files"]) == 11
 
     # Verify pre-existing files were NOT overwritten
     md_content = (target / "CLAUDE.md").read_text(encoding="utf-8")
@@ -596,51 +596,13 @@ def test_update_project_skipped_files_count(tmp_path):
 
     result = update_project(target)
 
-    # 4 user-owned (registry, README, STATUS, .gitignore) + inbox.json = 5
-    assert len(result["skipped_files"]) == 5
+    # 4 user-owned (registry, README, STATUS, .gitignore)
+    assert len(result["skipped_files"]) == 4
 
 
 # ---------------------------------------------------------------------------
-# DPLAN-0121: AIPASS_HOME + mailbox tests
+# DPLAN-0121: AIPASS_HOME tests
 # ---------------------------------------------------------------------------
-
-
-def test_init_project_creates_mailbox(tmp_path):
-    """init_project creates .ai_mail.local/inbox.json."""
-    target = tmp_path / "proj"
-    target.mkdir()
-
-    init_project(target, project_name="mail")
-
-    assert (target / ".ai_mail.local" / "inbox.json").exists()
-
-
-def test_init_project_mailbox_json_contents(tmp_path):
-    """inbox.json has valid empty mailbox structure."""
-    target = tmp_path / "proj"
-    target.mkdir()
-
-    init_project(target, project_name="mail")
-
-    data = json.loads((target / ".ai_mail.local" / "inbox.json").read_text(encoding="utf-8"))
-    assert data["mailbox"] == "inbox"
-    assert data["total_messages"] == 0
-    assert data["unread_count"] == 0
-    assert data["messages"] == []
-
-
-def test_init_project_mailbox_not_overwritten_on_rerun(tmp_path):
-    """Re-running init skips existing inbox.json."""
-    target = tmp_path / "proj"
-    target.mkdir()
-    init_project(target, project_name="mail")
-
-    inbox = target / ".ai_mail.local" / "inbox.json"
-    inbox.write_text('{"custom": true}\n', encoding="utf-8")
-
-    init_project(target, project_name="mail")
-
-    assert json.loads(inbox.read_text(encoding="utf-8")) == {"custom": True}
 
 
 def test_init_project_returns_aipass_home(tmp_path):
@@ -667,42 +629,6 @@ def test_init_project_settings_has_aipass_home_when_detected(tmp_path):
     settings = json.loads((target / ".claude" / "settings.json").read_text(encoding="utf-8"))
     assert "env" in settings
     assert settings["env"]["AIPASS_HOME"] == result["aipass_home"]
-
-
-def test_update_project_creates_mailbox_if_missing(tmp_path):
-    """update_project creates inbox.json if it does not exist."""
-    import shutil
-
-    target = tmp_path / "proj"
-    target.mkdir()
-    init_project(target, project_name="newmail")
-
-    # Remove the entire mailbox directory to simulate missing mailbox
-    shutil.rmtree(target / ".ai_mail.local")
-
-    result = update_project(target)
-
-    inbox = target / ".ai_mail.local" / "inbox.json"
-    assert inbox.exists()
-    assert str(inbox) in result["updated_files"]
-
-
-def test_update_project_skips_existing_mailbox(tmp_path):
-    """update_project never overwrites an existing inbox.json."""
-    target = tmp_path / "proj"
-    target.mkdir()
-    init_project(target, project_name="keepmail")
-
-    inbox = target / ".ai_mail.local" / "inbox.json"
-    inbox.write_text(
-        '{"mailbox":"inbox","total_messages":5,"unread_count":2,"messages":["x"]}\n',
-        encoding="utf-8",
-    )
-
-    result = update_project(target)
-
-    assert str(inbox) in result["skipped_files"]
-    assert json.loads(inbox.read_text(encoding="utf-8"))["total_messages"] == 5
 
 
 def test_update_project_returns_aipass_home(tmp_path):

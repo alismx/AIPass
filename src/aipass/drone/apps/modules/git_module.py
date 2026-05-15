@@ -244,38 +244,11 @@ def _handle_delete_branch(args: list[str]) -> dict:
     return {"stdout": "", "stderr": result["message"], "exit_code": 1}
 
 
-def _handle_system_pr(args: list[str], caller: str) -> dict:
-    """Handle the system-pr subcommand (owner-tier, auth pre-checked)."""
-    if not args:
-        return {
-            "stdout": "",
-            "stderr": "Usage: drone @git system-pr <description>",
-            "exit_code": 1,
-        }
-
-    description = " ".join(args)
-
-    try:
-        from aipass.drone.apps.plugins.devpulse_ops.pr_plugin import create_system_pr
-    except ImportError as exc:
-        logger.error("Failed to import devpulse_ops plugin: %s", exc)
-        return {
-            "stdout": "",
-            "stderr": f"devpulse_ops plugin not available: {exc}",
-            "exit_code": 1,
-        }
-
-    result = create_system_pr(description, caller)
-
-    if result["success"]:
-        return {
-            "stdout": f"System PR created: {result['pr_url']}\nBranch: {result['feature_branch']}",
-            "stderr": "",
-            "exit_code": 0,
-        }
+def _handle_system_pr(_args: list[str], _caller: str) -> dict:
+    """Handle the system-pr subcommand — DEPRECATED."""
     return {
         "stdout": "",
-        "stderr": result["message"],
+        "stderr": "system-pr is deprecated. Use: drone @git dev-pr <description>",
         "exit_code": 1,
     }
 
@@ -583,9 +556,11 @@ def get_help(command: str | None = None) -> str:
         )
     if command == "commit":
         return (
-            "git commit <message> [--all] — Commit changes [owner]\n"
+            "git commit <message> [--all | file1 file2 ...] — Commit changes [owner]\n"
             "  Options:\n"
-            "    --all   Stage all repo changes (git add -A) before committing.\n"
+            "    --all          Stage all repo changes (git add -A) before committing.\n"
+            "    file1 file2    Stage only these files before committing.\n"
+            "  With no flag or files, commits whatever is already staged.\n"
         )
     if command == "checkout":
         return "git checkout <main|dev> — Switch branches (main or dev only) [owner]\n"
@@ -598,10 +573,7 @@ def get_help(command: str | None = None) -> str:
     if command == "unlock":
         return "git unlock --force — Force-release the PR lock [owner]\n"
     if command == "system-pr":
-        return (
-            "git system-pr <description> — Create a system-wide PR [owner]\n"
-            "  Stages all tracked changes, creates a feature branch, and opens a PR.\n"
-        )
+        return "git system-pr — DEPRECATED. Use: drone @git dev-pr <description>\n"
     if command == "merge":
         return (
             "git merge <PR#> — Merge a PR and sync local main [owner]\n"
@@ -637,7 +609,7 @@ def get_help(command: str | None = None) -> str:
         "  workflow [args]        Passthrough to gh workflow\n"
         "\n"
         "Owner (devpulse only):\n"
-        "  commit <msg> [--all]   Commit changes (--all stages entire repo)\n"
+        "  commit <msg> [--all | files]  Commit changes (selective or --all)\n"
         "  checkout <main|dev>    Switch branches\n"
         "  dev-pr <desc>          Push dev and create PR to main\n"
         "  delete-branch <name>   Delete a remote branch\n"
@@ -645,7 +617,7 @@ def get_help(command: str | None = None) -> str:
         "  sync [--autostash]     Checkout main and pull\n"
         "  smart-sync             Fetch + rebase if behind\n"
         "  unlock --force         Force-release the PR lock\n"
-        "  system-pr <desc>       Legacy system-wide PR (use dev-pr)\n"
+        "  system-pr              DEPRECATED (use dev-pr)\n"
         "  fix [--dry-run]        Fix broken git states\n"
     )
 
@@ -661,7 +633,7 @@ def get_introspective() -> str:
         "    - status_handler.py (get_branch_status — scoped git status)\n"
         "    - diff_handler.py (get_branch_diff — scoped git diff)\n"
         "    - log_handler.py (get_git_log — recent log entries)\n"
-        "    - commit_handler.py (commit_changes — repo-wide staging with --all)\n"
+        "    - commit_handler.py (commit_changes — selective files, --all, or pre-staged)\n"
         "    - checkout_handler.py (checkout_branch — main/dev only)\n"
         "    - sync_handler.py (sync_main — safe main synchronization)\n"
         "    - dev_pr_handler.py (create_dev_pr — push dev, PR to main)\n"
@@ -671,7 +643,7 @@ def get_introspective() -> str:
         "\n"
         "  plugins/devpulse_ops/\n"
         "    - auth.py (verify_git_access — tier-based authorization)\n"
-        "    - pr_plugin.py (create_system_pr — legacy, use dev-pr instead)\n"
+        "    - pr_plugin.py (create_system_pr — DEPRECATED, use dev-pr)\n"
         "    - merge_plugin.py (merge_pr — merge PR + sync)\n"
         "    - sync_plugin.py (smart_sync — fetch + rebase if behind)\n"
         "    - fix_plugin.py (fix_git_state — detect/fix broken states)\n"

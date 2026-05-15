@@ -332,19 +332,18 @@ def init_project(target: Path, project_name: str | None = None) -> dict:
         shipped = _ship_hooks(aipass_home, target)
         created.extend(shipped)
 
-    # 10. src/ directory (where agents live)
+    # 10. src/<project>/ package structure (pip-installable from day one)
+    package_name = raw_name.lower().replace("-", "_").replace(" ", "_")
     src_dir = target / "src"
-    if not src_dir.exists():
-        src_dir.mkdir()
-        created.append(str(src_dir))
-
-    # 12. .ai_mail.local/inbox.json — empty project mailbox
-    mail_dir = target / ".ai_mail.local"
-    mail_dir.mkdir(exist_ok=True)
-    inbox_path = mail_dir / "inbox.json"
-    if not inbox_path.exists():
-        inbox_path.write_text(sc.inbox_json(), encoding="utf-8")
-        created.append(str(inbox_path))
+    src_dir.mkdir(exist_ok=True)
+    package_dir = src_dir / package_name
+    if not package_dir.exists():
+        package_dir.mkdir(parents=True)
+        created.append(str(package_dir))
+    init_py = package_dir / "__init__.py"
+    if not init_py.exists():
+        init_py.write_text(f'"""{raw_name} — created with aipass init."""\n', encoding="utf-8")
+        created.append(str(init_py))
 
     return {
         "registry_id": registry_id,
@@ -485,16 +484,6 @@ def update_project(target: Path) -> dict:
         str(target / ".gitignore"),
     ):
         skipped.append(skip_name)
-
-    # Mailbox — create if missing, never overwrite existing
-    mail_dir = target / ".ai_mail.local"
-    mail_dir.mkdir(exist_ok=True)
-    inbox_path = mail_dir / "inbox.json"
-    if not inbox_path.exists():
-        inbox_path.write_text(sc.inbox_json(), encoding="utf-8")
-        updated.append(str(inbox_path))
-    else:
-        skipped.append(str(inbox_path))
 
     return {
         "project_name": name,

@@ -1,14 +1,11 @@
 # DRONE Branch-Local Context
-<!-- Auto-generated local prompt -->
-
-> Auto-created by aipass init. Customize for your branch.
 
 ## Status: NEEDS CONFIGURATION
 
-This file is injected into every AI conversation when working from this branch directory. Configure it with:
+Injected into every AI conversation when working this branch directory. Configure:
 
-- Who this branch is (role, purpose)
-- Key commands and workflows
+- Branch identity (role, purpose)
+- Key commands + workflows
 - Architecture overview
-- Critical files and operational rules
-- Integration points with other branches
+- Critical files + operational rules
+- Integration points, other branches

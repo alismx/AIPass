@@ -253,7 +253,7 @@ class TestGhBlocking:
             "gh issue close 5",
             "gh release create v1",
             "gh repo create x",
-            "gh api repos/x/pulls",
+            "gh api repos/x/pulls -X POST",
         ],
     )
     def test_blocks_gh_writes(self, cmd):

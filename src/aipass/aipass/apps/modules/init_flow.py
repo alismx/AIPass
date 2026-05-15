@@ -9,7 +9,7 @@
 """
 aipass init — guided first-run setup
 
-12 resumable stages. State persists to .trinity/local.json setup_progress.
+12 resumable stages. State persists to .aipass/init_progress.json.
 Ctrl-C at any stage resumes next time from that stage.
 
 Usage:
@@ -20,7 +20,7 @@ Usage:
     aipass init run --dry-run            # walk all 12 stages, no destructive ops
                                          #   - skips drone @spawn create (stage 8)
                                          #   - skips tmux/wt handoff (stage 11)
-                                         #   - does NOT write .trinity/local.json
+                                         #   - does NOT write .aipass/init_progress.json
 """
 
 from __future__ import annotations
@@ -68,8 +68,23 @@ _BRANCH_ROOT = Path(__file__).resolve().parents[2]
 
 
 def _get_local_json_path() -> Path:
-    """Always resolve .trinity/local.json from CWD (user's project)."""
-    return Path.cwd() / ".trinity" / "local.json"
+    """Resolve init progress file from CWD (user's project)."""
+    return Path.cwd() / ".aipass" / "init_progress.json"
+
+
+def _resolve_package_dir() -> str | None:
+    """Find the src/<package>/ path in CWD project.
+
+    Looks for a directory under src/ that contains an __init__.py.
+    Returns the relative path like 'src/my_project' or None if not found.
+    """
+    src_dir = Path.cwd() / "src"
+    if not src_dir.is_dir():
+        return None
+    for child in src_dir.iterdir():
+        if child.is_dir() and (child / "__init__.py").is_file():
+            return f"src/{child.name}"
+    return None
 
 
 CLI_CHOICES = ["claude", "codex", "gemini", "other"]
@@ -80,7 +95,7 @@ STYLE_CHOICES = ["building-my-own-project", "improving-aipass", "just-exploring"
 
 # --- LOCAL JSON HELPERS ---
 def _read_local_json() -> dict:
-    """Read .trinity/local.json, returning empty dict on failure."""
+    """Read init progress file, returning empty dict on failure."""
     local_json = _get_local_json_path()
     if not local_json.exists() or local_json.stat().st_size == 0:
         return {}
@@ -103,7 +118,7 @@ def _fire_file_deleted(path: str) -> None:
 
 
 def _write_local_json(data: dict) -> None:
-    """Write .trinity/local.json atomically via temp-file rename."""
+    """Write init progress file atomically via temp-file rename."""
     local_json = _get_local_json_path()
     dir_ = local_json.parent
     dir_.mkdir(parents=True, exist_ok=True)
@@ -443,7 +458,11 @@ def stage_8_first_agent(non_interactive: bool = False, dry_run: bool = False) ->
     else:
         agent_name = _prompt("Agent name (letters, hyphens, no spaces)", "my-agent") or "my-agent"
 
-    agent_path = f"src/{agent_name}"
+    package_dir = _resolve_package_dir()
+    if package_dir:
+        agent_path = f"{package_dir}/{agent_name}"
+    else:
+        agent_path = f"src/{agent_name}"
     console.print(f"Running: [cyan]drone @spawn create {agent_path}[/cyan]")
 
     success = False
@@ -678,7 +697,7 @@ def run_init(
         console.print(f"[red]✗[/red] {err}")
         return 1
 
-    # Ensure scaffold exists (creates registry, .trinity, etc. if missing)
+    # Ensure scaffold exists (creates registry, .aipass, etc. if missing)
     cwd = Path.cwd()
     if not list(cwd.glob("*_REGISTRY.json")):
         from aipass.aipass.apps.handlers.init.bootstrap import init_project
@@ -788,7 +807,29 @@ def _handle_init_scaffold(args: list[str]) -> int:
     project_name = args[1] if len(args) > 1 else None
     try:
         result = init_project(target, project_name)
-        console.print(f"[green]✓[/green] Project initialized at {target}")
+        console.print(f"\n[green]✓[/green] Project initialized at [bold]{target}[/bold]")
+        console.print()
+
+        # Find the package directory to show in guidance
+        package_dir = None
+        for child in (target / "src").iterdir():
+            if child.is_dir() and (child / "__init__.py").is_file():
+                package_dir = child
+                break
+
+        console.print("[bold]Project structure:[/bold]")
+        console.print(f"  {target}/")
+        if package_dir:
+            rel_pkg = package_dir.relative_to(target)
+            console.print(f"  └── {rel_pkg}/    [dim]← agents live here[/dim]")
+        console.print()
+        console.print("[bold]Next steps:[/bold]")
+        if str(target) != str(Path.cwd()):
+            console.print(f"  [cyan]cd {target}[/cyan]")
+        console.print("  [cyan]aipass init agent <name>[/cyan]    [dim]# create your first agent[/dim]")
+        console.print("  [cyan]aipass init run[/cyan]             [dim]# full guided setup (optional)[/dim]")
+        console.print()
+
         json_handler.log_operation("aipass_init", {"target": str(target), "result": result})
         return 0
     except Exception as exc:
@@ -821,7 +862,13 @@ def _handle_init_agent(args: list[str]) -> int:
     agent_name = args[0]
     import subprocess as _sp
 
-    cmd = ["drone", "@spawn", "create", f"src/{agent_name}"]
+    package_dir = _resolve_package_dir()
+    if package_dir:
+        agent_path = f"{package_dir}/{agent_name}"
+    else:
+        agent_path = f"src/{agent_name}"
+
+    cmd = ["drone", "@spawn", "create", agent_path]
     console.print(f"[dim]Running: {' '.join(cmd)}[/dim]")
     result = _sp.run(cmd, capture_output=False)
     return result.returncode

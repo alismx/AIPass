@@ -564,7 +564,7 @@ class TestUpdatedHelp:
         from aipass.drone.apps.modules.git_module import get_help
 
         text = get_help()
-        assert "legacy" in text.lower()
+        assert "deprecated" in text.lower()
 
     def test_introspection_includes_new_handlers(self) -> None:
         from aipass.drone.apps.modules.git_module import get_introspective
