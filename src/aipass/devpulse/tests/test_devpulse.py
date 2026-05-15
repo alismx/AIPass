@@ -86,7 +86,7 @@ class TestModuleDiscovery:
 
     def test_reimport_after_mock(self):
         """Verify module reimport picks up mocked state."""
-        original_modules = devpulse_module.discover_modules()
+        devpulse_module.discover_modules()
         with patch.object(devpulse_module, "MODULES_DIR", devpulse_module.Path("/nonexistent")):
             importlib.reload(devpulse_module)
             reloaded = devpulse_module.discover_modules()
