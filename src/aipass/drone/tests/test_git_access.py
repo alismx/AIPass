@@ -346,6 +346,7 @@ class TestCommitChanges:
         mock_ruff_fix = MagicMock(returncode=0, stdout="", stderr="")
         mock_ruff_format = MagicMock(returncode=0, stdout="", stderr="")
         mock_ruff_gate = MagicMock(returncode=0, stdout="", stderr="")
+        mock_status = MagicMock(returncode=0, stdout=" M src/aipass/api/app.py\n", stderr="")
         mock_add = MagicMock(returncode=0, stderr="")
         mock_diff = MagicMock(returncode=1, stdout="", stderr="")
         mock_commit = MagicMock(returncode=0, stdout="[main def456] all commit", stderr="")
@@ -356,10 +357,118 @@ class TestCommitChanges:
             patch("shutil.which", return_value="/usr/bin/ruff"),
             patch(
                 "aipass.drone.apps.handlers.git.commit_handler.subprocess.run",
-                side_effect=[mock_ruff_fix, mock_ruff_format, mock_ruff_gate, mock_add, mock_diff, mock_commit],
+                side_effect=[
+                    mock_ruff_fix,
+                    mock_ruff_format,
+                    mock_ruff_gate,
+                    mock_status,
+                    mock_add,
+                    mock_diff,
+                    mock_commit,
+                ],
             ),
         ):
             result = commit_changes("all commit", branch_dir=branch_dir, all_files=True)
+
+        assert result["exit_code"] == 0
+
+    def test_commit_all_blocks_on_test_failure(self, repo_dir: Path) -> None:
+        mock_ruff_fix = MagicMock(returncode=0, stdout="", stderr="")
+        mock_ruff_format = MagicMock(returncode=0, stdout="", stderr="")
+        mock_ruff_gate = MagicMock(returncode=0, stdout="", stderr="")
+        mock_status = MagicMock(
+            returncode=0,
+            stdout=" M src/aipass/drone/apps/handlers/git/commit_handler.py\n",
+            stderr="",
+        )
+        mock_pytest = MagicMock(
+            returncode=1,
+            stdout="FAILED test_foo.py::test_bar - assert 1 == 2\n1 failed",
+            stderr="",
+        )
+
+        test_dir = repo_dir / "src" / "aipass" / "drone" / "tests"
+        test_dir.mkdir(parents=True)
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/ruff"),
+            patch(
+                "aipass.drone.apps.handlers.git.commit_handler.subprocess.run",
+                side_effect=[mock_ruff_fix, mock_ruff_format, mock_ruff_gate, mock_status, mock_pytest],
+            ),
+        ):
+            result = commit_changes("fail commit", all_files=True)
+
+        assert result["exit_code"] == 1
+        assert "Test failures" in result["stderr"]
+        assert "drone" in result["stderr"]
+
+    def test_commit_all_passes_with_green_tests(self, repo_dir: Path) -> None:
+        mock_ruff_fix = MagicMock(returncode=0, stdout="", stderr="")
+        mock_ruff_format = MagicMock(returncode=0, stdout="", stderr="")
+        mock_ruff_gate = MagicMock(returncode=0, stdout="", stderr="")
+        mock_status = MagicMock(
+            returncode=0,
+            stdout=" M src/aipass/drone/apps/handlers/git/commit_handler.py\n",
+            stderr="",
+        )
+        mock_pytest = MagicMock(returncode=0, stdout="3 passed", stderr="")
+        mock_add = MagicMock(returncode=0, stderr="")
+        mock_diff = MagicMock(returncode=1, stdout="", stderr="")
+        mock_commit = MagicMock(returncode=0, stdout="[main abc999] green commit", stderr="")
+
+        test_dir = repo_dir / "src" / "aipass" / "drone" / "tests"
+        test_dir.mkdir(parents=True)
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/ruff"),
+            patch(
+                "aipass.drone.apps.handlers.git.commit_handler.subprocess.run",
+                side_effect=[
+                    mock_ruff_fix,
+                    mock_ruff_format,
+                    mock_ruff_gate,
+                    mock_status,
+                    mock_pytest,
+                    mock_add,
+                    mock_diff,
+                    mock_commit,
+                ],
+            ),
+        ):
+            result = commit_changes("green commit", all_files=True)
+
+        assert result["exit_code"] == 0
+
+    def test_commit_all_skips_branches_without_tests(self, repo_dir: Path) -> None:
+        mock_ruff_fix = MagicMock(returncode=0, stdout="", stderr="")
+        mock_ruff_format = MagicMock(returncode=0, stdout="", stderr="")
+        mock_ruff_gate = MagicMock(returncode=0, stdout="", stderr="")
+        mock_status = MagicMock(
+            returncode=0,
+            stdout=" M src/aipass/flow/apps/module.py\n",
+            stderr="",
+        )
+        mock_add = MagicMock(returncode=0, stderr="")
+        mock_diff = MagicMock(returncode=1, stdout="", stderr="")
+        mock_commit = MagicMock(returncode=0, stdout="[main skip77] no tests", stderr="")
+
+        with (
+            patch("shutil.which", return_value="/usr/bin/ruff"),
+            patch(
+                "aipass.drone.apps.handlers.git.commit_handler.subprocess.run",
+                side_effect=[
+                    mock_ruff_fix,
+                    mock_ruff_format,
+                    mock_ruff_gate,
+                    mock_status,
+                    mock_add,
+                    mock_diff,
+                    mock_commit,
+                ],
+            ),
+        ):
+            result = commit_changes("no tests commit", all_files=True)
 
         assert result["exit_code"] == 0
 
