@@ -94,7 +94,7 @@ class TestGitAccessTiers:
         assert "checkout" in cmds
         assert "sync" in cmds
         assert "unlock" in cmds
-        assert "system-pr" in cmds
+        assert "pr" in cmds
         assert "merge" in cmds
         assert "smart-sync" in cmds
         assert "fix" in cmds
@@ -103,9 +103,9 @@ class TestGitAccessTiers:
         allowed = GIT_ACCESS_TIERS["owner"]["allowed_callers"]
         assert allowed == ["devpulse"]
 
-    def test_pr_not_in_any_tier(self) -> None:
-        all_cmds = GIT_ACCESS_TIERS["global"]["commands"] + GIT_ACCESS_TIERS["owner"]["commands"]
-        assert "pr" not in all_cmds
+    def test_pr_in_owner_tier(self) -> None:
+        cmds = GIT_ACCESS_TIERS["owner"]["commands"]
+        assert "pr" in cmds
 
 
 # ===========================================================================
@@ -151,20 +151,20 @@ class TestVerifyGitAccessOwner:
         with pytest.raises(PermissionError, match="not authorized"):
             verify_git_access("unlock")
 
-    def test_system_pr_denied_for_seedgo(self, seedgo_dir: Path) -> None:
+    def test_pr_denied_for_seedgo(self, seedgo_dir: Path) -> None:
         with pytest.raises(PermissionError, match="not authorized"):
-            verify_git_access("system-pr")
-
-
-class TestVerifyGitAccessPrDeprecated:
-    """PR command should be denied with deprecation message."""
-
-    def test_pr_deprecated_for_devpulse(self, devpulse_dir: Path) -> None:
-        with pytest.raises(PermissionError, match="deprecated"):
             verify_git_access("pr")
 
-    def test_pr_deprecated_for_any_branch(self, seedgo_dir: Path) -> None:
-        with pytest.raises(PermissionError, match="deprecated"):
+
+class TestVerifyGitAccessPrOwnerOnly:
+    """PR command should be allowed for devpulse, denied for others."""
+
+    def test_pr_allowed_for_devpulse(self, devpulse_dir: Path) -> None:
+        result = verify_git_access("pr")
+        assert result == "devpulse"
+
+    def test_pr_denied_for_seedgo(self, seedgo_dir: Path) -> None:
+        with pytest.raises(PermissionError, match="not authorized"):
             verify_git_access("pr")
 
 
@@ -449,18 +449,19 @@ class TestCheckoutHandler:
 # ===========================================================================
 
 
-class TestPrDeprecation:
-    """PR command returns deprecation message via centralized auth."""
+class TestPrCommand:
+    """PR command routes to create_branch_pr for authorized callers."""
 
-    def test_pr_returns_deprecation(self, devpulse_dir: Path) -> None:
-        result = handle_command("pr", ["some description"])
-        assert result["exit_code"] == 1
-        assert "deprecated" in result["stderr"].lower()
-
-    def test_pr_no_args_also_deprecated(self, devpulse_dir: Path) -> None:
+    def test_pr_no_args_shows_usage(self, devpulse_dir: Path) -> None:
         result = handle_command("pr")
         assert result["exit_code"] == 1
-        assert "deprecated" in result["stderr"].lower()
+        assert "usage" in result["stderr"].lower()
+
+    @patch("aipass.drone.apps.handlers.git.dev_pr_handler.create_branch_pr")
+    def test_pr_with_description_calls_handler(self, mock_pr: MagicMock, devpulse_dir: Path) -> None:
+        mock_pr.return_value = {"success": True, "message": "PR created", "pr_url": "https://example.com"}
+        result = handle_command("pr", ["test description"])
+        mock_pr.assert_called_once()
 
 
 # ===========================================================================
@@ -560,11 +561,11 @@ class TestUpdatedHelp:
         assert "global" in text.lower()
         assert "owner" in text.lower()
 
-    def test_help_marks_pr_legacy(self) -> None:
+    def test_help_includes_pr_command(self) -> None:
         from aipass.drone.apps.modules.git_module import get_help
 
         text = get_help()
-        assert "deprecated" in text.lower()
+        assert "pr" in text.lower()
 
     def test_introspection_includes_new_handlers(self) -> None:
         from aipass.drone.apps.modules.git_module import get_introspective
