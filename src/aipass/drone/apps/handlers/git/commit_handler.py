@@ -18,6 +18,57 @@ from aipass.drone.apps.handlers.json import json_handler
 from aipass.drone.apps.handlers.git.lock_handler import find_repo_root
 
 
+def _run_test_gate(repo_root: Path) -> dict | None:
+    """Run pytest for changed branches. Returns error dict if tests fail, None if all pass."""
+    status_result = subprocess.run(
+        ["git", "status", "--porcelain"],
+        capture_output=True,
+        text=True,
+        cwd=str(repo_root),
+    )
+    changed_branches: set[str] = set()
+    for line in status_result.stdout.strip().splitlines():
+        filepath = line[3:].split(" -> ")[-1]
+        parts = Path(filepath).parts
+        if len(parts) >= 3 and parts[0] == "src" and parts[1] == "aipass":
+            changed_branches.add(parts[2])
+
+    venv_python = repo_root / ".venv" / "bin" / "python"
+    python_bin = str(venv_python) if venv_python.exists() else "python3"
+
+    failed_branches: list[tuple[str, str]] = []
+    for branch_name in sorted(changed_branches):
+        test_dir = repo_root / "src" / "aipass" / branch_name / "tests"
+        if not test_dir.is_dir():
+            continue
+        try:
+            test_result = subprocess.run(
+                [python_bin, "-m", "pytest", str(test_dir), "--tb=short", "-q"],
+                capture_output=True,
+                text=True,
+                cwd=str(repo_root),
+                timeout=120,
+            )
+        except subprocess.TimeoutExpired:
+            logger.warning("pytest timed out for branch %s (120s limit)", branch_name)
+            failed_branches.append((branch_name, "pytest timed out (120s)"))
+            continue
+        if test_result.returncode != 0:
+            failed_branches.append((branch_name, test_result.stdout.strip()))
+
+    if not failed_branches:
+        return None
+
+    msg_parts = ["Test failures — fix before committing:"]
+    for bname, output in failed_branches:
+        msg_parts.append(f"\n--- {bname} ---\n{output}")
+    return {
+        "stdout": "",
+        "stderr": "\n".join(msg_parts),
+        "exit_code": 1,
+    }
+
+
 def stage_branch_dir(branch_dir: Path, repo_root: Path | None = None) -> dict:
     """Stage all changes under branch_dir.
 
@@ -111,6 +162,11 @@ def commit_changes(
                     "stderr": f"Lint errors — fix before committing:\n{lint_check.stdout.strip()}",
                     "exit_code": 1,
                 }
+
+        test_gate_result = _run_test_gate(repo_root)
+        if test_gate_result is not None:
+            return test_gate_result
+
         add_result = subprocess.run(
             ["git", "add", "-A"],
             capture_output=True,

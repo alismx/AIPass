@@ -90,6 +90,7 @@ def create_branch_pr(description: str, target_branch: str = "main") -> dict:
         if "already exists" in stderr:
             existing_url = ""
             for line in stderr.splitlines():
+                # codeql[py/incomplete-url-substring-sanitization]
                 if "github.com" in line:
                     existing_url = line.strip()
                     break
