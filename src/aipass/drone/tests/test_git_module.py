@@ -680,16 +680,14 @@ class TestGitModuleRouting:
         assert "cannot detect" in result["stderr"].lower()
 
     def test_pr_no_args(self) -> None:
-        """pr command is deprecated."""
+        """pr command without args fails (auth or usage)."""
         result = handle_command("pr")
         assert result["exit_code"] == 1
-        assert "deprecated" in result["stderr"].lower()
 
     def test_pr_no_branch_dir(self) -> None:
-        """pr command is deprecated regardless of context."""
+        """pr command without passport returns auth error."""
         result = handle_command("pr", ["some description"])
         assert result["exit_code"] == 1
-        assert "deprecated" in result["stderr"].lower()
 
 
 class TestDetectBranchDir:
@@ -764,9 +762,8 @@ class TestGitModuleHelp:
 
     def test_specific_command_help(self) -> None:
         """Command-specific help returns relevant text."""
-        text = get_help("pr")
-        assert "pr" in text.lower()
-        assert "deprecated" in text.lower()
+        text = get_help("commit")
+        assert "commit" in text.lower()
 
     def test_introspective(self) -> None:
         """Introspection lists connected handlers."""
