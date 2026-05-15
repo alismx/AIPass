@@ -99,6 +99,18 @@ def commit_changes(
                 text=True,
                 cwd=str(repo_root),
             )
+            lint_check = subprocess.run(
+                [ruff_bin, "check", "src/", "tests/"],
+                capture_output=True,
+                text=True,
+                cwd=str(repo_root),
+            )
+            if lint_check.returncode != 0:
+                return {
+                    "stdout": "",
+                    "stderr": f"Lint errors — fix before committing:\n{lint_check.stdout.strip()}",
+                    "exit_code": 1,
+                }
         add_result = subprocess.run(
             ["git", "add", "-A"],
             capture_output=True,
