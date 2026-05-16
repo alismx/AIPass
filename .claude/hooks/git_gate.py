@@ -148,9 +148,9 @@ def main():
                 return
 
             # Subprocess bypass detection — scan raw command for git/gh inside
-            # subprocess.run/call/Popen/os.system patterns before stripping quotes.
-            if re.search(r"subprocess\.\w+|os\.system|os\.popen|Popen", cmd):
-                if re.search(r"['\"]git['\"]|['\"]gh['\"]", cmd):
+            # subprocess/os execution patterns before stripping quotes.
+            if re.search(r"subprocess\.\w+|os\.system|os\.popen|Popen|(?<!\w)popen\s*\(|(?<!\w)system\s*\(", cmd):
+                if re.search(r"\bgit\b|\bgh\b", cmd):
                     _block(GIT_REDIRECT)
 
             # Strip quoted strings before matching — text inside "..." or '...' is data
