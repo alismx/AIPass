@@ -353,11 +353,11 @@ class TestBypassDetection:
     @pytest.mark.parametrize(
         "cmd",
         [
-            f'{_PY3} -c "import subprocess; subprocess.run([\'git\',\'commit\'])"',
-            f'{_PY3} -c "import os; os.system(\'git push\')"',
-            f'{_PY3} -c "from subprocess import Popen; Popen([\'gh\',\'pr\',\'create\'])"',
-            f'{_PY3} -c "from os import popen; popen(\'git merge\')"',
-            f'{_PY3} -c "from os import system; system(\'git push\')"',
+            f"{_PY3} -c \"import subprocess; subprocess.run(['git','commit'])\"",
+            f"{_PY3} -c \"import os; os.system('git push')\"",
+            f"{_PY3} -c \"from subprocess import Popen; Popen(['gh','pr','create'])\"",
+            f"{_PY3} -c \"from os import popen; popen('git merge')\"",
+            f"{_PY3} -c \"from os import system; system('git push')\"",
         ],
     )
     def test_blocks_subprocess_bypass(self, cmd):
@@ -418,7 +418,7 @@ class TestBypassDetection:
 
     def test_allows_subprocess_no_git(self):
         """Subprocess calls without git/gh are allowed."""
-        assert self._run(f'{_PY3} -c "import subprocess; subprocess.run([\'ls\'])"') == 0
+        assert self._run(f"{_PY3} -c \"import subprocess; subprocess.run(['ls'])\"") == 0
 
     def test_allows_read_only_full_path(self):
         """Read-only git via full path is allowed."""
