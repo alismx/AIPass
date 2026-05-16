@@ -146,10 +146,17 @@ def main():
             cmd = tool_input.get("command", "")
             if not cmd:
                 return
+
+            # Subprocess bypass detection — scan raw command for git/gh inside
+            # subprocess.run/call/Popen/os.system patterns before stripping quotes.
+            if re.search(r"subprocess\.\w+|os\.system|os\.popen|Popen", cmd):
+                if re.search(r"['\"]git['\"]|['\"]gh['\"]", cmd):
+                    _block(GIT_REDIRECT)
+
             # Strip quoted strings before matching — text inside "..." or '...' is data
             # (PR descriptions, commit messages, examples in docs), not code to enforce.
             scan = re.sub(r'"(?:[^"\\]|\\.)*"', '""', cmd)
-            scan = re.sub(r"'(?:[^'\\]|\\.)*'", "''", scan)
+            scan = re.sub(r"'(?:[^'\\]|\\.)*'", "''", cmd)
             if (
                 BLOCKED_GIT_RE.search(scan)
                 or BLOCKED_GIT_STASH_RE.search(scan)
