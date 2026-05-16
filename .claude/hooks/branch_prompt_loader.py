@@ -74,6 +74,11 @@ def main():
             branch_name = branch_root.name.upper()
             print(f"\n# Branch Context: {branch_name}\n<!-- Source: {prompt_file} -->\n{content}")
 
+        integrations_dir = branch_root / "apps" / "integrations"
+        if integrations_dir.is_dir():
+            for prompt in sorted(integrations_dir.glob("*/private_prompt.md")):
+                print(f"\n{prompt.read_text().strip()}")
+
 
 if __name__ == "__main__":
     import sys

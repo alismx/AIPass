@@ -43,6 +43,12 @@ BLOCKED_GIT_RE = re.compile(
     r"(" + "|".join(BLOCKED_GIT_VERBS) + r")\b"
 )
 
+# Full binary path bypass: /usr/bin/git, /usr/local/bin/git, ./git, etc.
+BLOCKED_GIT_PATH_RE = re.compile(
+    r"/git\s+(?:--?[A-Za-z][A-Za-z0-9_-]*(?:[= ][^\s]+)?\s+)*"
+    r"(" + "|".join(BLOCKED_GIT_VERBS) + r")\b"
+)
+
 BLOCKED_GIT_STASH_RE = re.compile(r"(?<![@\w/.])git\s+stash\s+(drop|clear|pop|apply)\b")
 
 BLOCKED_GIT_BRANCH_RE = re.compile(
@@ -65,6 +71,12 @@ BLOCKED_GH_API_RE = re.compile(
 
 BLOCKED_GH_RE = re.compile(
     r"(?<![@\w/.])gh\s+(pr|issue|repo|release|workflow|run|cache|secret|variable|gist)"
+    r"\s+(?!list\b|view\b|status\b|diff\b|checks\b|comments\b)\w[\w-]*"
+)
+
+# Full binary path for gh: /usr/bin/gh, /usr/local/bin/gh, etc.
+BLOCKED_GH_PATH_RE = re.compile(
+    r"/gh\s+(pr|issue|repo|release|workflow|run|cache|secret|variable|gist)"
     r"\s+(?!list\b|view\b|status\b|diff\b|checks\b|comments\b)\w[\w-]*"
 )
 
@@ -146,19 +158,73 @@ def main():
             cmd = tool_input.get("command", "")
             if not cmd:
                 return
+
+            # Subprocess bypass detection — scan raw command for git/gh inside
+            # subprocess/os execution patterns before stripping quotes.
+            if re.search(r"subprocess\.\w+|os\.system|os\.popen|Popen|(?<!\w)popen\s*\(|(?<!\w)system\s*\(", cmd):
+                if re.search(r"\bgit\b|\bgh\b", cmd):
+                    _block(GIT_REDIRECT)
+
+            # Script-file bypass detection — read file contents when an interpreter runs a file.
+            script_match = re.search(
+                r"(?:^|[;&|]\s*)(?:bash|sh|source|python3?|\.)\s+([^\s;&|]+)", cmd
+            )
+            if script_match:
+                script_path = script_match.group(1)
+                if not script_path.startswith("-"):
+                    if not os.path.isabs(script_path):
+                        script_path = os.path.join(cwd, script_path)
+                    try:
+                        content = Path(script_path).read_text(encoding="utf-8", errors="ignore")
+                        if BLOCKED_GIT_RE.search(content) or BLOCKED_GIT_PATH_RE.search(content):
+                            _block(GIT_REDIRECT)
+                        if re.search(r"\bgit\b|\bgh\b", content):
+                            if re.search(r"subprocess|os\.system|os\.popen|Popen", content):
+                                _block(GIT_REDIRECT)
+                        if BLOCKED_GH_RE.search(content) or BLOCKED_GH_PATH_RE.search(content):
+                            if not (_cwd_branch(cwd) in TRUSTED_HOOK_EDITORS or _is_project_owner(cwd)):
+                                _block(GH_REDIRECT)
+                    except (OSError, UnicodeDecodeError):
+                        pass
+
+            # Pipe-to-shell and stdin redirect: cat file | bash, bash < file
+            pipe_match = re.search(r"(?:cat|head|tail)\s+([^\s;&|]+)\s*\|\s*(?:bash|sh)\b", cmd)
+            if not pipe_match:
+                pipe_match = re.search(r"(?:bash|sh)\s*<\s*([^\s;&|]+)", cmd)
+            if pipe_match:
+                piped_path = pipe_match.group(1)
+                if not os.path.isabs(piped_path):
+                    piped_path = os.path.join(cwd, piped_path)
+                try:
+                    content = Path(piped_path).read_text(encoding="utf-8", errors="ignore")
+                    if BLOCKED_GIT_RE.search(content) or BLOCKED_GIT_PATH_RE.search(content):
+                        _block(GIT_REDIRECT)
+                except (OSError, UnicodeDecodeError):
+                    pass
+
+            # xargs with git/gh — command construction bypass
+            if re.search(r"\bxargs\b.*\bgit\b|\bxargs\b.*\bgh\b", cmd):
+                _block(GIT_REDIRECT)
+
+            # Variable assignment bypass: cmd=git; $cmd commit
+            if re.search(r"=\s*git\b|=\s*gh\b", cmd):
+                if re.search(r"\$\w*\s+" + "(" + "|".join(BLOCKED_GIT_VERBS) + ")", cmd):
+                    _block(GIT_REDIRECT)
+
             # Strip quoted strings before matching — text inside "..." or '...' is data
             # (PR descriptions, commit messages, examples in docs), not code to enforce.
             scan = re.sub(r'"(?:[^"\\]|\\.)*"', '""', cmd)
-            scan = re.sub(r"'(?:[^'\\]|\\.)*'", "''", scan)
+            scan = re.sub(r"'(?:[^'\\]|\\.)*'", "''", cmd)
             if (
                 BLOCKED_GIT_RE.search(scan)
+                or BLOCKED_GIT_PATH_RE.search(scan)
                 or BLOCKED_GIT_STASH_RE.search(scan)
                 or BLOCKED_GIT_BRANCH_RE.search(scan)
                 or BLOCKED_GIT_TAG_RE.search(scan)
                 or BLOCKED_GIT_REMOTE_RE.search(scan)
             ):
                 _block(GIT_REDIRECT)
-            if BLOCKED_GH_API_RE.search(scan) or BLOCKED_GH_RE.search(scan):
+            if BLOCKED_GH_API_RE.search(scan) or BLOCKED_GH_RE.search(scan) or BLOCKED_GH_PATH_RE.search(scan):
                 if not (_cwd_branch(cwd) in TRUSTED_HOOK_EDITORS or _is_project_owner(cwd)):
                     _block(GH_REDIRECT)
             return
