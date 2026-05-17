@@ -222,9 +222,9 @@ class TestDispatchSection:
 class TestRefresh:
     """Tests for refresh.py orchestrator."""
 
-    @patch("aipass.prax.apps.plugins.devpulse_dashboard.refresh._refresh_git")
-    @patch("aipass.prax.apps.plugins.devpulse_dashboard.refresh._refresh_session")
-    @patch("aipass.prax.apps.plugins.devpulse_dashboard.refresh._refresh_dispatch")
+    @patch("aipass.prax.apps.plugins.devpulse_dashboard.git_section.build_git_section")
+    @patch("aipass.prax.apps.plugins.devpulse_dashboard.session_section.build_session_section")
+    @patch("aipass.prax.apps.plugins.devpulse_dashboard.dispatch_section.build_dispatch_section")
     def test_refresh_all_success(self, mock_dispatch, mock_session, mock_git, branch_path):
         """Test refresh orchestrator calls all builders."""
         from aipass.prax.apps.plugins.devpulse_dashboard.refresh import refresh
@@ -237,9 +237,9 @@ class TestRefresh:
         mock_session.assert_called_once_with(branch_path)
         mock_dispatch.assert_called_once_with(branch_path)
 
-    @patch("aipass.prax.apps.plugins.devpulse_dashboard.refresh._refresh_git")
-    @patch("aipass.prax.apps.plugins.devpulse_dashboard.refresh._refresh_session")
-    @patch("aipass.prax.apps.plugins.devpulse_dashboard.refresh._refresh_dispatch")
+    @patch("aipass.prax.apps.plugins.devpulse_dashboard.git_section.build_git_section")
+    @patch("aipass.prax.apps.plugins.devpulse_dashboard.session_section.build_session_section")
+    @patch("aipass.prax.apps.plugins.devpulse_dashboard.dispatch_section.build_dispatch_section")
     def test_refresh_partial_failure(self, mock_dispatch, mock_session, mock_git, branch_path):
         """Test refresh continues when one section fails."""
         from aipass.prax.apps.plugins.devpulse_dashboard.refresh import refresh
