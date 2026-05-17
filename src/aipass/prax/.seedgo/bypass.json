@@ -498,6 +498,11 @@
       "reason": "Package marker \u2014 not a CLI entry point. --version is in apps/prax.py."
     },
     {
+      "file": "tests/test_devpulse_dashboard_plugin.py",
+      "standard": "architecture",
+      "reason": "Test file lives in tests/ by convention, not in the 3-layer apps/ structure. This is standard for all prax test files."
+    },
+    {
       "file": "tests/test_logging.py",
       "standard": "architecture",
       "reason": "Test files live in tests/ by convention, not in the 3-layer apps/ structure. False positive for test directory."
