@@ -568,6 +568,8 @@ settings["hooks"] = {
     "PreCompact": [
         {"matcher": "manual", "hooks": [{"type": "command", "command": f"{hook_python} {hooks_dir}/pre_compact.py", "timeout": 60}]},
         {"matcher": "auto", "hooks": [{"type": "command", "command": f"{hook_python} {hooks_dir}/pre_compact.py", "timeout": 60}]},
+        {"matcher": "manual", "hooks": [{"type": "command", "command": f"{hook_python} {hooks_dir}/pre_compact_rollover.py", "timeout": 120}]},
+        {"matcher": "auto", "hooks": [{"type": "command", "command": f"{hook_python} {hooks_dir}/pre_compact_rollover.py", "timeout": 120}]},
     ],
 }
 

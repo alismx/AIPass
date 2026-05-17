@@ -143,6 +143,75 @@ def _resolve_global_prompt(name: str, aipass_home: str | None, dest: Path) -> st
     return sc.with_source(sc.global_prompt_md(name), dest)
 
 
+def _hook_fingerprint(hook_entry: dict) -> str:
+    """Extract a comparable fingerprint from a hook entry."""
+    commands = []
+    for h in hook_entry.get("hooks", []):
+        cmd = h.get("command", "")
+        commands.append(cmd.strip())
+    return "|".join(sorted(commands))
+
+
+def _merge_settings(existing: dict, generated: dict) -> dict:
+    """Merge AIPass-generated settings with existing user settings.
+
+    Strategy: for each event type, build a set of fingerprints from the
+    generated (AIPass) hooks. Keep any existing hook whose fingerprint
+    does NOT appear in the generated set — those are user-added.
+    Replace all AIPass hooks with the latest generated versions.
+    """
+    merged = {}
+
+    existing_hooks = existing.get("hooks", {})
+    generated_hooks = generated.get("hooks", {})
+
+    merged_hooks: dict[str, list] = {}
+    all_events = set(existing_hooks.keys()) | set(generated_hooks.keys())
+
+    for event in all_events:
+        existing_entries = existing_hooks.get(event, [])
+        generated_entries = generated_hooks.get(event, [])
+
+        # Fingerprint all generated hooks for this event
+        generated_fps = {_hook_fingerprint(e) for e in generated_entries}
+
+        # Keep existing hooks that DON'T match any generated hook
+        user_entries = [e for e in existing_entries if _hook_fingerprint(e) not in generated_fps]
+        merged_hooks[event] = generated_entries + user_entries
+
+    merged["hooks"] = merged_hooks
+
+    # Merge env: generated wins for AIPASS_HOME, preserve user additions
+    existing_env = existing.get("env", {})
+    generated_env = generated.get("env", {})
+    merged["env"] = {**existing_env, **generated_env}
+
+    # Merge permissions: union deny/ask lists
+    existing_perms = existing.get("permissions", {})
+    generated_perms = generated.get("permissions", {})
+    merged_perms: dict[str, list] = {}
+    for key in ("deny", "ask", "allow"):
+        existing_rules = existing_perms.get(key, [])
+        generated_rules = generated_perms.get(key, [])
+        seen: set[str] = set()
+        combined: list[str] = []
+        for rule in generated_rules + existing_rules:
+            if rule not in seen:
+                seen.add(rule)
+                combined.append(rule)
+        if combined:
+            merged_perms[key] = combined
+    if merged_perms:
+        merged["permissions"] = merged_perms
+
+    # Preserve any other top-level keys from existing settings
+    for key in existing:
+        if key not in merged:
+            merged[key] = existing[key]
+
+    return merged
+
+
 def _claude_settings(aipass_home: str | None = None) -> str:
     """Generate .claude/settings.json — hooks for prompt injection at project level.
 
@@ -482,7 +551,7 @@ def update_project(target: Path) -> dict:
     else:
         already_current.append(str(global_prompt_path))
 
-    # settings.json — smart merge: preserve existing AIPASS_HOME, detect if missing
+    # settings.json — smart merge: preserve user hooks + env, update AIPass hooks
     settings_path = claude_dir / "settings.json"
     if not settings_path.exists():
         aipass_home = _detect_aipass_home()
@@ -491,15 +560,17 @@ def update_project(target: Path) -> dict:
     else:
         existing_content = settings_path.read_text(encoding="utf-8")
         try:
-            existing_env = json.loads(existing_content).get("env", {})
+            existing = json.loads(existing_content)
         except json.JSONDecodeError as exc:
             logger.info("settings.json parse failed, rebuilding: %s", exc)
-            existing_env = {}
-        # Preserve existing AIPASS_HOME; detect and add if missing
+            existing = {}
+        existing_env = existing.get("env", {})
         aipass_home = existing_env.get("AIPASS_HOME") or _detect_aipass_home()
-        generated = _claude_settings(aipass_home)
-        if existing_content != generated:
-            settings_path.write_text(generated, encoding="utf-8")
+        generated = json.loads(_claude_settings(aipass_home))
+        merged = _merge_settings(existing, generated)
+        merged_content = json.dumps(merged, indent=2, ensure_ascii=False) + "\n"
+        if existing != merged:
+            settings_path.write_text(merged_content, encoding="utf-8")
             updated.append(str(settings_path))
         else:
             already_current.append(str(settings_path))
