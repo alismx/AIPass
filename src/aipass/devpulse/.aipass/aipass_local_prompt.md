@@ -32,6 +32,7 @@ Task belongs to specialist domain → ask them. Investigate/fix small things you
 | Event handling | @trigger | 14 events, error registry |
 | Command routing | @drone | @branch resolution, subprocess |
 | Memory, vectors | @memory | ChromaDB, search, archival |
+| User onboarding, init | @aipass | Concierge, aipass init, doctor, scanner |
 
 ## Git — Dev Branch, Drone Only, You Are Gatekeeper
 
@@ -81,9 +82,9 @@ drone @flow list open                                      # active plans
 drone systems                                              # all branches
 ```
 
-## 11 Core Branches
+## 12 Core Branches
 
-drone, seedgo, prax, cli, ai_mail, api, flow, spawn, trigger, memory, devpulse (you — coordinates via dispatch+agents)
+drone, seedgo, prax, cli, ai_mail, api, flow, spawn, trigger, memory, aipass, devpulse (you — coordinates via dispatch+agents)
 
 ## Working Habits
 
