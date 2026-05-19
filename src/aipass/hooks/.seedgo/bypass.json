@@ -1,0 +1,119 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "created": "2026-05-18",
+    "description": "Standards bypass configuration for this branch"
+  },
+  "bypass": [
+    {
+      "file": "apps/modules/engine.py",
+      "standard": "modules",
+      "reason": "Internal dispatch module called by bridges, not a drone-routable command module"
+    },
+    {
+      "file": "apps/modules/engine.py",
+      "standard": "introspection",
+      "reason": "Internal dispatch module, not discoverable via drone @hooks"
+    },
+    {
+      "file": "apps/modules/engine.py",
+      "standard": "json_structure",
+      "reason": "Engine has its own JSONL diagnostic logging, does not use branch json_handler"
+    },
+    {
+      "file": "apps/handlers/bridges/claude.py",
+      "standard": "handlers",
+      "reason": "Bridges are designed to import engine module — that is their entire purpose"
+    },
+    {
+      "file": "apps/handlers/bridges/claude.py",
+      "standard": "json_structure",
+      "reason": "Bridge is a thin entry point, no JSON operations to log"
+    },
+    {
+      "file": "apps/hooks.py",
+      "standard": "cli",
+      "reason": "Drone-routed entry point, output via sys.stdout.write to drone subprocess capture, not CLI"
+    },
+    {
+      "file": "apps/hooks.py",
+      "standard": "cli_flags",
+      "reason": "Drone-routed entry point, --version handled in main(), not a standalone CLI binary"
+    },
+    {
+      "file": "tests/conftest.py",
+      "standard": "architecture",
+      "reason": "Test fixtures live in tests/, not in the 3-layer apps structure"
+    },
+    {
+      "file": "tests/test_engine.py",
+      "standard": "architecture",
+      "reason": "Test files live in tests/, not in the 3-layer apps structure"
+    },
+    {
+      "file": "tests/test_engine.py",
+      "standard": "documentation",
+      "reason": "Test methods use descriptive names as documentation per pytest convention"
+    },
+    {
+      "file": "tests/test_engine.py",
+      "standard": "help_text",
+      "reason": "Test data contains command references as part of test fixtures, not user-facing help"
+    },
+    {
+      "file": "apps/handlers/bridges/claude.py",
+      "standard": "dead_code",
+      "reason": "Bridge called from provider settings (external subprocess), not internal imports"
+    },
+    {
+      "file": "apps/handlers/bridges/claude.py",
+      "standard": "architecture",
+      "reason": "Bridge intentionally imports engine module — bridges exist to call the engine"
+    },
+    {
+      "file": "apps/handlers/bridges/claude.py",
+      "standard": "imports",
+      "reason": "Bridge imports engine module by design — that is its sole purpose"
+    },
+    {
+      "file": "apps/hooks.py",
+      "standard": "unused_function",
+      "reason": "print_introspection() called by drone's discovery system, not internal code"
+    },
+    {
+      "file": "apps/handlers/bridges/claude.py",
+      "standard": "dead_code",
+      "reason": "Bridge called from provider settings (external subprocess), not imported internally"
+    },
+    {
+      "file": "handlers/bridges/claude.py",
+      "standard": "dead_code",
+      "reason": "Bridge called externally by provider settings subprocess — no internal import"
+    },
+    {
+      "file": "tests/test_engine.py",
+      "standard": "json_handler",
+      "reason": "Hooks branch does not use json_handler — has its own JSONL logging"
+    },
+    {
+      "file": "tests/test_engine.py",
+      "standard": "exception_contracts",
+      "reason": "Hooks has no json_handler create_default/save_invalid/invalid_mode patterns"
+    }
+  ],
+  "notes": {
+    "usage": "Add entries to bypass specific seedgo standard violations",
+    "example": {
+      "file": "apps/example.py",
+      "standard": "imports",
+      "reason": "Legacy import required for compatibility"
+    },
+    "fields": {
+      "file": "Relative path to the file",
+      "standard": "Which standard to bypass (imports, cli, naming, etc.)",
+      "lines": "Optional array of line numbers",
+      "pattern": "Optional regex pattern to match",
+      "reason": "Why this bypass exists"
+    }
+  }
+}

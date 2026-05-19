@@ -14,7 +14,7 @@ Failures in one section don't block others.
 """
 
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from aipass.prax.apps.modules.logger import system_logger as logger
 
@@ -24,7 +24,7 @@ _AIPASS_SRC = Path(__file__).resolve().parents[4]  # .../src/aipass/
 DEVPULSE_PATH = _AIPASS_SRC / "devpulse"
 
 
-def refresh(branch_path: Path = None) -> Dict:
+def refresh(branch_path: Optional[Path] = None) -> Dict:
     """Refresh all devpulse custom dashboard sections.
 
     Args:

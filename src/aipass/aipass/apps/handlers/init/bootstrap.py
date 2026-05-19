@@ -44,29 +44,19 @@ from aipass.aipass.apps.handlers.init import scaffold_content as sc
 
 logger = logging.getLogger(__name__)
 
-PROJECT_HOOKS = [
+# Hooks are NOT distributed to projects. All hooks fire from provider
+# settings (~/.claude/settings.json), installed by setup.sh. Provider hooks
+# use CWD-walking patterns that work from any directory in any project.
+# Hook files are shipped as reference copies only (for debugging/inspection).
+HOOKS_TO_SHIP = [
     "branch_prompt_loader.py",
     "email_notification.py",
     "identity_injector.py",
     "pre_compact.py",
-]
-
-# These are shipped as reference copies but NOT wired in project settings.json
-# because PreToolUse/PostToolUse/SubagentStop only fire from provider settings.
-PROVIDER_ONLY_HOOKS = [
     "auto_fix_diagnostics.py",
     "pre_edit_gate.py",
     "subagent_stop_gate.py",
 ]
-
-HOOKS_TO_SHIP = PROJECT_HOOKS + PROVIDER_ONLY_HOOKS
-
-HOOK_EVENTS: dict[str, str] = {
-    "pre_compact.py": "PreCompact",
-    "branch_prompt_loader.py": "UserPromptSubmit",
-    "email_notification.py": "UserPromptSubmit",
-    "identity_injector.py": "UserPromptSubmit",
-}
 
 
 def _ship_hooks(aipass_home: str, target: Path) -> list[str]:
@@ -155,31 +145,31 @@ def _hook_fingerprint(hook_entry: dict) -> str:
 def _merge_settings(existing: dict, generated: dict) -> dict:
     """Merge AIPass-generated settings with existing user settings.
 
-    Strategy: for each event type, build a set of fingerprints from the
-    generated (AIPass) hooks. Keep any existing hook whose fingerprint
-    does NOT appear in the generated set — those are user-added.
-    Replace all AIPass hooks with the latest generated versions.
+    Hooks are no longer distributed to projects (provider handles them).
+    On update, strip any previously-injected AIPass hooks from project
+    settings while preserving genuine user hooks.
     """
     merged = {}
 
+    _aipass_hook_markers = (
+        ".claude/hooks/",
+        "aipass_global_prompt.md",
+        "aipass_local_prompt.md",
+    )
+
     existing_hooks = existing.get("hooks", {})
-    generated_hooks = generated.get("hooks", {})
-
-    merged_hooks: dict[str, list] = {}
-    all_events = set(existing_hooks.keys()) | set(generated_hooks.keys())
-
-    for event in all_events:
-        existing_entries = existing_hooks.get(event, [])
-        generated_entries = generated_hooks.get(event, [])
-
-        # Fingerprint all generated hooks for this event
-        generated_fps = {_hook_fingerprint(e) for e in generated_entries}
-
-        # Keep existing hooks that DON'T match any generated hook
-        user_entries = [e for e in existing_entries if _hook_fingerprint(e) not in generated_fps]
-        merged_hooks[event] = generated_entries + user_entries
-
-    merged["hooks"] = merged_hooks
+    if existing_hooks:
+        cleaned_hooks: dict[str, list] = {}
+        for event, entries in existing_hooks.items():
+            user_entries = []
+            for entry in entries:
+                fp = _hook_fingerprint(entry)
+                if not any(marker in fp for marker in _aipass_hook_markers):
+                    user_entries.append(entry)
+            if user_entries:
+                cleaned_hooks[event] = user_entries
+        if cleaned_hooks:
+            merged["hooks"] = cleaned_hooks
 
     # Merge env: generated wins for AIPASS_HOME, preserve user additions
     existing_env = existing.get("env", {})
@@ -213,61 +203,22 @@ def _merge_settings(existing: dict, generated: dict) -> dict:
 
 
 def _claude_settings(aipass_home: str | None = None) -> str:
-    """Generate .claude/settings.json — hooks for prompt injection at project level.
+    """Generate .claude/settings.json — env and permissions only.
 
-    Only wires hooks that fire from project-level settings:
-    - UserPromptSubmit: global/local prompt injection + branch_prompt_loader,
-      email_notification, identity_injector
-    - PreCompact: pre_compact
+    Hooks are NOT wired at the project level. All AIPass hooks
+    (prompt injection, identity, email, pre-compact, edit gates) fire
+    from provider settings (~/.claude/settings.json), installed by
+    setup.sh. Provider hooks use CWD-walking patterns that work from
+    any directory in any project.
 
-    PreToolUse/PostToolUse/SubagentStop hooks are NOT wired here — they only
-    fire from provider settings (~/.claude/settings.json). The scripts are
-    still shipped as reference copies. Provider wiring is handled by setup.sh.
+    Project settings only contain:
+    - env.AIPASS_HOME (so hooks can find the AIPass installation)
+    - permissions.deny (basic safety rails)
 
     Args:
         aipass_home: Optional AIPass installation root to add as env.AIPASS_HOME.
     """
-    _local_prompt_cmd = (
-        'python3 -c "'
-        "from pathlib import Path; "
-        "p=next((x/'.aipass'/'aipass_local_prompt.md' "
-        "for x in [Path.cwd(),*Path.cwd().parents] "
-        "if (x/'.aipass'/'aipass_local_prompt.md').exists()),None); "
-        "p and print(p.read_text(encoding='utf-8'),end='')"
-        '"'
-    )
-
-    event_hooks: dict[str, list] = {}
-    for hook_name, event in HOOK_EVENTS.items():
-        entry = {
-            "matcher": "",
-            "hooks": [{"type": "command", "command": f"python3 .claude/hooks/{hook_name}"}],
-        }
-        event_hooks.setdefault(event, []).append(entry)
-
-    prompt_hooks = [
-        {
-            "matcher": "",
-            "hooks": [
-                {
-                    "type": "command",
-                    "command": "cat .aipass/aipass_global_prompt.md 2>/dev/null || true",
-                }
-            ],
-        },
-        {
-            "matcher": "",
-            "hooks": [
-                {
-                    "type": "command",
-                    "command": _local_prompt_cmd,
-                }
-            ],
-        },
-    ]
-    event_hooks["UserPromptSubmit"] = prompt_hooks + event_hooks.get("UserPromptSubmit", [])
-
-    data: dict = {"hooks": event_hooks}
+    data: dict = {}
 
     data["permissions"] = {
         "deny": [

@@ -180,6 +180,35 @@ def _safe_write_dashboard(
         return False
 
 
+def _update_spawn_template(
+    spawn_path: Path, template: dict, dry_run: bool, result: Dict[str, Any], updated_list: List[str]
+) -> None:
+    """Apply structural updates to spawn's builder template, preserving placeholders."""
+    if not spawn_path.exists():
+        return
+    try:
+        spawn_data = json.loads(spawn_path.read_text())
+    except (json.JSONDecodeError, OSError) as e:
+        logger.warning("Failed to read spawn template: %s", e)
+        result["errors"].append(f"SPAWN_TEMPLATE: {e}")
+        return
+
+    spawn_actions: List[str] = []
+    changed, spawn_actions = _apply_structural_updates(spawn_data, template, spawn_actions)
+    if not changed:
+        return
+
+    spawn_data["branch"] = "{{BRANCHNAME}}"
+    spawn_data["last_updated"] = "{{DATE}}"
+    for section in spawn_data.get("sections", {}).values():
+        if isinstance(section, dict) and "last_updated" in section:
+            section["last_updated"] = "{{DATE}}"
+
+    if _safe_write_dashboard(spawn_path, spawn_data, "SPAWN_TEMPLATE", dry_run, result):
+        updated_list.append("SPAWN_TEMPLATE")
+        result["changes"].append({"branch": "SPAWN_TEMPLATE", "actions": spawn_actions})
+
+
 def _apply_structural_updates(data: dict, template: dict, branch_actions: List[str]) -> tuple:
     """Apply structural updates from template to existing dashboard data.
 
@@ -335,6 +364,10 @@ def push_dashboard_template(dry_run: bool = False) -> Dict[str, Any]:
             result["branches_updated"] += 1
             branches_updated_list.append(branch_name)
             result["changes"].append({"branch": branch_name, "actions": branch_actions})
+
+    # Update spawn template (scaffold for new branches)
+    spawn_template_path = repo_root / "src" / "aipass" / "spawn" / "templates" / "builder" / "DASHBOARD.local.json"
+    _update_spawn_template(spawn_template_path, template, dry_run, result, branches_updated_list)
 
     # Update version file if any branches were modified
     if not dry_run and branches_updated_list:

@@ -85,9 +85,13 @@ Local files = source of truth. Edit file → state on disk IS reality.
 
 Linting and formatting run automatically on commit via drone's commit handler (ruff check --fix + ruff format).
 
-# aipass init
+# aipass CLI
 
-Bootstraps AIPass project in any directory, inside or outside repo. Creates registry, identity, memory, local prompt. Any folder becomes AI-powered workspace with persistent memory. Spawn adds full agent scaffolding on top.
+`aipass` = standalone binary (`/usr/local/bin/aipass`). User-facing tool — not drone-routed. Users run `aipass` directly without knowing about drone.
+
+Commands: `aipass init`, `aipass doctor`, `aipass handoff`, `aipass help`, `aipass profile`. Never `drone @aipass` — that's not how it works.
+
+`aipass init` bootstraps AIPass project in any directory, inside or outside repo. Creates registry, identity, memory, local prompt. Any folder becomes AI-powered workspace with persistent memory. Spawn adds full agent scaffolding on top.
 
 Source: `src/aipass/cli/apps/handlers/init/bootstrap.py`
 

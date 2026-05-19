@@ -372,9 +372,10 @@ def extract_items(file_path: Path, percentage: int | None = None) -> Dict[str, A
         logger.warning(f"[extractor] Failed to read file {file_path}: {e}")
         return {"success": False, "error": f"Failed to read file: {e}"}
 
-    # v2 schema: delegate to entry-count based extraction
-    schema_version = data.get("document_metadata", {}).get("schema_version", "1.0.0")
-    if schema_version.startswith("2"):
+    # v2: entry-count based extraction (when v2 limit keys are present, regardless of schema_version)
+    ext_limits = data.get("document_metadata", {}).get("limits", {})
+    v2_limit_keys = {"max_sessions", "max_key_learnings", "max_observations"}
+    if v2_limit_keys & set(ext_limits.keys()):
         return _extract_items_v2(file_path, data)
 
     # v1: line-count based extraction

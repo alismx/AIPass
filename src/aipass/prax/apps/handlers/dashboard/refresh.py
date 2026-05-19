@@ -202,6 +202,16 @@ def _preserve_write_through_sections(dashboard: Dict, branch_path: Path, branch_
         logger.warning("Failed to preserve write-through sections for %s: %s", branch_name, e)
 
 
+def _run_devpulse_plugin(branch_path: Path) -> None:
+    """Invoke devpulse dashboard plugin refresh for custom sections."""
+    try:
+        from aipass.prax.apps.plugins.devpulse_dashboard.refresh import refresh as devpulse_refresh
+
+        devpulse_refresh(branch_path)
+    except Exception as e:
+        logger.warning("Devpulse plugin refresh failed: %s", e)
+
+
 def refresh_all_dashboards() -> Dict:
     """
     Refresh all branch dashboards from central files.
@@ -246,6 +256,11 @@ def refresh_all_dashboards() -> Dict:
 
             # Save
             save_dashboard(branch_path, dashboard)
+
+            # Invoke devpulse plugin refresh for custom sections (git, session, dispatch)
+            if branch_name == "DEVPULSE":
+                _run_devpulse_plugin(branch_path)
+
             branches_updated += 1
 
         except Exception as e:
@@ -303,6 +318,10 @@ def refresh_single_dashboard(branch_path: Path) -> Dict:
         dashboard["quick_status"] = _calculate_quick_status(dashboard["sections"])
 
         save_dashboard(branch_path, dashboard)
+
+        # Invoke devpulse plugin refresh for custom sections (git, session, dispatch)
+        if branch_name == "DEVPULSE":
+            _run_devpulse_plugin(branch_path)
 
         return {"status": "success", "branch": branch_name}
 

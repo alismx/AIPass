@@ -66,7 +66,8 @@ def _check_file(file_path):
     schema_version = metadata.get("schema_version", "1.0.0")
     limits = metadata.get("limits", {})
 
-    if schema_version.startswith("2"):
+    has_v2_limits = any(k in limits for k in ("max_sessions", "max_key_learnings", "max_observations"))
+    if has_v2_limits:
         reasons = []
         max_sessions = limits.get("max_sessions")
         if max_sessions is not None:

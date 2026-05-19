@@ -273,7 +273,7 @@ def test_init_project_gitignore_content(tmp_path):
 
 
 def test_init_project_claude_settings_content(tmp_path):
-    """.claude/settings.json has valid hook configuration."""
+    """.claude/settings.json has env and permissions, no hooks."""
     target = tmp_path / "proj"
     target.mkdir()
 
@@ -281,12 +281,13 @@ def test_init_project_claude_settings_content(tmp_path):
 
     settings_path = target / ".claude" / "settings.json"
     data = json.loads(settings_path.read_text(encoding="utf-8"))
-    assert "hooks" in data
-    assert "UserPromptSubmit" in data["hooks"]
+    assert "hooks" not in data, "Hooks should not be in project settings — provider handles them"
+    assert "permissions" in data
+    assert "deny" in data["permissions"]
 
 
-def test_init_project_settings_has_all_hooks(tmp_path):
-    """.claude/settings.json wires project-compatible hook event types."""
+def test_init_project_settings_no_hooks(tmp_path):
+    """.claude/settings.json has no hooks — all hooks fire from provider level."""
     target = tmp_path / "proj"
     target.mkdir()
 
@@ -295,21 +296,9 @@ def test_init_project_settings_has_all_hooks(tmp_path):
     settings_path = target / ".claude" / "settings.json"
     data = json.loads(settings_path.read_text(encoding="utf-8"))
 
-    # UserPromptSubmit: 2 prompt injectors + 3 hook files
-    ups_hooks = data["hooks"]["UserPromptSubmit"]
-    assert len(ups_hooks) == 5, f"Expected 5 UserPromptSubmit hooks, got {len(ups_hooks)}"
-    assert "aipass_global_prompt.md" in ups_hooks[0]["hooks"][0]["command"]
-    assert "aipass_local_prompt.md" in ups_hooks[1]["hooks"][0]["command"]
-    assert "branch_prompt_loader.py" in ups_hooks[2]["hooks"][0]["command"]
-
-    # PreCompact fires from project level
-    assert len(data["hooks"]["PreCompact"]) == 1
-    assert "pre_compact.py" in data["hooks"]["PreCompact"][0]["hooks"][0]["command"]
-
-    # PreToolUse, PostToolUse, Stop are provider-only — NOT in project settings
-    assert "PreToolUse" not in data["hooks"]
-    assert "PostToolUse" not in data["hooks"]
-    assert "Stop" not in data["hooks"]
+    assert "hooks" not in data, "Project settings should not contain hooks"
+    assert "env" in data
+    assert "permissions" in data
 
 
 def test_init_project_global_prompt_content(tmp_path):
@@ -763,16 +752,15 @@ def test_init_project_hooks_idempotent_on_rerun(tmp_path):
     assert len(hook_paths_rerun) == 0
 
 
-def test_init_project_settings_has_all_event_types(tmp_path):
-    """settings.json contains only project-compatible hook event types."""
+def test_init_project_settings_has_no_hook_events(tmp_path):
+    """settings.json contains no hooks — provider handles all events."""
     target = tmp_path / "proj"
     target.mkdir()
 
     init_project(target, project_name="events")
 
     settings = json.loads((target / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    expected_events = {"UserPromptSubmit", "PreCompact"}
-    assert set(settings["hooks"].keys()) == expected_events
+    assert "hooks" not in settings
 
 
 # ---------------------------------------------------------------------------
