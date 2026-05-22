@@ -127,7 +127,7 @@ def test_init_project_creates_all_expected_files(tmp_path):
     created_basenames = [Path(f).name for f in result["created_files"]]
     for f in expected_files:
         assert f.name in created_basenames or f.exists(), f"Expected {f.name} in created_files"
-    assert len(result["created_files"]) >= 19
+    assert len(result["created_files"]) >= 11
 
 
 def test_init_project_return_dict_structure(tmp_path):
@@ -337,7 +337,7 @@ def test_init_project_auto_creates_target_dir(tmp_path):
 
     assert target.is_dir()
     assert result["project_name"] == "NESTED"
-    assert len(result["created_files"]) >= 19
+    assert len(result["created_files"]) >= 11
 
 
 def test_init_project_defaults_name_from_directory(tmp_path):
@@ -389,8 +389,8 @@ def test_init_project_skips_existing_optional_files(tmp_path):
 
     result = init_project(target, project_name="eta")
 
-    # Only non-pre-existing files should be created (registry, hooks, package dir, etc.)
-    assert len(result["created_files"]) >= 11
+    # Only non-pre-existing files should be created (registry, package dir, etc.)
+    assert len(result["created_files"]) >= 5
 
     # Verify pre-existing files were NOT overwritten
     md_content = (target / "CLAUDE.md").read_text(encoding="utf-8")
@@ -563,9 +563,9 @@ def test_update_project_creates_missing_managed_dirs(tmp_path):
 
     assert (target / ".aipass" / "aipass_global_prompt.md").exists()
     assert (target / ".claude" / "settings.json").exists()
-    # Managed files in deleted dirs re-written (global_prompt, settings, prep + 7 hooks)
-    assert len(result["updated_files"]) == 10
-    assert len(result["already_current"]) == 3
+    # Managed files in deleted dirs re-written (global_prompt, settings, prep)
+    assert len(result["updated_files"]) == 3
+    assert len(result["already_current"]) >= 3
 
 
 def test_update_project_skipped_files_count(tmp_path):
@@ -669,17 +669,11 @@ def test_init_project_ships_hooks(tmp_path):
         pytest.skip("AIPASS_HOME not detectable in this environment")
 
     hooks_dir = target / ".claude" / "hooks"
-    assert hooks_dir.is_dir()
-    for hook_name in [
-        "auto_fix_diagnostics.py",
-        "pre_edit_gate.py",
-        "subagent_stop_gate.py",
-        "pre_compact.py",
-        "branch_prompt_loader.py",
-        "email_notification.py",
-        "identity_injector.py",
-    ]:
-        assert (hooks_dir / hook_name).exists(), f"Hook {hook_name} not shipped"
+    # Post DPLAN-0184: hooks are native handlers in src/aipass/hooks/,
+    # no longer shipped as script copies. Directory may or may not exist.
+    if hooks_dir.exists():
+        shipped = [f.name for f in hooks_dir.iterdir()]
+        assert len(shipped) == 0, f"No hook scripts should be shipped post-migration: {shipped}"
 
 
 def test_init_project_hooks_not_shipped_without_aipass_home(tmp_path, monkeypatch):
@@ -722,17 +716,16 @@ def test_update_project_resyncs_hooks(tmp_path):
     if result["aipass_home"] is None:
         pytest.skip("AIPASS_HOME not detectable in this environment")
 
-    hook_file = target / ".claude" / "hooks" / "auto_fix_diagnostics.py"
-    hook_file.write_text("# corrupted\n", encoding="utf-8")
-
+    # Post DPLAN-0184: hooks are native handlers, not shipped as copies.
+    # update_project no longer resyncs hook scripts.
     result = update_project(target)
-
-    assert str(hook_file) in result["updated_files"]
-    assert hook_file.read_text(encoding="utf-8") != "# corrupted\n"
+    hooks_marker = str(Path(".claude") / "hooks")
+    hook_paths = [f for f in result["updated_files"] if hooks_marker in f]
+    assert len(hook_paths) == 0, "No hook scripts should be shipped post-migration"
 
 
 def test_init_project_hooks_idempotent_on_rerun(tmp_path):
-    """Re-running update does not re-ship hooks when content is identical."""
+    """Re-running init does not create hook script copies."""
     target = tmp_path / "proj"
     target.mkdir()
 
@@ -741,15 +734,9 @@ def test_init_project_hooks_idempotent_on_rerun(tmp_path):
     if result1["aipass_home"] is None:
         pytest.skip("AIPASS_HOME not detectable in this environment")
 
-    # Use os.path.join fragment to match platform-specific separators
     hooks_marker = str(Path(".claude") / "hooks")
     hook_paths = [f for f in result1["created_files"] if hooks_marker in f]
-    assert len(hook_paths) == 7
-
-    # Update should not re-ship hooks (content identical)
-    result2 = update_project(target)
-    hook_paths_rerun = [f for f in result2["updated_files"] if hooks_marker in f]
-    assert len(hook_paths_rerun) == 0
+    assert len(hook_paths) == 0, "No hook scripts should be shipped post-migration"
 
 
 def test_init_project_settings_has_no_hook_events(tmp_path):
