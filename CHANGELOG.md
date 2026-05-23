@@ -91,6 +91,18 @@ versioned release with notes.
   branch as `drone @hooks hooksound on|off` with full mute support for
   all 14 handlers (the old plugin only controlled 4).
 
+### Infrastructure
+
+- **Provider manifest migrated to bridge pattern.** `provider_manifest.json`
+  now stores bridge commands (`$AIPASS_HOME/...bridges/claude.py EventType`)
+  instead of standalone script names. `doctor_wire.py` auto-wires bridge
+  entries directly — no longer copies scripts to `~/.claude/hooks/` or
+  generates `sys.executable` paths. Doctor checks validate commands exist in
+  provider settings instead of checking for script files on disk.
+- **README v3** — rewritten for external users. Tighter problem/solution
+  framing, collapsible agent details, Gemini CLI removed (untested),
+  user-project perspective throughout.
+
 ---
 
 *This is the first CHANGELOG entry. Prior work is documented in the

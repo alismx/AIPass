@@ -11,7 +11,7 @@
 import json
 from unittest.mock import MagicMock, patch
 
-import pytest
+import pytest  # pyright: ignore[reportMissingImports]
 
 from aipass.aipass.apps.handlers.system_detect.system_detector import (
     detect_cpu,
@@ -439,20 +439,20 @@ class TestProviderManifest:
         """All hook scripts exist → PASS for hooks."""
         from aipass.aipass.apps.modules.doctor import _check_provider_manifest
 
-        hooks_dir = tmp_path / ".claude" / "hooks"
-        hooks_dir.mkdir(parents=True)
-        (hooks_dir / "hook_a.py").write_text("", encoding="utf-8")
-        (hooks_dir / "hook_b.py").write_text("", encoding="utf-8")
-
         manifest = tmp_path / ".claude" / "provider_manifest.json"
+        manifest.parent.mkdir(parents=True)
+        cmd_a = "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py Stop"
+        cmd_b = (
+            "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py Notification"
+        )
         manifest.write_text(
             json.dumps(
                 {
                     "cli": {
                         "claude": {
                             "hooks": [
-                                {"script": "hook_a.py", "event": "Stop", "source": "repo"},
-                                {"script": "hook_b.py", "event": "Stop", "source": "repo"},
+                                {"command": cmd_a, "event": "Stop"},
+                                {"command": cmd_b, "event": "Notification"},
                             ]
                         }
                     }
@@ -460,27 +460,41 @@ class TestProviderManifest:
             ),
             encoding="utf-8",
         )
-        with patch("aipass.aipass.apps.modules.doctor._find_manifest", return_value=manifest):
+        provider_settings = tmp_path / ".claude" / "settings.json"
+        provider_settings.write_text(
+            json.dumps(
+                {
+                    "hooks": {
+                        "Stop": [{"hooks": [{"type": "command", "command": cmd_a}]}],
+                        "Notification": [{"hooks": [{"type": "command", "command": cmd_b}]}],
+                    }
+                }
+            ),
+            encoding="utf-8",
+        )
+        with (
+            patch("aipass.aipass.apps.modules.doctor._find_manifest", return_value=manifest),
+            patch("aipass.aipass.apps.modules.doctor.Path.home", return_value=tmp_path),
+        ):
             results = _check_provider_manifest()
         hooks_result = [r for r in results if r.label == "hooks"][0]
         assert hooks_result.glyph == GLYPH_PASS
         assert "2" in hooks_result.detail
 
     def test_missing_hook_detected(self, tmp_path) -> None:
-        """Missing hook script → WARN with script name."""
+        """Missing hook command in provider settings → WARN."""
         from aipass.aipass.apps.modules.doctor import _check_provider_manifest
 
-        hooks_dir = tmp_path / ".claude" / "hooks"
-        hooks_dir.mkdir(parents=True)
-
         manifest = tmp_path / ".claude" / "provider_manifest.json"
+        manifest.parent.mkdir(parents=True)
+        cmd = "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py Stop"
         manifest.write_text(
             json.dumps(
                 {
                     "cli": {
                         "claude": {
                             "hooks": [
-                                {"script": "missing.py", "event": "Stop", "source": "repo"},
+                                {"command": cmd, "event": "Stop"},
                             ]
                         }
                     }
@@ -488,11 +502,16 @@ class TestProviderManifest:
             ),
             encoding="utf-8",
         )
-        with patch("aipass.aipass.apps.modules.doctor._find_manifest", return_value=manifest):
+        provider_settings = tmp_path / ".claude" / "settings.json"
+        provider_settings.write_text(json.dumps({"hooks": {}}), encoding="utf-8")
+        with (
+            patch("aipass.aipass.apps.modules.doctor._find_manifest", return_value=manifest),
+            patch("aipass.aipass.apps.modules.doctor.Path.home", return_value=tmp_path),
+        ):
             results = _check_provider_manifest()
         hooks_result = [r for r in results if r.label == "hooks"][0]
         assert hooks_result.glyph == GLYPH_WARN
-        assert "missing.py" in hooks_result.detail
+        assert "Stop" in hooks_result.detail
 
     def test_env_vars_all_present(self, tmp_path) -> None:
         """All manifest env vars present in provider settings → PASS."""

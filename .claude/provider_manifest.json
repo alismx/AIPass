@@ -4,22 +4,19 @@
   "cli": {
     "claude": {
       "hooks": [
-        {"script": "global_prompt_loader.py", "event": "UserPromptSubmit", "source": "repo"},
-        {"script": "branch_prompt_loader.py", "event": "UserPromptSubmit", "source": "repo"},
-        {"script": "identity_injector.py", "event": "UserPromptSubmit", "source": "repo"},
-        {"script": "email_notification.py", "event": "UserPromptSubmit", "source": "repo"},
-        {"script": "tool_use_sound.py", "event": "PreToolUse", "matcher": "Bash|Edit|MultiEdit|Write|Read|Grep|Glob|WebSearch|WebFetch|Task", "source": "repo"},
-        {"script": "pre_edit_gate.py", "event": "PreToolUse", "matcher": "Edit|MultiEdit|Write|NotebookEdit", "source": "user"},
-        {"script": "git_gate.py", "event": "PreToolUse", "matcher": "Bash|Edit|MultiEdit|Write|NotebookEdit", "source": "user"},
-        {"script": "auto_fix_diagnostics.py", "event": "PostToolUse", "matcher": "Edit|MultiEdit|Write|NotebookEdit", "source": "repo"},
-        {"script": "auto_watchdog.py", "event": "PostToolUse", "matcher": "Bash", "source": "user"},
-        {"script": "subagent_stop_gate.py", "event": "SubagentStop", "source": "repo"},
-        {"script": "stop_sound.py", "event": "Stop", "source": "repo"},
-        {"script": "notification_sound.py", "event": "Notification", "source": "repo"},
-        {"script": "pre_compact.py", "event": "PreCompact", "matcher": "manual", "source": "repo", "timeout": 60},
-        {"script": "pre_compact.py", "event": "PreCompact", "matcher": "auto", "source": "repo", "timeout": 60},
-        {"script": "pre_compact_rollover.py", "event": "PreCompact", "matcher": "manual", "source": "repo", "timeout": 120},
-        {"script": "pre_compact_rollover.py", "event": "PreCompact", "matcher": "auto", "source": "repo", "timeout": 120}
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py UserPromptSubmit:global_prompt", "event": "UserPromptSubmit"},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py UserPromptSubmit:branch_prompt", "event": "UserPromptSubmit"},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py UserPromptSubmit:identity_injector", "event": "UserPromptSubmit"},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py UserPromptSubmit:email_notification", "event": "UserPromptSubmit"},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py PreToolUse", "event": "PreToolUse", "matcher": "Bash|Edit|MultiEdit|Write|Read|Grep|Glob|WebSearch|WebFetch|Task"},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py PostToolUse", "event": "PostToolUse", "matcher": "Bash|Edit|MultiEdit|Write|NotebookEdit"},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py SubagentStop", "event": "SubagentStop"},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py Stop", "event": "Stop"},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py Notification", "event": "Notification"},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py PreCompact:pre_compact", "event": "PreCompact", "matcher": "manual", "timeout": 60},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py PreCompact:pre_compact", "event": "PreCompact", "matcher": "auto", "timeout": 60},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py PreCompact:pre_compact_rollover", "event": "PreCompact", "matcher": "manual", "timeout": 120},
+        {"command": "$AIPASS_HOME/.venv/bin/python3 $AIPASS_HOME/src/aipass/hooks/apps/handlers/bridges/claude.py PreCompact:pre_compact_rollover", "event": "PreCompact", "matcher": "auto", "timeout": 120}
       ],
       "env": {
         "AIPASS_HOME": "{{REPO_ROOT}}",

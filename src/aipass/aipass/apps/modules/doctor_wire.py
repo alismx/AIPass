@@ -12,16 +12,14 @@ doctor_wire — auto-wire provider settings
 Extracted from doctor.py to keep module sizes manageable.
 Provides:
   - HOOK_DESCRIPTIONS / ENV_DESCRIPTIONS — human-readable hook/env purpose
-  - _resolve_hook_source() — locate hook scripts (repo or pip package)
+  - Bridge pattern — hooks wired as $AIPASS_HOME bridge commands (no script copying)
   - _auto_wire_provider()  — additive merge of manifest into ~/.claude/settings.json
 """
 
 from __future__ import annotations
 
 import json
-import os
 import shutil
-import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List
@@ -53,45 +51,6 @@ ENV_DESCRIPTIONS: Dict[str, str] = {
 
 
 # =============================================================================
-# HOOK SOURCE RESOLUTION
-# =============================================================================
-
-
-def _resolve_hook_source(manifest_path: Path) -> Path | None:
-    """Find where hook scripts live.
-
-    First: look for ``.claude/hooks/`` relative to the manifest path (clone/fork users).
-    Fallback: find the pip-installed package location via ``aipass/_hooks/``.
-    Returns the directory Path, or None if neither found.
-    """
-    # Repo-local hooks (manifest lives in .claude/, hooks are in .claude/hooks/)
-    repo_hooks = manifest_path.parent / "hooks"
-    if repo_hooks.is_dir():
-        return repo_hooks
-
-    # Pip-installed package — _hooks directory next to top-level aipass __init__.py
-    try:
-        import importlib.resources as _resources
-
-        ref = _resources.files("aipass").joinpath("_hooks")
-        pkg_hooks = Path(str(ref))
-        if pkg_hooks.is_dir():
-            return pkg_hooks
-    except Exception as exc:
-        logger.info("[doctor] importlib.resources lookup failed: %s", exc)
-
-    # Manual fallback: walk up from this file to find the aipass package root
-    pkg_root = Path(__file__).resolve()
-    for _ in range(10):
-        pkg_root = pkg_root.parent
-        candidate = pkg_root / "_hooks"
-        if candidate.is_dir():
-            return candidate
-        if pkg_root == pkg_root.parent:
-            break
-
-    return None
-
 
 # =============================================================================
 # AUTO-WIRE
@@ -127,31 +86,17 @@ def _auto_wire_provider(manifest_path: Path, interactive: bool = True) -> List[s
         shutil.copy2(settings_path, backup_path)
         actions.append(f"Backed up settings to {backup_path.name}")
 
-    # Hooks — copy user-source scripts and add settings entries
+    # Hooks — add bridge entries to provider settings
     manifest_hooks = claude_section.get("hooks", [])
-    hook_source_dir = _resolve_hook_source(manifest_path)
-    user_hooks_dir = Path.home() / ".claude" / "hooks"
 
     for hook in manifest_hooks:
-        script = hook.get("script", "")
-        if not script:
+        command = hook.get("command", "")
+        event = hook.get("event", "")
+        if not command or not event:
             continue
-        source_type = hook.get("source", "repo")
 
-        # Only user-source hooks get copied to ~/.claude/hooks/
-        if source_type == "user":
-            target = user_hooks_dir / script
-            if not target.exists() and hook_source_dir:
-                src_file = hook_source_dir / script
-                if src_file.exists():
-                    os.makedirs(user_hooks_dir, exist_ok=True)
-                    shutil.copy2(src_file, target)
-                    actions.append(f"Copied hook {script} to ~/.claude/hooks/")
-
-        # Add hook entry to settings.json if not already present
         if "hooks" not in settings:
             settings["hooks"] = {}
-        event = hook.get("event", "")
         if event not in settings["hooks"]:
             settings["hooks"][event] = []
         event_hooks = settings["hooks"][event]
@@ -159,24 +104,25 @@ def _auto_wire_provider(manifest_path: Path, interactive: bool = True) -> List[s
             event_hooks = [event_hooks]
             settings["hooks"][event] = event_hooks
 
-        already_wired = any(isinstance(h, dict) and script in json.dumps(h) for h in event_hooks)
+        hook_matcher = hook.get("matcher", "")
+        already_wired = any(
+            isinstance(h, dict) and command in json.dumps(h) and h.get("matcher", "") == hook_matcher
+            for h in event_hooks
+        )
         if not already_wired:
-            if source_type == "user":
-                hook_path = f"~/.claude/hooks/{script}"
-            else:
-                hook_path = f".claude/hooks/{script}"
             cmd_entry: Dict[str, object] = {
                 "type": "command",
-                "command": f"{sys.executable} {hook_path}",
+                "command": command,
             }
             if hook.get("timeout"):
                 cmd_entry["timeout"] = hook["timeout"]
-            wrapper: Dict[str, object] = {
-                "matcher": hook.get("matcher", ""),
-                "hooks": [cmd_entry],
-            }
+            wrapper: Dict[str, object] = {}
+            if hook.get("matcher"):
+                wrapper["matcher"] = hook["matcher"]
+            wrapper["hooks"] = [cmd_entry]
             event_hooks.append(wrapper)
-            actions.append(f"Wired hook {script} -> {event}")
+            label = command.rsplit(" ", 1)[-1] if " " in command else command
+            actions.append(f"Wired hook {label} -> {event}")
 
     # Env vars
     manifest_env = claude_section.get("env", {})
@@ -313,7 +259,7 @@ def print_introspection() -> None:
     console.print()
     console.print("[yellow]Provides:[/yellow]")
     console.print("  [dim]- HOOK_DESCRIPTIONS / ENV_DESCRIPTIONS[/dim]")
-    console.print("  [dim]- _resolve_hook_source() — locate hook scripts[/dim]")
+    console.print("  [dim]- Bridge pattern — hooks wired as $AIPASS_HOME bridge commands[/dim]")
     console.print("  [dim]- _auto_wire_provider() — additive merge into settings[/dim]")
     console.print()
 

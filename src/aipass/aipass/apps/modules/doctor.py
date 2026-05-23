@@ -268,28 +268,41 @@ def _check_provider_manifest(interactive: bool = False, fix: bool = False) -> Li
         results.append(CheckResult("hooks", GLYPH_WARN, "manifest has no claude section", ""))
         return results
 
-    # --- Hook scripts exist ---
+    # --- Hook commands wired in provider settings ---
     manifest_hooks = claude_section.get("hooks", [])
-    hook_scripts = {h["script"] for h in manifest_hooks if "script" in h}
-    repo_hooks_dir = manifest_path.parent / "hooks"
-    user_hooks_dir = Path.home() / ".claude" / "hooks"
+    provider_settings_path = Path.home() / ".claude" / "settings.json"
+    provider_hooks: dict = {}
+    if provider_settings_path.exists():
+        try:
+            provider_hooks = json.loads(provider_settings_path.read_text(encoding="utf-8")).get("hooks", {})
+        except Exception as exc:
+            logger.warning("[doctor] provider settings read error (hooks): %s", exc)
 
     missing_hooks = []
-    for script in sorted(hook_scripts):
-        source = next((h.get("source", "repo") for h in manifest_hooks if h.get("script") == script), "repo")
-        check_dir = user_hooks_dir if source == "user" else repo_hooks_dir
-        if not (check_dir / script).exists():
-            missing_hooks.append(script)
+    for hook in manifest_hooks:
+        command = hook.get("command", "")
+        event = hook.get("event", "")
+        if not command or not event:
+            continue
+        event_entries = provider_hooks.get(event, [])
+        hook_matcher = hook.get("matcher", "")
+        found = any(
+            isinstance(e, dict) and command in json.dumps(e) and e.get("matcher", "") == hook_matcher
+            for e in event_entries
+        )
+        if not found:
+            label = command.rsplit(" ", 1)[-1] if " " in command else command
+            missing_hooks.append(f"{event}:{label}")
 
     if not missing_hooks:
-        results.append(CheckResult("hooks", GLYPH_PASS, f"{len(hook_scripts)} provider hooks present", ""))
+        results.append(CheckResult("hooks", GLYPH_PASS, f"{len(manifest_hooks)} provider hooks wired", ""))
     else:
         results.append(
             CheckResult(
                 "hooks",
                 GLYPH_WARN,
-                f"{len(missing_hooks)} hook(s) missing: {', '.join(missing_hooks)}",
-                "Copy missing hooks to ~/.claude/hooks/ — see .claude/hooks/README.md",
+                f"{len(missing_hooks)} hook(s) missing from provider settings: {', '.join(missing_hooks)}",
+                "Run aipass init run or manually add bridge entries to ~/.claude/settings.json",
             )
         )
 
