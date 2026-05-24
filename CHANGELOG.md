@@ -102,6 +102,23 @@ versioned release with notes.
 - **README v3** — rewritten for external users. Tighter problem/solution
   framing, collapsible agent details, Gemini CLI removed (untested),
   user-project perspective throughout.
+- **Inline handoff** (`aipass init run` Step 11) — new default stays in the
+  current terminal via `os.execvp` instead of opening a new window. Users
+  choose "stay here" or "new window." Enables single-terminal demo
+  recordings. Closes [#610](https://github.com/AIOSAI/AIPass/issues/610).
+- **Project-aware global prompt** — the global prompt loader now detects
+  whether CWD is inside AIPass or an external project. External projects
+  receive their own lighter prompt (from `.aipass/aipass_global_prompt.md`)
+  instead of the full AIPass-internal playbook. Fixes `drone @prax` errors
+  in new projects.
+- **Project CLAUDE.md template** — `aipass init` now generates a
+  project-specific CLAUDE.md from `.aipass/project_CLAUDE.md` instead of
+  copying the AIPass-internal one. Removes the startup protocol reference
+  to `drone @prax dashboard refresh` which doesn't exist in external
+  projects.
+- **Gemini CLI removed** from `aipass init` CLI choices and handoff
+  options. GEMINI.md no longer created for new projects. Gemini CLI is
+  being retired upstream.
 
 ---
 
