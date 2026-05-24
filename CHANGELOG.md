@@ -119,6 +119,7 @@ versioned release with notes.
 - **Gemini CLI removed** from `aipass init` CLI choices and handoff
   options. GEMINI.md no longer created for new projects. Gemini CLI is
   being retired upstream.
+- **Demo GIF** added to `assets/demo.gif` and referenced in README.
 
 ---
 
