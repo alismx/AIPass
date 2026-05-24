@@ -17,17 +17,32 @@ from aipass.hooks.apps.sound import speak
 from aipass.prax.apps.modules.logger import system_logger as logger
 
 
+def _find_project_prompt() -> Path | None:
+    """Walk up from CWD to find the nearest .aipass/aipass_global_prompt.md."""
+    cwd = Path.cwd()
+    for parent in [cwd, *cwd.parents]:
+        candidate = parent / ".aipass" / "aipass_global_prompt.md"
+        if candidate.is_file():
+            return candidate
+        if parent == parent.parent:
+            break
+    return None
+
+
 def handle(hook_data: dict) -> dict:
-    """Load AIPass global prompt from AIPASS_HOME."""
+    """Load global prompt — project-local if outside AIPass, AIPass-internal if inside."""
     speak("global prompt")
 
     try:
         aipass_home = os.environ.get("AIPASS_HOME", "")
-        if not aipass_home:
-            return {"stdout": "", "exit_code": 0}
+        cwd = str(Path.cwd())
 
-        prompt_file = Path(aipass_home) / ".aipass" / "aipass_global_prompt.md"
-        if not prompt_file.exists():
+        if aipass_home and cwd.startswith(aipass_home):
+            prompt_file = Path(aipass_home) / ".aipass" / "aipass_global_prompt.md"
+        else:
+            prompt_file = _find_project_prompt()
+
+        if not prompt_file or not prompt_file.exists():
             return {"stdout": "", "exit_code": 0}
 
         content = prompt_file.read_text(encoding="utf-8")
