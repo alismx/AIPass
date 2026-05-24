@@ -424,7 +424,12 @@ def spawn_agent(
 
         # Update lock with real monitor PID
         lock_file = branch_path / ".ai_mail.local" / ".dispatch.lock"
-        lock_data = {"pid": monitor_pid, "timestamp": datetime.now().isoformat(), "branch": str(branch_path)}
+        lock_data = {
+            "pid": monitor_pid,
+            "timestamp": datetime.now().isoformat(),
+            "branch": str(branch_path),
+            "subject": subject,
+        }
         _write_json(lock_file, lock_data)
 
         # Track session cycles for rotation

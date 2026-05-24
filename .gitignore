@@ -1,17 +1,15 @@
 # Virtual environment
 .venv/
 
-# Herald (session history — parked)
-HERALD.md
-
 # Python
 __pycache__/
 *.pyc
 *.egg-info/
 dist/
-build/-
+build/
 .pytest_cache/
 .ruff_cache/
+.coverage
 
 # ChromaDB
 .chroma/
@@ -20,13 +18,10 @@ build/-
 .env
 .devpulse_secret.md
 
-# API keys never leave ~/.secrets/ — gitleaks + pre-commit enforce this
+# OS
+.DS_Store
+.vscode
 
-# Plans (managed by flow, local to each installation)
-FPLAN-*.md
-DPLAN-*.md
-RPLAN-*.md
-TDPLAN-*.md
 # AIPass runtime state (local to each installation)
 AIPASS_REGISTRY.json
 .trinity/
@@ -35,11 +30,19 @@ AIPASS_REGISTRY.json
 ai_mail.local/
 .feedback.local/
 DASHBOARD.local.json
-dev.local.md
 STATUS.local.md
+STATUS.md
+dev.local.md
 CLOSED_PLANS.local.json
 .ai_central/
 system_logs/
+notepad.md
+
+# Plans (managed by flow, local to each installation)
+FPLAN-*.md
+DPLAN-*.md
+RPLAN-*.md
+TDPLAN-*.md
 
 # Branch local directories
 logs/
@@ -49,6 +52,7 @@ tools/
 docs.local/
 .archive/
 .backup/
+.backup_system/
 .recovery/
 .seed/
 .spawn/
@@ -56,16 +60,30 @@ docs.local/
 # Module runtime JSON (config/data/log per command)
 **/*_json/
 
+# Branch-specific runtime files
+src/aipass/memory/config/fragmented_memory_config.json
+src/aipass/memory/config/fragmented_memory_state.json
+src/aipass/memory/config/memory_bank.config.json
+src/aipass/memory/config/.plans_processed.json
+src/aipass/trigger/trigger_data.json
+src/aipass/trigger/trigger_data.lock
+src/aipass/drone/drone_command_registry.json
+src/aipass/flow/CLOSED_PLANS.local.json
+src/aipass/seedgo/apps/standards/aipass/pack.json
+
 # Claude Code local state
 .claude/hooks/__pycache__/
 .claude/hooks/.last_diagnostics_file
+.claude/hooks/probes/last_ping.jsonl
 .claude/worktrees/
-
-# @aipass citizen — now tracked. Launch (pyproject flip) still pending.
-# **/.claude/settings.local.json — UNIGNORED: deny rules are system config that must travel with PRs
 
 # Disabled files (AIPass convention: rename with (disabled) instead of delete)
 *(disabled)
+
+# Private integrations — driver layer (@api) and wrapper layer (all branches)
+# Per DPLAN-0133. Contents gitignored; only scaffold README.md tracked.
+src/aipass/*/apps/integrations/**
+!src/aipass/*/apps/integrations/README.md
 
 # Spawn template exceptions (template files must be tracked for public repo)
 !src/aipass/spawn/templates/builder/.trinity/
@@ -93,54 +111,17 @@ docs.local/
 !src/aipass/spawn/templates/builder/DASHBOARD.local.json
 !src/aipass/spawn/templates/builder/STATUS.local.md
 
-# OS
-.DS_Store
+# CI artifacts
+windows-pytest-results/
 
-# Test artifacts
-test/
-src/aipass/seedgo/apps/standards/aipass/pack.json
+# Parked / one-off
+HERALD.md
 backup_data/
-
-
-backups
-backup_system
-src/aipass/flow/CLOSED_PLANS.local.json
-src/aipass/memory/config/fragmented_memory_config.json
-src/aipass/memory/config/fragmented_memory_state.json
-
-
-.vscode
-src/aipass/memory/config/memory_bank.config.json
-src/aipass/spawn/templates/builder/.spawn/.template_registry.json
-branch_audits _only
-notepad.md
-src/aipass/trigger/trigger_data.json
-src/aipass/memory/config/.plans_processed.json
-src/aipass/drone/drone_command_registry.json
-src/aipass/spawn/templates/builder/.spawn/.template_registry.json
-src/aipass/memory/config/.plans_processed.json
-src/aipass/drone/apps/plugins/devpulse_ops/__pycache__/pr_plugin.cpython-312.pyc
-
-whiteboard.md
-README_ORIGINAL_DISABLED.md
+backups/
+backup_system/
 readme_history/
-src/aipass/trigger/trigger_data.lock
-
-# STATUS files — auto-generated, contain developer session data.
-# Gitignored until prax sync is fixed to produce clean public output (#298).
-STATUS.md
-STATUS.local.md
-
-# Private integrations — driver layer (@api) and wrapper layer (all branches)
-# Per DPLAN-0133. Contents are gitignored; only the scaffold README.md is tracked.
-# Drop project-specific code into src/aipass/{branch}/apps/integrations/{project}/
-# It stays local. Never appears in git.
-src/aipass/*/apps/integrations/**
-!src/aipass/*/apps/integrations/README.md
-.coverage
+branch_audits/
 claude_4_7_transition_notes.md
-.claude/hooks/probes/last_ping.jsonl
+README_ORIGINAL_DISABLED.md
 *.bak
-src/aipass/drone/apps/plugins/devpulse_ops/__pycache__/auth.cpython-312.pyc
-src/aipass/drone/apps/plugins/devpulse_ops/__pycache__/__init__.cpython-312.pyc
-.backup_system 
+test/

@@ -10,19 +10,9 @@
       "description": "Branch dashboard template - v3 schema with write-through sections"
     }
   },
-  "last_push": "2026-05-16 21:34:52",
+  "last_push": "2026-05-17 00:08:31",
   "last_push_branches": [
-    "AI_MAIL",
-    "AIPASS",
-    "API",
-    "CLI",
     "DEVPULSE",
-    "DRONE",
-    "FLOW",
-    "MEMORY",
-    "PRAX",
-    "SEEDGO",
-    "SPAWN",
-    "TRIGGER"
+    "SPAWN_TEMPLATE"
   ]
 }

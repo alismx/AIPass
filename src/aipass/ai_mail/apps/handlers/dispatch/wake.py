@@ -501,7 +501,12 @@ def wake_branch(
 
         # Update lock with real monitor PID
         lock_file = branch_path / ".ai_mail.local" / ".dispatch.lock"
-        lock_data = {"pid": monitor_pid, "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"), "branch": str(branch_path)}
+        lock_data = {
+            "pid": monitor_pid,
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "branch": str(branch_path),
+            "subject": custom_message or "manual wake",
+        }
         with open(lock_file, "w", encoding="utf-8") as f:
             json.dump(lock_data, f, indent=2)
 

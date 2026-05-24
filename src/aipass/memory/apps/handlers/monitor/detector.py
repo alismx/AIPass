@@ -286,11 +286,11 @@ def _should_rollover(file_path: Path) -> tuple[bool, int, int, str, str]:
         return (current_lines >= 600, current_lines, 600, "1.0.0", "")
 
     metadata = data.get("document_metadata", {})
-    schema_version = metadata.get("schema_version", "1.0.0")
     limits = metadata.get("limits", {})
 
-    # v2: entry-count based limits
-    if schema_version.startswith("2"):
+    # v2: entry-count based limits (checked when v2 limit keys are present, regardless of schema_version)
+    v2_limit_keys = {"max_sessions", "max_key_learnings", "max_observations"}
+    if v2_limit_keys & set(limits.keys()):
         reasons = []
 
         max_sessions = limits.get("max_sessions")
@@ -311,10 +311,10 @@ def _should_rollover(file_path: Path) -> tuple[bool, int, int, str, str]:
             if isinstance(observations, list) and len(observations) >= max_observations:
                 reasons.append(f"{len(observations)}/{max_observations} observations")
 
-        triggered = len(reasons) > 0
-        return (triggered, current_lines, 0, schema_version, ", ".join(reasons))
+        if reasons:
+            return (True, current_lines, 0, "2.0.0", ", ".join(reasons))
 
-    # v1: line-count based
+    # v1: line-count based (fallback when no v2 limits triggered)
     max_lines = limits.get("max_lines")
     if max_lines is None:
         max_lines = _get_max_lines(file_path)

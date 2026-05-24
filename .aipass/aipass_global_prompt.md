@@ -79,15 +79,19 @@ Read-only awareness (all branches):
 
 All write operations (commit, push, merge, checkout) restricted to devpulse via tier-based access. Dispatched agents build code, run tests — devpulse reviews diff, commits.
 
-Drone runs git via Python subprocess, bypasses settings.json deny rules by design — drone is the gate. `git_gate.py` PreToolUse hook enforces mechanically — applies to ALL sessions including dispatched agents. bypassPermissions does not skip hooks.
+Drone runs git via Python subprocess, bypasses settings.json deny rules by design — drone is the gate. Git gate (PreToolUse hook) enforces mechanically — applies to ALL sessions including dispatched agents. bypassPermissions does not skip hooks.
 
 Local files = source of truth. Edit file → state on disk IS reality.
 
 Linting and formatting run automatically on commit via drone's commit handler (ruff check --fix + ruff format).
 
-# aipass init
+# aipass CLI
 
-Bootstraps AIPass project in any directory, inside or outside repo. Creates registry, identity, memory, local prompt. Any folder becomes AI-powered workspace with persistent memory. Spawn adds full agent scaffolding on top.
+`aipass` = standalone binary (`/usr/local/bin/aipass`). User-facing tool — not drone-routed. Users run `aipass` directly without knowing about drone.
+
+Commands: `aipass init`, `aipass doctor`, `aipass handoff`, `aipass help`, `aipass profile`. Never `drone @aipass` — that's not how it works.
+
+`aipass init` bootstraps AIPass project in any directory, inside or outside repo. Creates registry, identity, memory, local prompt. Any folder becomes AI-powered workspace with persistent memory. Spawn adds full agent scaffolding on top.
 
 Source: `src/aipass/cli/apps/handlers/init/bootstrap.py`
 

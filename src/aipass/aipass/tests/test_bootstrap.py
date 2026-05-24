@@ -127,7 +127,7 @@ def test_init_project_creates_all_expected_files(tmp_path):
     created_basenames = [Path(f).name for f in result["created_files"]]
     for f in expected_files:
         assert f.name in created_basenames or f.exists(), f"Expected {f.name} in created_files"
-    assert len(result["created_files"]) >= 19
+    assert len(result["created_files"]) >= 11
 
 
 def test_init_project_return_dict_structure(tmp_path):
@@ -273,7 +273,7 @@ def test_init_project_gitignore_content(tmp_path):
 
 
 def test_init_project_claude_settings_content(tmp_path):
-    """.claude/settings.json has valid hook configuration."""
+    """.claude/settings.json has env and permissions, no hooks."""
     target = tmp_path / "proj"
     target.mkdir()
 
@@ -281,12 +281,13 @@ def test_init_project_claude_settings_content(tmp_path):
 
     settings_path = target / ".claude" / "settings.json"
     data = json.loads(settings_path.read_text(encoding="utf-8"))
-    assert "hooks" in data
-    assert "UserPromptSubmit" in data["hooks"]
+    assert "hooks" not in data, "Hooks should not be in project settings — provider handles them"
+    assert "permissions" in data
+    assert "deny" in data["permissions"]
 
 
-def test_init_project_settings_has_all_hooks(tmp_path):
-    """.claude/settings.json wires project-compatible hook event types."""
+def test_init_project_settings_no_hooks(tmp_path):
+    """.claude/settings.json has no hooks — all hooks fire from provider level."""
     target = tmp_path / "proj"
     target.mkdir()
 
@@ -295,21 +296,9 @@ def test_init_project_settings_has_all_hooks(tmp_path):
     settings_path = target / ".claude" / "settings.json"
     data = json.loads(settings_path.read_text(encoding="utf-8"))
 
-    # UserPromptSubmit: 2 prompt injectors + 3 hook files
-    ups_hooks = data["hooks"]["UserPromptSubmit"]
-    assert len(ups_hooks) == 5, f"Expected 5 UserPromptSubmit hooks, got {len(ups_hooks)}"
-    assert "aipass_global_prompt.md" in ups_hooks[0]["hooks"][0]["command"]
-    assert "aipass_local_prompt.md" in ups_hooks[1]["hooks"][0]["command"]
-    assert "branch_prompt_loader.py" in ups_hooks[2]["hooks"][0]["command"]
-
-    # PreCompact fires from project level
-    assert len(data["hooks"]["PreCompact"]) == 1
-    assert "pre_compact.py" in data["hooks"]["PreCompact"][0]["hooks"][0]["command"]
-
-    # PreToolUse, PostToolUse, Stop are provider-only — NOT in project settings
-    assert "PreToolUse" not in data["hooks"]
-    assert "PostToolUse" not in data["hooks"]
-    assert "Stop" not in data["hooks"]
+    assert "hooks" not in data, "Project settings should not contain hooks"
+    assert "env" in data
+    assert "permissions" in data
 
 
 def test_init_project_global_prompt_content(tmp_path):
@@ -348,7 +337,7 @@ def test_init_project_auto_creates_target_dir(tmp_path):
 
     assert target.is_dir()
     assert result["project_name"] == "NESTED"
-    assert len(result["created_files"]) >= 19
+    assert len(result["created_files"]) >= 11
 
 
 def test_init_project_defaults_name_from_directory(tmp_path):
@@ -400,8 +389,8 @@ def test_init_project_skips_existing_optional_files(tmp_path):
 
     result = init_project(target, project_name="eta")
 
-    # Only non-pre-existing files should be created (registry, hooks, package dir, etc.)
-    assert len(result["created_files"]) >= 11
+    # Only non-pre-existing files should be created (registry, package dir, etc.)
+    assert len(result["created_files"]) >= 5
 
     # Verify pre-existing files were NOT overwritten
     md_content = (target / "CLAUDE.md").read_text(encoding="utf-8")
@@ -574,9 +563,9 @@ def test_update_project_creates_missing_managed_dirs(tmp_path):
 
     assert (target / ".aipass" / "aipass_global_prompt.md").exists()
     assert (target / ".claude" / "settings.json").exists()
-    # Managed files in deleted dirs re-written (global_prompt, settings, prep + 7 hooks)
-    assert len(result["updated_files"]) == 10
-    assert len(result["already_current"]) == 3
+    # Managed files in deleted dirs re-written (global_prompt, settings, prep)
+    assert len(result["updated_files"]) == 3
+    assert len(result["already_current"]) >= 3
 
 
 def test_update_project_skipped_files_count(tmp_path):
@@ -680,17 +669,11 @@ def test_init_project_ships_hooks(tmp_path):
         pytest.skip("AIPASS_HOME not detectable in this environment")
 
     hooks_dir = target / ".claude" / "hooks"
-    assert hooks_dir.is_dir()
-    for hook_name in [
-        "auto_fix_diagnostics.py",
-        "pre_edit_gate.py",
-        "subagent_stop_gate.py",
-        "pre_compact.py",
-        "branch_prompt_loader.py",
-        "email_notification.py",
-        "identity_injector.py",
-    ]:
-        assert (hooks_dir / hook_name).exists(), f"Hook {hook_name} not shipped"
+    # Post DPLAN-0184: hooks are native handlers in src/aipass/hooks/,
+    # no longer shipped as script copies. Directory may or may not exist.
+    if hooks_dir.exists():
+        shipped = [f.name for f in hooks_dir.iterdir()]
+        assert len(shipped) == 0, f"No hook scripts should be shipped post-migration: {shipped}"
 
 
 def test_init_project_hooks_not_shipped_without_aipass_home(tmp_path, monkeypatch):
@@ -733,17 +716,16 @@ def test_update_project_resyncs_hooks(tmp_path):
     if result["aipass_home"] is None:
         pytest.skip("AIPASS_HOME not detectable in this environment")
 
-    hook_file = target / ".claude" / "hooks" / "auto_fix_diagnostics.py"
-    hook_file.write_text("# corrupted\n", encoding="utf-8")
-
+    # Post DPLAN-0184: hooks are native handlers, not shipped as copies.
+    # update_project no longer resyncs hook scripts.
     result = update_project(target)
-
-    assert str(hook_file) in result["updated_files"]
-    assert hook_file.read_text(encoding="utf-8") != "# corrupted\n"
+    hooks_marker = str(Path(".claude") / "hooks")
+    hook_paths = [f for f in result["updated_files"] if hooks_marker in f]
+    assert len(hook_paths) == 0, "No hook scripts should be shipped post-migration"
 
 
 def test_init_project_hooks_idempotent_on_rerun(tmp_path):
-    """Re-running update does not re-ship hooks when content is identical."""
+    """Re-running init does not create hook script copies."""
     target = tmp_path / "proj"
     target.mkdir()
 
@@ -752,27 +734,20 @@ def test_init_project_hooks_idempotent_on_rerun(tmp_path):
     if result1["aipass_home"] is None:
         pytest.skip("AIPASS_HOME not detectable in this environment")
 
-    # Use os.path.join fragment to match platform-specific separators
     hooks_marker = str(Path(".claude") / "hooks")
     hook_paths = [f for f in result1["created_files"] if hooks_marker in f]
-    assert len(hook_paths) == 7
-
-    # Update should not re-ship hooks (content identical)
-    result2 = update_project(target)
-    hook_paths_rerun = [f for f in result2["updated_files"] if hooks_marker in f]
-    assert len(hook_paths_rerun) == 0
+    assert len(hook_paths) == 0, "No hook scripts should be shipped post-migration"
 
 
-def test_init_project_settings_has_all_event_types(tmp_path):
-    """settings.json contains only project-compatible hook event types."""
+def test_init_project_settings_has_no_hook_events(tmp_path):
+    """settings.json contains no hooks — provider handles all events."""
     target = tmp_path / "proj"
     target.mkdir()
 
     init_project(target, project_name="events")
 
     settings = json.loads((target / ".claude" / "settings.json").read_text(encoding="utf-8"))
-    expected_events = {"UserPromptSubmit", "PreCompact"}
-    assert set(settings["hooks"].keys()) == expected_events
+    assert "hooks" not in settings
 
 
 # ---------------------------------------------------------------------------

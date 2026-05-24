@@ -55,6 +55,7 @@ drone @git pr "desc"             # Push current branch and create PR to main
 drone @git dev-pr "desc"         # Push dev and create PR to main
 drone @git merge <PR#>           # Merge a PR and sync local main
 drone @git delete-branch <name>  # Delete a remote branch (not main/dev)
+drone @git close-pr <number>     # Close a PR by number
 drone @git branches              # List remote branches
 drone @git sync                  # Pull latest (branch-aware: main or dev)
 drone @git sync --autostash      # Sync with autostash for dirty trees
@@ -71,7 +72,6 @@ drone list                       # List registered custom command shortcuts
 drone remove <name>              # Remove a custom command shortcut
 
 # Utilities
-drone hook-sounds on|off         # Toggle hook notification sounds
 drone --version                  # Show version (v1.1.0)
 drone --help                     # Show usage information
 ```
@@ -173,6 +173,7 @@ drone/
 │   │       ├── dev_pr_handler.py            # Push dev and create PR to main
 │   │       ├── branches_handler.py          # List remote branches
 │   │       ├── delete_branch_handler.py     # Delete remote branch (main/dev protected)
+│   │       ├── close_pr_handler.py          # Close PR by number (gh pr close)
 │   │       ├── status_handler.py            # Scoped git status (subprocess)
 │   │       └── sync_handler.py              # Safe main sync (--autostash support)
 │   └── plugins/
@@ -182,8 +183,8 @@ drone/
 │       │   ├── merge_plugin.py    # PR merge (--merge) + local sync
 │       │   ├── sync_plugin.py     # Smart sync (fetch, divergence detect, rebase)
 │       │   └── fix_plugin.py      # Auto-fix stuck rebase / detached HEAD
-│       └── hook_sounds/
-│           └── hook_sounds_plugin.py  # Toggle notification sounds on/off
+│       └── hook_sounds/                   # DISABLED — moved to hooks branch (drone @hooks hooksound on/off)
+│           └── hook_sounds_plugin.py.disabled
 ├── docs/                          # Public documentation
 ├── docs.local/                    # Investigation reports and policies
 └── tests/                         # 704 tests across 21 test files
@@ -192,7 +193,7 @@ drone/
 ### Routing Flow
 
 1. **CLI input** → `drone.py:main()`
-2. **Built-in commands** checked first: `systems`, `scan`, `activate`, `list`, `remove`, `hook-sounds`
+2. **Built-in commands** checked first: `systems`, `scan`, `activate`, `list`, `remove`
 3. **`@target` routing** → branch resolution via `AIPASS_REGISTRY.json` → subprocess dispatch
 4. **Module fallback** → if branch not found but is a registered module, routes internally
 5. **Bare module names** → auto-discovered from `apps/modules/*.py`, routed via `importlib`
@@ -216,7 +217,7 @@ Auth centralized via `verify_git_access()` in `apps/plugins/devpulse_ops/auth.py
 | Tier | Who | Commands |
 |------|-----|----------|
 | **Global** | All branches | `status`, `diff`, `log`, `lock`, `branches`, `issue`, `run`, `workflow` |
-| **Owner** | `devpulse` only | `pr`, `commit`, `checkout`, `dev-pr`, `delete-branch`, `sync`, `unlock`, `system-pr`, `merge`, `smart-sync`, `fix` |
+| **Owner** | `devpulse` only | `pr`, `commit`, `checkout`, `dev-pr`, `delete-branch`, `close-pr`, `sync`, `unlock`, `system-pr`, `merge`, `smart-sync`, `fix` |
 
 - Auth is checked once at the top of `git_module.handle_command()` before any handler is called
 - Unauthorized commands return a clear "Access denied" message with the caller's tier
@@ -230,7 +231,7 @@ All work happens on `dev`. Only devpulse has write access. Agents build and repo
 **`pr` vs `dev-pr`:** `pr` works from any branch — on main it auto-creates a temp branch from the description slug (`main:<slug>`), on other branches it pushes directly. Does NOT use `-u` so main's upstream tracking stays on `origin/main`. `dev-pr` is specific to the dev→main workflow.
 
 Enforcement layers:
-- `git_gate.py` PreToolUse hook blocks ALL raw git/gh commands
+- Git gate (PreToolUse hook) blocks ALL raw git/gh commands
 - Drone tier system restricts write commands to devpulse only
 - Prompt instructions tell agents they have zero git access
 
@@ -275,9 +276,9 @@ Auth-gated operations for system administration. `auth.py` walks CWD for `.trini
 | `sync_plugin` | `smart-sync` | Fetch + detect divergence + rebase |
 | `fix_plugin` | `fix` | Auto-fix stuck rebase / detached HEAD |
 
-### hook_sounds
+### hook_sounds (DISABLED)
 
-Simple toggle for hook notification sounds. Creates/removes `/tmp/aipass-hooks-muted` flag file.
+Moved to hooks branch as `drone @hooks hooksound on/off`. Plugin file renamed to `.disabled`.
 
 ---
 
@@ -323,7 +324,7 @@ Tip: set AIPASS_HOME=/path/to/AIPass to access all branches
 | Git operations | `test_git_module.py`, `test_system_pr.py`, `test_devpulse_plugins.py`, `test_git_access.py` | ~150 |
 | Handlers | `test_executor.py`, `test_registry_handler.py`, `test_discovery.py` | ~99 |
 | Infrastructure | `test_generic_adapter.py`, `test_module_registry.py`, `test_config.py` | ~66 |
-| Features | `test_commands.py`, `test_scan.py`, `test_hook_sounds.py`, `test_json_handler.py` | ~125 |
+| Features | `test_commands.py`, `test_scan.py`, `test_json_handler.py` | ~125 |
 | Standards | `test_cli_routing.py`, `test_contracts.py`, `test_error_resilience.py`, `test_init_provisioning.py` | ~21 |
 
 Run tests: `cd src/aipass/drone && python -m pytest tests/ -q`

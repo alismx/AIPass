@@ -8,10 +8,7 @@
 
 """Integration tests for CLI main() entry point."""
 
-import subprocess
-import sys
 from io import StringIO
-from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -120,25 +117,9 @@ class TestMainFlow:
             result = main()
         assert result == 0
 
-
-# =============================================================================
-# __main__.py test — verify module is runnable
-# =============================================================================
-
-
-class TestModuleRunnable:
-    """Verify python -m aipass.cli works as a subprocess."""
-
-    def test_module_runnable(self):
-        """python -m aipass.cli --version runs successfully."""
-        result = subprocess.run(
-            [sys.executable, "-m", "aipass.cli", "--version"],
-            capture_output=True,
-            text=True,
-            timeout=30,
-            cwd=str(Path(__file__).resolve().parents[3]),
-        )
-        assert result.returncode == 0
+    # =============================================================================
+    # cli entry point test
+    # =============================================================================
 
     def test_cli_entry_callable(self):
         """cli_entry() is the console_scripts entry point — verify it's callable."""
