@@ -168,7 +168,7 @@ def launch_inline(cli: str, prompt: str, cwd: str, flag_variant: str = "default"
         return
 
     os.chdir(cwd)
-    argv = cli_cmd.split() + [prompt]
+    argv = cli_cmd.split()
     logger.info("[handoff_platform] exec inline: %s (cwd=%s)", " ".join(argv), cwd)
     os.execvp(cli_path, argv)
 
