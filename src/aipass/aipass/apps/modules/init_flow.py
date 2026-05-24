@@ -87,7 +87,7 @@ def _resolve_package_dir() -> str | None:
     return None
 
 
-CLI_CHOICES = ["claude", "codex", "gemini", "other"]
+CLI_CHOICES = ["claude", "codex", "other"]
 # Flag variants for CLI launch — these are user-facing config values, not code-level flags
 FLAG_CHOICES = ["default", "skip-permissions"]
 STYLE_CHOICES = ["building-my-own-project", "improving-aipass", "just-exploring"]
@@ -563,21 +563,24 @@ def stage_11_handoff(
     agent_path: str = "src/my-agent",
     non_interactive: bool = False,
     dry_run: bool = False,
+    accumulated: Dict[str, Any] | None = None,
 ) -> Dict[str, Any]:
-    """Launch user's chosen CLI in a new session via handoff module."""
+    """Launch user's chosen CLI — inline (same terminal) or new window."""
     console.print()
     console.print("[bold cyan]Step 11/12[/bold cyan] — Handoff")
 
     init_prompt = "I just completed aipass init. I am ready to start. What should I do first?"
 
     console.print()
-    console.print("  Your agent is ready. The next step opens an interactive session with it.")
+    console.print("  Your agent is ready.")
     console.print(f"  [dim]CLI: {cli_choice} | Agent: {agent_path}[/dim]")
 
-    if dry_run:
-        from aipass.aipass.apps.handlers.handoff_platform import build_manual_command
+    from aipass.aipass.apps.handlers.handoff_platform import build_manual_command
 
-        command = build_manual_command(cli_choice, init_prompt, agent_path, flag_variant)
+    command = build_manual_command(cli_choice, init_prompt, agent_path, flag_variant)
+    inline = False
+
+    if dry_run:
         console.print(f"[yellow]\\[dry-run][/yellow] would launch handoff: {command}")
         launched = False
     elif non_interactive:
@@ -589,25 +592,38 @@ def stage_11_handoff(
             cwd=agent_path,
             flag_variant=flag_variant,
         )
-        from aipass.aipass.apps.handlers.handoff_platform import build_manual_command
-
-        command = build_manual_command(cli_choice, init_prompt, agent_path, flag_variant)
     else:
         console.print()
-        input("  Press Enter to chat with your agent...")
-        from aipass.aipass.apps.modules import handoff as handoff_mod
+        console.print("  [bold]1.[/bold] Stay here — launch agent in this terminal")
+        console.print("  [bold]2.[/bold] New window — open agent in a separate terminal")
+        console.print()
+        choice = input("  Choice [1]: ").strip()
+        inline = choice != "2"
 
-        launched = handoff_mod.do_handoff(
-            cli=cli_choice,
-            prompt=init_prompt,
-            cwd=agent_path,
-            flag_variant=flag_variant,
-        )
-        from aipass.aipass.apps.handlers.handoff_platform import build_manual_command
+        if inline:
+            _save_stage(11, {"command": command, "launched": True, "inline": True}, dry_run=dry_run)
+            _save_stage(12, dry_run=dry_run)
+            if accumulated:
+                _write_init_report(accumulated.get("agent_path", agent_path), accumulated, dry_run=dry_run)
+            console.print()
+            console.print("[bold green]✓ Setup complete![/bold green]")
+            console.print()
+            from aipass.aipass.apps.handlers.handoff_platform import launch_inline
 
-        command = build_manual_command(cli_choice, init_prompt, agent_path, flag_variant)
+            launch_inline(cli_choice, init_prompt, agent_path, flag_variant)
+            launched = False
+        else:
+            from aipass.aipass.apps.modules import handoff as handoff_mod
 
-    _save_stage(11, {"command": command, "launched": launched}, dry_run=dry_run)
+            launched = handoff_mod.do_handoff(
+                cli=cli_choice,
+                prompt=init_prompt,
+                cwd=agent_path,
+                flag_variant=flag_variant,
+            )
+
+    if not inline:
+        _save_stage(11, {"command": command, "launched": launched}, dry_run=dry_run)
     return {"handoff_command": command, "launched": launched}
 
 
@@ -739,6 +755,7 @@ def run_init(
                 accumulated.get("agent_path", "src/my-agent"),
                 non_interactive,
                 dry_run=dry_run,
+                accumulated=accumulated,
             ),
         ),
         (12, lambda: stage_12_done(accumulated=accumulated, dry_run=dry_run)),

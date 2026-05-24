@@ -30,7 +30,7 @@ COMMAND = "handoff"
 
 _INIT_PROMPT = "I just completed aipass init and am ready to start. What should I do first?"
 
-CLI_CHOICES = ["claude", "codex", "gemini"]
+CLI_CHOICES = ["claude", "codex"]
 FLAG_CHOICES = ["default", "skip-permissions"]
 
 

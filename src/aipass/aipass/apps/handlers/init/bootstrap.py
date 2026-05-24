@@ -338,17 +338,23 @@ def init_project(target: Path, project_name: str | None = None) -> dict:
         global_prompt_path.write_text(_resolve_global_prompt(name, aipass_home, global_prompt_path), encoding="utf-8")
         created.append(str(global_prompt_path))
 
-    # 3-5. CLAUDE.md, AGENTS.md, GEMINI.md — copy from AIPass source of truth
-    for md_name in ("CLAUDE.md", "AGENTS.md", "GEMINI.md"):
+    # 3-5. CLAUDE.md, AGENTS.md — project templates or AIPass source
+    for md_name in ("CLAUDE.md", "AGENTS.md"):
         dest = target / md_name
         if dest.exists():
             continue
-        source = Path(aipass_home) / md_name if aipass_home else None
-        if source and source.is_file():
-            shutil.copy2(str(source), str(dest))
+        template = Path(aipass_home) / ".aipass" / f"project_{md_name}" if aipass_home else None
+        if template and template.is_file():
+            content = template.read_text(encoding="utf-8").replace("{name}", name)
+            dest.write_text(content, encoding="utf-8")
             created.append(str(dest))
         else:
-            logging.getLogger(__name__).warning("Source %s not found at AIPASS_HOME, skipping", md_name)
+            source = Path(aipass_home) / md_name if aipass_home else None
+            if source and source.is_file():
+                shutil.copy2(str(source), str(dest))
+                created.append(str(dest))
+            else:
+                logging.getLogger(__name__).warning("Source %s not found at AIPASS_HOME, skipping", md_name)
 
     # 6. README.md
     readme_md_path = target / "README.md"
@@ -526,17 +532,17 @@ def update_project(target: Path) -> dict:
         else:
             already_current.append(str(settings_path))
 
-    # CLAUDE.md, AGENTS.md, GEMINI.md — sync from AIPass source of truth
-    for md_name in ("CLAUDE.md", "AGENTS.md", "GEMINI.md"):
+    # CLAUDE.md, AGENTS.md — sync from project templates or AIPass source
+    for md_name in ("CLAUDE.md", "AGENTS.md"):
         dest = target / md_name
-        source = Path(aipass_home) / md_name if aipass_home else None
-        if not source or not source.is_file():
-            already_current.append(str(dest))
-            continue
-        source_content = source.read_text(encoding="utf-8")
-        if not dest.exists() or dest.read_text(encoding="utf-8") != source_content:
-            shutil.copy2(str(source), str(dest))
-            updated.append(str(dest))
+        template = Path(aipass_home) / ".aipass" / f"project_{md_name}" if aipass_home else None
+        if template and template.is_file():
+            new_content = template.read_text(encoding="utf-8").replace("{name}", name)
+            if not dest.exists() or dest.read_text(encoding="utf-8") != new_content:
+                dest.write_text(new_content, encoding="utf-8")
+                updated.append(str(dest))
+            else:
+                already_current.append(str(dest))
         else:
             already_current.append(str(dest))
 

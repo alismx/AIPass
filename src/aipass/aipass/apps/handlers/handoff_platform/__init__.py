@@ -156,12 +156,30 @@ def launch_wt(cli: str, prompt: str, cwd: str, flag_variant: str = "default") ->
         return False
 
 
+def launch_inline(cli: str, prompt: str, cwd: str, flag_variant: str = "default") -> None:
+    """Replace the current process with the CLI in the agent directory. Does not return."""
+    import os
+
+    cli_cmd = build_cli_cmd(cli, flag_variant)
+    cli_bin = cli_cmd.split()[0]
+    cli_path = shutil.which(cli_bin)
+    if not cli_path:
+        logger.warning("[handoff_platform] %s not found on PATH, cannot exec inline", cli_bin)
+        return
+
+    os.chdir(cwd)
+    argv = cli_cmd.split() + [prompt]
+    logger.info("[handoff_platform] exec inline: %s (cwd=%s)", " ".join(argv), cwd)
+    os.execvp(cli_path, argv)
+
+
 def launch_handoff(
     cli: str,
     prompt: str,
     cwd: str,
     flag_variant: str = "default",
     platform_override: Optional[str] = None,
+    inline: bool = False,
 ) -> tuple[bool, str]:
     """
     Dispatch CLI launch to the appropriate platform handler.
@@ -171,9 +189,16 @@ def launch_handoff(
       launched=False — auto-launch unavailable; caller displays manual_command
       manual_command — always populated; equivalent command for manual run
 
-    Order: tmux (Linux/Mac) → wt.exe (Windows) → fallback (caller handles display).
+    If inline=True, replaces the current process (does not return).
+
+    Order: inline → terminal (Linux/Mac) → wt.exe (Windows) → tmux → fallback.
     """
     manual_cmd = build_manual_command(cli, prompt, cwd, flag_variant)
+
+    if inline:
+        launch_inline(cli, prompt, cwd, flag_variant)
+        return False, manual_cmd
+
     target = platform_override or ("windows" if IS_WINDOWS else "unix")
 
     if target == "windows":

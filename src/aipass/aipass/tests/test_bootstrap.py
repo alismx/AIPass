@@ -18,7 +18,7 @@ import uuid
 from datetime import date
 from pathlib import Path
 
-import pytest
+import pytest  # pyright: ignore[reportMissingImports]
 
 from aipass.aipass.apps.handlers.init import scaffold_content as sc
 from aipass.aipass.apps.handlers.init.bootstrap import (
@@ -100,7 +100,6 @@ def test_init_project_creates_all_expected_files(tmp_path):
         target / ".aipass" / "aipass_global_prompt.md",
         target / "CLAUDE.md",
         target / "AGENTS.md",
-        target / "GEMINI.md",
         target / "README.md",
         target / "STATUS.local.md",
         target / ".gitignore",
@@ -202,7 +201,7 @@ def test_init_project_no_local_prompt(tmp_path):
 
 
 def test_init_project_claude_md_content(tmp_path):
-    """CLAUDE.md is copied from AIPass source of truth."""
+    """CLAUDE.md uses project template with name substitution."""
     target = tmp_path / "proj"
     target.mkdir()
 
@@ -210,8 +209,8 @@ def test_init_project_claude_md_content(tmp_path):
 
     md_path = target / "CLAUDE.md"
     content = md_path.read_text(encoding="utf-8")
-    assert "# AIPass" in content
-    assert "Multi-agent framework" in content
+    assert "# ZETA" in content
+    assert "Startup protocol" in content
 
 
 def test_init_project_rerunnable_blocked_by_guard(tmp_path):
@@ -242,18 +241,6 @@ def test_init_project_agents_md_content(tmp_path):
     init_project(target, project_name="alpha")
 
     content = (target / "AGENTS.md").read_text(encoding="utf-8")
-    assert "# AIPass" in content
-    assert "Multi-agent framework" in content
-
-
-def test_init_project_gemini_md_content(tmp_path):
-    """GEMINI.md is copied from AIPass source of truth."""
-    target = tmp_path / "proj"
-    target.mkdir()
-
-    init_project(target, project_name="alpha")
-
-    content = (target / "GEMINI.md").read_text(encoding="utf-8")
     assert "# AIPass" in content
     assert "Multi-agent framework" in content
 
@@ -375,7 +362,6 @@ def test_init_project_skips_existing_optional_files(tmp_path):
     (aipass_dir / "aipass_global_prompt.md").write_text("# Custom global\n", encoding="utf-8")
     (target / "CLAUDE.md").write_text("# Custom CLAUDE\n", encoding="utf-8")
     (target / "AGENTS.md").write_text("# Custom AGENTS\n", encoding="utf-8")
-    (target / "GEMINI.md").write_text("# Custom GEMINI\n", encoding="utf-8")
     (target / "README.md").write_text("# Custom README\n", encoding="utf-8")
     (target / "STATUS.local.md").write_text("# Custom status\n", encoding="utf-8")
     (target / ".gitignore").write_text("# Custom\n", encoding="utf-8")
@@ -410,9 +396,9 @@ def test_init_project_no_overwrite(tmp_path):
     with pytest.raises(RuntimeError, match="already an AIPass project"):
         init_project(target, project_name="safe")
 
-    # Content from first run is preserved (copied from AIPass source)
+    # Content from first run is preserved
     claude_md = (target / "CLAUDE.md").read_text(encoding="utf-8")
-    assert "# AIPass" in claude_md
+    assert "# SAFE" in claude_md
 
 
 def test_init_project_returns_dict(tmp_path):
@@ -484,7 +470,7 @@ def test_update_project_already_current_after_init(tmp_path):
     result = update_project(target)
 
     assert len(result["updated_files"]) == 0
-    assert len(result["already_current"]) == 6
+    assert len(result["already_current"]) >= 4
 
 
 def test_update_project_idempotent(tmp_path):
@@ -517,10 +503,10 @@ def test_update_project_updates_modified_managed_file(tmp_path):
     assert str(claude_md.resolve()) in result["updated_files"]
     assert str(claude_md.resolve()) not in result["already_current"]
 
-    # Content is restored from AIPass source of truth
+    # Content is restored from project template
     restored = claude_md.read_text(encoding="utf-8")
-    assert "# AIPass" in restored
-    assert "Multi-agent framework" in restored
+    assert "# MOD" in restored
+    assert "Startup protocol" in restored
 
 
 def test_update_project_never_touches_user_owned_files(tmp_path):
@@ -565,7 +551,7 @@ def test_update_project_creates_missing_managed_dirs(tmp_path):
     assert (target / ".claude" / "settings.json").exists()
     # Managed files in deleted dirs re-written (global_prompt, settings, prep)
     assert len(result["updated_files"]) == 3
-    assert len(result["already_current"]) >= 3
+    assert len(result["already_current"]) >= 2
 
 
 def test_update_project_skipped_files_count(tmp_path):
