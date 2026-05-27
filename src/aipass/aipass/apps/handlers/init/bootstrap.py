@@ -224,6 +224,7 @@ def _claude_settings(aipass_home: str | None = None) -> str:
             "Bash(rm -rf *)",
             "Bash(git push --force*)",
             "Bash(git reset --hard*)",
+            "EnterPlanMode",
         ],
     }
 
