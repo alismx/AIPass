@@ -30,11 +30,12 @@ and this project uses [Calendar Versioning](https://calver.org/) in the format
 
 ### Changed
 
-- **Edit gate now project-aware** — cross-branch write protection and daemon
-  confinement no longer hardcode `src/aipass/`. The package name is derived
-  dynamically from CWD, so any `src/<package>/<branch>/` project gets the
-  same security. 4 new tests for external projects. Addresses
-  [#605](https://github.com/AIOSAI/AIPass/issues/605).
+- **Security gates fully project-aware** — both the edit gate *and* the
+  subagent stop gate now derive the package name dynamically from CWD instead
+  of hardcoding `src/aipass/`. Cross-branch write protection and branch
+  detection work for any `src/<package>/<branch>/` project; previously the
+  subagent gate silently no-opped outside AIPass. 9 new external-project tests.
+  Closes [#605](https://github.com/AIOSAI/AIPass/issues/605).
 - **Hooks branch promoted to service** — registry profile changed from
   "AIPass Workshop" to "library" so it appears in `drone systems` alongside
   the other 12 services.
