@@ -12,6 +12,10 @@ and this project uses [Calendar Versioning](https://calver.org/) in the format
 
 ### Added
 
+- **`drone @hooks status`** — read-only viewer for a project's hook config:
+  master switch, every hook's enabled state per event group, matchers, and an
+  enabled/total summary. Resolves the project's `.aipass/hooks.json` by walking
+  up from CWD. (DPLAN-0190 Phase B)
 - **Hooks activate in every project** — `aipass init` now writes
   `.aipass/hooks.json`, so new projects fire the hook engine out of the box
   (previously: no config shipped, 0 hooks fired). `aipass init update`
@@ -34,6 +38,13 @@ and this project uses [Calendar Versioning](https://calver.org/) in the format
 - **Hooks branch promoted to service** — registry profile changed from
   "AIPass Workshop" to "library" so it appears in `drone systems` alongside
   the other 12 services.
+- **Hooks branch hardened to 100% seedgo** — the @hooks citizen took full
+  ownership of its branch: every handler verified wired + firing, README
+  rewritten (two-tier provider/project model, dynamic-dispatch design, event
+  table), 2 stale tests resolved (253 pass). Dead-code/unused-function flags
+  documented as architectural bypasses — the 15 handlers are invoked
+  dynamically via `importlib` from `hooks.json` paths, never statically
+  imported. (DPLAN-0191)
 
 ### Release
 
