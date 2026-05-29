@@ -24,6 +24,9 @@ and this project uses [Calendar Versioning](https://calver.org/) in the format
   shipping (`_ship_hooks`) removed. (DPLAN-0190 Phase A)
 - **README logo** — centered logo image replaces plain `# AIPass` header.
   New `assets/logo.png` added to the repo.
+- **OpenSSF Scorecard** — `.github/workflows/scorecard.yml` runs the official
+  OSSF Scorecard action on push to `main` and weekly. Publishes a public security
+  health score at scorecard.dev with a README badge. Actions pinned by SHA.
 - **Registry descriptions** — all 13 branches now have one-liner descriptions
   in `AIPASS_REGISTRY.json`. `drone systems` shows what each agent does
   instead of blank lines. Closes [#607](https://github.com/AIOSAI/AIPass/issues/607).
