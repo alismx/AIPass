@@ -130,22 +130,24 @@ class TestSubagentGateHandler:
 class TestSubagentGateExternalProject:
     """Verify subagent gate works for non-AIPass projects (e.g. src/vera_studio/)."""
 
-    def test_get_cwd_branch_external_package(self):
-        from pathlib import Path
+    def test_get_cwd_branch_external_package(self, tmp_path):
         from aipass.hooks.apps.handlers.security.subagent_gate import _get_cwd_branch
 
-        repo_root = Path("/home/user/Projects/vera")
-        cwd = "/home/user/Projects/vera/src/vera_studio/quality"
-        branch = _get_cwd_branch(cwd, repo_root)
+        # Use tmp_path for OS-native, drive-anchored paths — synthetic POSIX
+        # strings break on Windows where .resolve() anchors to the current drive.
+        repo_root = tmp_path / "vera"
+        cwd = repo_root / "src" / "vera_studio" / "quality"
+        cwd.mkdir(parents=True)
+        branch = _get_cwd_branch(str(cwd), repo_root)
         assert branch == "quality"
 
-    def test_get_cwd_branch_aipass_still_works(self):
-        from pathlib import Path
+    def test_get_cwd_branch_aipass_still_works(self, tmp_path):
         from aipass.hooks.apps.handlers.security.subagent_gate import _get_cwd_branch
 
-        repo_root = Path("/home/user/Projects/AIPass")
-        cwd = "/home/user/Projects/AIPass/src/aipass/hooks"
-        branch = _get_cwd_branch(cwd, repo_root)
+        repo_root = tmp_path / "AIPass"
+        cwd = repo_root / "src" / "aipass" / "hooks"
+        cwd.mkdir(parents=True)
+        branch = _get_cwd_branch(str(cwd), repo_root)
         assert branch == "hooks"
 
     def test_get_package_from_cwd_external(self):
